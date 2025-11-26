@@ -71,11 +71,13 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 /**
  * @fileoverview This page allows users to track their symptoms over time.
  *
- * It provides a form to log new symptom entries and displays a chart
- * visualizing the history of logged symptoms, including their severity and frequency.
- * All data is securely stored and retrieved from the user's personal Firestore document space.
+ * It provides a form to log new symptom entries (name, severity, frequency, date)
+ * and displays a bar chart visualizing the history of the last 30 logged symptoms.
+ * All data is securely stored and retrieved from the user's private space in Firestore.
+ * It also includes options to view a detailed report and delete all user data.
  */
 
+// Zod schema for validating the symptom logging form.
 const symptomSchema = z.object({
   symptom: z.string().min(1, 'Symptom name is required.'),
   severity: z.coerce.number().min(1, 'Severity is required.').max(10),
@@ -84,13 +86,18 @@ const symptomSchema = z.object({
 });
 
 type SymptomFormValues = z.infer<typeof symptomSchema>;
+
+/**
+ * Type definition for a single symptom data object retrieved from Firestore.
+ * Extends the form values with Firestore-generated fields.
+ */
 export type SymptomData = SymptomFormValues & { id: string; userId: string, createdAt: string, date: string };
 
 
 /**
  * The main component for the Symptom Tracker page.
- * It handles user authentication, data fetching for symptoms,
- * form submission for new symptoms, and rendering the UI.
+ * It handles user authentication, data fetching for symptoms, form submission
+ * for new symptoms, data deletion, and rendering the complete UI.
  *
  * @returns {React.ReactElement} The rendered symptom tracker page.
  */
@@ -119,16 +126,16 @@ export default function SymptomTrackerPage() {
     },
   });
 
-  // Redirect unauthenticated users
+  // Redirect unauthenticated users to the auth page.
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/auth');
     }
   }, [user, isUserLoading, router]);
 
+  // Memoized Firestore query to fetch the last 30 symptoms for the current user, ordered by date.
   const symptomsQuery = useMemoFirebase(() => {
     if (!user) return null;
-    // Query to get the last 30 symptoms, ordered by date
     return query(collection(firestore, 'users', user.uid, 'symptoms'), orderBy('date', 'desc'), limit(30));
   }, [firestore, user]);
 
@@ -140,6 +147,7 @@ export default function SymptomTrackerPage() {
 
   /**
    * Handles the form submission to log a new symptom.
+   * It creates a new document in the user's `symptoms` subcollection in Firestore.
    * @param {SymptomFormValues} values - The validated form values.
    */
   const onSubmit = (values: SymptomFormValues) => {
@@ -163,30 +171,24 @@ export default function SymptomTrackerPage() {
 
     const collectionRef = collection(firestore, 'users', user.uid, 'symptoms');
 
-    // addDocumentNonBlocking returns a promise. We can use .then, .catch, and .finally
-    // to manage the UI state for this specific operation without blocking the main thread.
     addDocumentNonBlocking(collectionRef, newSymptom)
         .then((docRef) => {
-            // This 'then' block will execute if the document is successfully created locally
-            // and the promise from addDoc resolves.
-            if(docRef) { // Check if docRef is not undefined (it won't be on success)
+            if(docRef) {
                  toast({
                     title: 'Symptom Logged!',
                     description: `${values.symptom} has been added to your tracker.`,
                 });
                 reset();
             }
-            // If docRef is undefined, it means the catch block in addDocumentNonBlocking was triggered
-            // and the global error handler is already managing the error feedback.
         })
         .finally(() => {
-            // This will run after the promise either resolves or is handled by the catch block.
             setIsSubmitting(false);
         });
   };
 
   /**
-   * Handles the deletion of all symptom data for the current user.
+   * Handles the deletion of all symptom data for the current user after confirmation.
+   * This is an irreversible action.
    */
   const handleDeleteAllSymptoms = () => {
     if (!user) {
@@ -211,6 +213,7 @@ export default function SymptomTrackerPage() {
         });
   };
 
+  // Show a full-page loader while checking authentication.
   if (isUserLoading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -219,7 +222,7 @@ export default function SymptomTrackerPage() {
     );
   }
 
-  // sort data ascending for the chart
+  // Format and sort data for the chart (ascending by date).
   const formattedData =
     symptoms?.map(item => ({
       ...item,
@@ -392,7 +395,7 @@ export default function SymptomTrackerPage() {
                                     <Select onValueChange={(val) => field.onChange(Number(val))} value={String(field.value)}>
                                         <SelectTrigger id="frequency" aria-label="Select frequency">
                                             <SelectValue placeholder="Select frequency" />
-                                        </SelectTrigger>
+                                        </Trigger>
                                         <SelectContent>
                                             {[...Array(10)].map((_, i) => (
                                                 <SelectItem key={i+1} value={String(i+1)}>{i+1}</SelectItem>
@@ -467,3 +470,5 @@ export default function SymptomTrackerPage() {
     </div>
   );
 }
+
+    

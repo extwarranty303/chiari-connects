@@ -28,16 +28,17 @@ import { analyzeSymptomsWithImaging, AnalyzeSymptomsWithImagingInput } from '@/a
 /**
  * @fileoverview This page generates a professional, printable report of the user's logged symptoms.
  *
- * It fetches all symptom data for the current user, organizes it into a clean table format,
+ * It fetches all symptom data for the current user, organizes it into a clean table,
  * and provides a button to print the report or save it as a PDF. The page is designed to be
- * printer-friendly, hiding non-essential UI elements like buttons during printing.
- * It also includes an AI-powered analysis of the symptom data, with an option to upload medical imaging.
+ * printer-friendly, hiding non-essential UI elements during printing. It also includes an
+ * AI-powered analysis of the symptom data, with an option to upload medical imaging for a more
+ * comprehensive summary.
  */
 
 /**
- * Calculates a summary of the symptom data.
+ * Calculates a statistical summary of the provided symptom data.
  * @param {SymptomData[]} symptoms - An array of symptom data objects.
- * @returns An object containing the total entries, unique symptoms, and average severity/frequency.
+ * @returns An object containing the total entries, number of unique symptoms, and average severity/frequency.
  */
 function getReportSummary(symptoms: SymptomData[]) {
   if (!symptoms || symptoms.length === 0) {
@@ -63,9 +64,12 @@ function getReportSummary(symptoms: SymptomData[]) {
 }
 
 /**
- * Component to display the AI-generated analysis of symptoms.
+ * A component that provides an AI-powered analysis of the user's symptom data.
+ * It allows for optional medical imaging uploads to generate a more comprehensive summary.
+ * The analysis is generated on-demand by calling a Genkit AI flow.
+ *
  * @param {{symptoms: SymptomData[]}} props - The user's symptom data.
- * @returns {React.ReactElement} The AI analysis section.
+ * @returns {React.ReactElement} The AI analysis section component.
  */
 function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
     const [isPending, startTransition] = useTransition();
@@ -79,7 +83,7 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
     /**
      * Converts a File object to a Base64 encoded data URI.
      * @param {File} file The file to convert.
-     * @returns {Promise<string>} A promise that resolves with the data URI.
+     * @returns {Promise<string>} A promise that resolves with the data URI string.
      */
     const toDataURL = (file: File): Promise<string> =>
         new Promise((resolve, reject) => {
@@ -89,6 +93,11 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
             reader.readAsDataURL(file);
     });
 
+    /**
+     * Handles the change event from the file input, validating the file type
+     * and setting the state for the selected image.
+     * @param {React.ChangeEvent<HTMLInputElement>} event - The file input change event.
+     */
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
@@ -105,12 +114,16 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
         }
     };
 
+    /**
+     * Triggers the AI analysis flow. It prepares the input data (symptoms and optional imaging)
+     * and calls the appropriate AI flow, then displays the result or an error message.
+     */
     const handleGenerateAnalysis = () => {
         startTransition(async () => {
             setError('');
             setAnalysis('');
             try {
-                // Prepare the base symptom input
+                // Prepare the base symptom input for the AI flow.
                 const symptomInput: AnalyzeSymptomsInput = {
                     symptoms: symptoms.map(s => ({
                         symptom: s.symptom,
@@ -122,7 +135,7 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
 
                 let result;
                 if (imagingFile) {
-                    // If there's an image, use the imaging analysis flow
+                    // If an image is provided, use the imaging analysis flow.
                     const imagingDataUri = await toDataURL(imagingFile);
                     const imagingInput: AnalyzeSymptomsWithImagingInput = {
                         ...symptomInput,
@@ -130,7 +143,7 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
                     };
                     result = await analyzeSymptomsWithImaging(imagingInput);
                 } else {
-                    // Otherwise, use the text-only analysis flow
+                    // Otherwise, use the text-only symptom analysis flow.
                     result = await analyzeSymptoms(symptomInput);
                 }
 
@@ -200,8 +213,8 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
 
 /**
  * The main component for the Symptom Report page.
- * It handles user authentication, fetches and displays symptom data,
- * and manages the print functionality.
+ * It handles user authentication, fetches all symptom data from Firestore,
+ * displays it in a structured format, and manages the print functionality.
  *
  * @returns {React.ReactElement} The rendered symptom report page.
  */
@@ -210,14 +223,14 @@ export default function SymptomReportPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
 
-  // Redirect unauthenticated users
+  // Redirect unauthenticated users.
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/auth');
     }
   }, [user, isUserLoading, router]);
 
-  // Create a memoized, ordered query for the symptoms
+  // Create a memoized, ordered query for all of the user's symptoms.
   const symptomsQuery = useMemoFirebase(() => {
     if (!user) return null;
     return query(collection(firestore, 'users', user.uid, 'symptoms'), orderBy('date', 'desc'));
@@ -230,12 +243,13 @@ export default function SymptomReportPage() {
   } = useCollection<SymptomData>(symptomsQuery);
 
   /**
-   * Triggers the browser's print dialog to print or save the report.
+   * Triggers the browser's print dialog to print or save the report as a PDF.
    */
   const handlePrint = () => {
     window.print();
   };
 
+  // Show a full-page loader while checking authentication.
   if (isUserLoading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -248,7 +262,7 @@ export default function SymptomReportPage() {
 
   return (
     <div className="bg-background text-foreground min-h-screen">
-      {/* Header section, hidden on print */}
+      {/* Header section, hidden from print output. */}
       <header className="p-4 sm:p-8 flex justify-between items-center print:hidden">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Symptom Report</h1>
         <div className="flex items-center gap-4">
@@ -262,7 +276,7 @@ export default function SymptomReportPage() {
         </div>
       </header>
 
-      {/* Main report content */}
+      {/* Main report content, styled for screen and print. */}
       <main className="p-4 sm:p-8">
         <div className="max-w-4xl mx-auto bg-card p-6 sm:p-10 rounded-lg shadow-md border print:shadow-none print:border-none print:p-0">
           <div className="flex justify-between items-start mb-8">
@@ -296,7 +310,7 @@ export default function SymptomReportPage() {
                    {/* AI Analysis Section */}
                    <AiAnalysis symptoms={symptoms} />
                   
-                  {/* Summary Section */}
+                  {/* Summary Statistics Section */}
                   <div>
                     <h3 className="text-xl font-semibold border-b pb-2 mb-4">Data Summary</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
@@ -319,7 +333,7 @@ export default function SymptomReportPage() {
                     </div>
                   </div>
 
-                  {/* Detailed Log Section */}
+                  {/* Detailed Log Table Section */}
                   <div>
                     <h3 className="text-xl font-semibold border-b pb-2 mb-4">Detailed Log</h3>
                     <div className="border rounded-lg overflow-hidden">
@@ -368,7 +382,7 @@ export default function SymptomReportPage() {
         </div>
       </main>
 
-      {/* Print-specific styles */}
+      {/* Print-specific styles to hide UI elements and optimize layout for printing. */}
       <style jsx global>{`
         @media print {
           body {
@@ -401,3 +415,5 @@ export default function SymptomReportPage() {
     </div>
   );
 }
+
+    

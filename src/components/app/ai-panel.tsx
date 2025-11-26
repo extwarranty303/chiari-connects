@@ -13,11 +13,30 @@ import { suggestCodeRefactoring } from '@/ai/flows/ai-suggest-code-refactoring';
 import { analyzeAndAssistCodebase } from '@/ai/flows/ai-analyze-and-assist-codebase';
 import { generateReactComponent } from '@/ai/flows/ai-generate-react-component';
 
+/**
+ * @fileoverview AiPanel component displays a tabbed interface for AI-powered code assistance.
+ * This component is a remnant of the `ReactRefinery` concept and serves as a placeholder
+ * demonstrating how AI flows can be integrated into the UI.
+ *
+ * It includes three main features:
+ * 1. Refactor Code: Suggests improvements for the provided code.
+ * 2. Codebase Assistant: Provides contextual help based on user requirements.
+ * 3. Generate Component: Creates new React components from a textual description.
+ *
+ * @param {AiPanelProps} props - The props for the AiPanel component.
+ * @param {string} props.code - The current code from the editor.
+ * @param {(code: string, type: 'component' | 'suggestion') => void} props.onAppendToEditor - Callback to append generated code to the editor.
+ * @returns {React.ReactElement} A card component with tabbed AI features.
+ */
+
 type AiPanelProps = {
   code: string;
   onAppendToEditor: (code: string, type: 'component' | 'suggestion') => void;
 };
 
+/**
+ * A reusable wrapper for the content of each tab in the AI Panel.
+ */
 const AIPanelTabContent = ({ title, description, children }: { title: string; description: string; children: React.ReactNode }) => (
     <Card className="h-full flex flex-col border-0 shadow-none">
         <CardHeader>
@@ -30,6 +49,9 @@ const AIPanelTabContent = ({ title, description, children }: { title: string; de
     </Card>
 );
 
+/**
+ * A loading skeleton component shown while waiting for an AI response.
+ */
 const LoadingSkeleton = () => (
     <div className="space-y-3">
         <Skeleton className="h-4 w-full" />
@@ -39,6 +61,9 @@ const LoadingSkeleton = () => (
     </div>
 )
 
+/**
+ * A component to display the result from an AI flow, with actions to copy or append the result.
+ */
 const ResultDisplay = ({ result, onAppend, appendType }: { result: string; onAppend: (code: string, type: 'component' | 'suggestion') => void; appendType: 'component' | 'suggestion' }) => {
     const { toast } = useToast();
     const handleCopy = () => {
@@ -58,6 +83,9 @@ const ResultDisplay = ({ result, onAppend, appendType }: { result: string; onApp
 };
 
 
+/**
+ * The "Refactor" tab content, which allows users to get AI suggestions for improving their code.
+ */
 const RefactorTab = ({ code, onAppendToEditor }: AiPanelProps) => {
     const [isPending, startTransition] = useTransition();
     const [suggestions, setSuggestions] = useState('');
@@ -85,6 +113,9 @@ const RefactorTab = ({ code, onAppendToEditor }: AiPanelProps) => {
     );
 };
 
+/**
+ * The "Assist" tab content, providing contextual help based on project requirements.
+ */
 const AssistTab = ({ code, onAppendToEditor }: AiPanelProps) => {
     const [isPending, startTransition] = useTransition();
     const [requirements, setRequirements] = useState('');
@@ -120,6 +151,9 @@ const AssistTab = ({ code, onAppendToEditor }: AiPanelProps) => {
     );
 };
 
+/**
+ * The "Generate" tab content, which creates new React components from a textual description.
+ */
 const GenerateTab = ({ onAppendToEditor }: { onAppendToEditor: (code: string, type: 'component') => void }) => {
     const [isPending, startTransition] = useTransition();
     const [description, setDescription] = useState('');
@@ -156,16 +190,7 @@ const GenerateTab = ({ onAppendToEditor }: { onAppendToEditor: (code: string, ty
 };
 
 /**
- * @fileoverview AiPanel component displays a tabbed interface for AI-powered code assistance.
- * It includes three main features:
- * 1. Refactor Code: Suggests improvements for the provided code.
- * 2. Codebase Assistant: Provides contextual help based on user requirements.
- * 3. Generate Component: Creates new React components from a textual description.
- *
- * @param {AiPanelProps} props - The props for the AiPanel component.
- * @param {string} props.code - The current code from the editor.
- * @param {(code: string, type: 'component' | 'suggestion') => void} props.onAppendToEditor - Callback to append generated code to the editor.
- * @returns {React.ReactElement} A card component with tabbed AI features.
+ * The main AiPanel component that orchestrates the different AI-powered tabs.
  */
 export function AiPanel({ code, onAppendToEditor }: AiPanelProps) {
   return (
@@ -189,3 +214,5 @@ export function AiPanel({ code, onAppendToEditor }: AiPanelProps) {
     </Card>
   );
 }
+
+    

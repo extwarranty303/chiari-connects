@@ -10,14 +10,15 @@ type CodeEditorProps = {
 };
 
 /**
- * @fileoverview CodeEditor component provides a simple textarea-based editor for code.
- * It displays the current file name in the header and allows the user to modify the code.
+ * @fileoverview A simple, reusable component for editing text content within a card.
+ * Originally designed for code, it now serves as a general-purpose text editor in the app.
+ * It displays the current file name in the header and allows the user to modify the content.
  *
  * @param {CodeEditorProps} props - The props for the CodeEditor component.
- * @param {string} props.code - The code content to display in the editor.
- * @param {(code: string) => void} props.onCodeChange - Callback function to handle code changes.
- * @param {string} props.fileName - The name of the file being edited.
- * @returns {React.ReactElement} A card-based code editor component.
+ * @param {string} props.code - The text content to display in the editor.
+ * @param {(code: string) => void} props.onCodeChange - Callback function to handle content changes.
+ * @param {string} props.fileName - The name of the file or content being edited.
+ * @returns {React.ReactElement} A card-based text editor component.
  */
 export function CodeEditor({ code, onCodeChange, fileName }: CodeEditorProps) {
   return (
@@ -29,7 +30,7 @@ export function CodeEditor({ code, onCodeChange, fileName }: CodeEditorProps) {
         <Textarea
           value={code}
           onChange={(e) => onCodeChange(e.target.value)}
-          placeholder="Upload or write your React code here..."
+          placeholder="Upload or write your content here..."
           className="w-full h-full min-h-[200px] resize-none border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 font-code text-base p-4 bg-card"
           spellCheck="false"
         />
@@ -37,3 +38,5 @@ export function CodeEditor({ code, onCodeChange, fileName }: CodeEditorProps) {
     </Card>
   );
 }
+
+    

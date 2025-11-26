@@ -26,6 +26,26 @@ import { Loader2 } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
 
+
+/**
+ * @fileoverview This file defines the authentication page for Chiari Connects.
+ * It provides a user interface for both logging in and signing up.
+ *
+ * Key functionalities:
+ * - **Tabs for Login/Sign Up**: Allows users to switch between login and sign-up forms.
+ * - **Form Validation**: Uses `zod` and `react-hook-form` for robust client-side validation.
+ * - **Email/Password Auth**: Handles user creation and sign-in with email and password.
+ * - **Google Sign-In**: Provides a one-click Google sign-in option.
+ * - **Firebase Integration**:
+ *   - Creates a new user document in Firestore upon successful sign-up.
+ *   - Uses a non-blocking approach for Firebase auth operations for a smoother UX.
+ *   - Listens for authentication state changes to redirect users automatically.
+ * - **Error Handling**: Catches and displays authentication errors to the user via toasts.
+ * - **Responsive Design**: Includes a loading state and redirects authenticated users away from the page.
+ * - **Disclaimer**: Displays an important medical and HIPAA compliance disclaimer.
+ */
+
+// Schema for the sign-up form validation.
 const signupSchema = z.object({
   username: z.string().min(3, { message: 'Username must be at least 3 characters.'}),
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -34,6 +54,7 @@ const signupSchema = z.object({
     .min(6, { message: 'Password must be at least 6 characters.' }),
 });
 
+// Schema for the login form validation.
 const loginSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
   password: z.string().min(1, { message: 'Password is required.' }),
@@ -42,6 +63,13 @@ const loginSchema = z.object({
 type SignupFormValues = z.infer<typeof signupSchema>;
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+
+/**
+ * The main component for the authentication page.
+ * It manages the entire authentication flow, from form rendering to handling Firebase responses.
+ *
+ * @returns {React.ReactElement} The rendered authentication page component.
+ */
 export default function AuthPage() {
   const { toast } = useToast();
   const { auth, firestore } = useFirebase();
@@ -60,31 +88,49 @@ export default function AuthPage() {
     defaultValues: { email: '', password: '' },
   });
 
+  // Redirects the user to the home page if they are already logged in.
   useEffect(() => {
     if (!isUserLoading && user) {
       router.push('/');
     }
   }, [user, isUserLoading, router]);
 
+  /**
+   * Initiates the email and password sign-up process.
+   * @param {SignupFormValues} values - The validated sign-up form values.
+   */
   const handleSignup = (values: SignupFormValues) => {
     setIsPending(true);
     initiateEmailSignUp(auth, values.email, values.password);
   };
 
+  /**
+   * Initiates the email and password login process.
+   * @param {LoginFormValues} values - The validated login form values.
+   */
   const handleLogin = (values: LoginFormValues) => {
     setIsPending(true);
     initiateEmailSignIn(auth, values.email, values.password);
   };
   
+  /**
+   * Initiates the Google Sign-In popup flow.
+   */
   const handleGoogleSignIn = () => {
     setIsPending(true);
     initiateGoogleSignIn(auth);
   };
 
+  /**
+   * This effect sets up a comprehensive listener for all Firebase authentication events.
+   * It handles successful authentication, user document creation in Firestore for new users,
+   * and centralized error handling for failed authentication attempts.
+   */
   useEffect(() => {
+    // onAuthStateChanged is the primary listener for any change in the user's auth status.
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        // If it's a new user from email/password signup, the username will be in the form state
+        // If a new user signs up via email, create their document in Firestore.
         const signupUsername = signupForm.getValues('username');
         if (signupUsername) {
             const userRef = doc(firestore, 'users', user.uid);
@@ -94,7 +140,7 @@ export default function AuthPage() {
                 username: signupUsername,
                 createdAt: new Date().toISOString()
             }, { merge: true });
-            // Reset form to prevent re-triggering this on auth state changes
+            // Reset form to prevent re-triggering this on subsequent auth state changes.
             signupForm.reset(); 
         }
         
@@ -105,26 +151,25 @@ export default function AuthPage() {
         });
         router.push('/');
       }
-      // Note: We don't set isPending(false) in the 'else' case
-      // because the error handler below will manage the state for failed attempts.
     });
     
-    // Centralized error handling for auth
+    // Centralized error handling by temporarily overriding console.error.
+    // The Firebase SDK logs auth errors to the console, which we intercept here.
     const originalConsoleError = console.error;
     const newConsoleError = (...args: any[]) => {
-      // Firebase auth errors are often logged to the console by the SDK
+      // Check if the log message is a Firebase auth error.
       if (typeof args[0] === 'string' && args[0].includes('Firebase: Error (auth/')) {
-        setIsPending(false); // Stop loading indicator on auth error
+        setIsPending(false); // Stop the loading indicator.
         
         let errorMessage = 'An unknown authentication error occurred.';
         const errorCodeMatch = args[0].match(/\(auth\/([^)]+)\)/);
         if (errorCodeMatch && errorCodeMatch[1]) {
             const errorCode = errorCodeMatch[1];
-            // Don't show toast if user closes Google sign-in popup
+            // Don't show a toast if the user simply closes the Google sign-in popup.
             if (errorCode === 'popup-closed-by-user' || errorCode === 'cancelled-popup-request') {
               return;
             }
-            // Capitalize and format for readability
+            // Format the error code for better readability.
             errorMessage = errorCode.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         }
 
@@ -134,18 +179,20 @@ export default function AuthPage() {
           description: errorMessage,
         });
       }
-      // Call the original console.error to maintain default behavior for other errors
+      // Call the original console.error to maintain default behavior for other errors.
       originalConsoleError.apply(console, args);
     };
 
     console.error = newConsoleError;
     
+    // Cleanup function to restore the original console.error and unsubscribe the listener.
     return () => {
       unsubscribe();
-      console.error = originalConsoleError; // Restore original console.error on cleanup
+      console.error = originalConsoleError;
     };
   }, [auth, router, toast, firestore, signupForm]);
 
+  // Display a full-page loader while checking auth status or if user is already logged in.
   if (isUserLoading || user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -176,7 +223,7 @@ export default function AuthPage() {
             <CardHeader>
               <CardTitle>Login</CardTitle>
               <CardDescription className='text-foreground/80'>
-                Access your account to manage your projects.
+                Access your account to continue your journey.
               </CardDescription>
             </CardHeader>
             <form onSubmit={loginForm.handleSubmit(handleLogin)}>
@@ -330,12 +377,10 @@ export default function AuthPage() {
         </TabsContent>
       </Tabs>
       <div className="relative z-10 mt-6 max-w-md w-full text-center text-xs text-muted-foreground bg-background/50 p-3 rounded-md backdrop-blur-sm">
-        <p><strong>Disclaimer:</strong> This application and its AI-powered analyses are for informational purposes only and are not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition. <strong>This application is not HIPAA compliant.</strong> Please do not store sensitive personal health information.</p>
+        <p><strong>Disclaimer:</strong> This application and its AI-powered analyses are for informational purposes only and are not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition. **This application is not HIPAA compliant.** Please do not store sensitive personal health information.</p>
       </div>
     </div>
   );
 }
-
-    
 
     

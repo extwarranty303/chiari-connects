@@ -6,16 +6,10 @@ import { FileUp, FileDown, Activity } from 'lucide-react';
 import { UserNav } from '@/components/app/user-nav';
 import { Icons } from '@/components/app/icons';
 
-type AppHeaderProps = {
-  onUploadClick: () => void;
-  onDownloadClick: () => void;
-  showActions?: boolean;
-};
-
 /**
  * @fileoverview AppHeader component serves as the main navigation bar for the application.
- * It displays the application logo and title, action buttons for file upload and download,
- * and the user navigation menu.
+ * It displays the application logo and title, action buttons for placeholder features
+ * (file upload/download), a link to the Symptom Tracker, and the user navigation menu.
  *
  * @param {AppHeaderProps} props - The props for the AppHeader component.
  * @param {() => void} props.onUploadClick - Callback function to trigger file upload.
@@ -23,6 +17,13 @@ type AppHeaderProps = {
  * @param {boolean} [props.showActions=true] - Whether to show the Upload/Download buttons.
  * @returns {React.ReactElement} The header component for the application.
  */
+
+type AppHeaderProps = {
+  onUploadClick: () => void;
+  onDownloadClick: () => void;
+  showActions?: boolean;
+};
+
 export function AppHeader({ onUploadClick, onDownloadClick, showActions = true }: AppHeaderProps) {
   return (
     <header className="flex items-center justify-between p-4 border-b bg-card shadow-sm">
@@ -60,3 +61,5 @@ export function AppHeader({ onUploadClick, onDownloadClick, showActions = true }
     </header>
   );
 }
+
+    
