@@ -8,6 +8,7 @@ import {
   FirestoreError,
   QuerySnapshot,
   CollectionReference,
+  collectionGroup
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -108,7 +109,13 @@ export function useCollection<T = any>(
     return () => unsubscribe();
   }, [memoizedTargetRefOrQuery]); // Re-run if the target query/reference changes.
   if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
-    throw new Error(memoizedTargetRefOrQuery + ' was not properly memoized using useMemoFirebase');
+    // A collection group query is a special case, it does not have a path property.
+    // The query is constructed with collectionGroup(firestore, 'collectionName')
+    // We cannot check if it's a collectionGroup query directly, but we can check for path.
+    const isCollectionGroupQuery = !(memoizedTargetRefOrQuery as any).path;
+    if (!isCollectionGroupQuery) {
+      throw new Error(memoizedTargetRefOrQuery + ' was not properly memoized using useMemoFirebase');
+    }
   }
   return { data, isLoading, error };
 }
