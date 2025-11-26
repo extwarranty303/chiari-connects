@@ -19,8 +19,8 @@
  *   `/users/{userId}` path. Cross-user access is explicitly forbidden.
  * - Public Discussions: The `/discussions` collection is readable by any authenticated user
  *   to foster a community environment.
- * - Create/Update Ownership: Users can only create posts with their own userId. They can only
- *   update or delete posts they have created.
+ * - Create/Update Ownership: Users can only create posts with their own userId and a valid category.
+ *   They can only update or delete posts they have created.
  * - No Public User Data: Listing all users is forbidden to protect privacy.
  * - Relational Integrity: On document creation, rules ensure that internal ID
  *   fields (e.g., `userId`, `projectId`) match the IDs in the document path,
@@ -175,12 +175,12 @@ service cloud.firestore {
      * @description Publicly readable discussion forum posts.
      * @path /discussions/{discussionId}
      * @allow (read) Any authenticated user can read all posts.
-     * @allow (create) Any authenticated user can create a post.
+     * @allow (create) Any authenticated user can create a post with a valid category.
      * @allow (update, delete) Only the user who created the post can update or delete it.
      */
     match /discussions/{discussionId} {
       allow read: if isSignedIn();
-      allow create: if (isSignedIn() && request.resource.data.userId == request.auth.uid) || isSeedOperation();
+      allow create: if (isSignedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.category is string && request.resource.data.category.size() > 0) || isSeedOperation();
       allow update, delete: if isOwner(request.resource.data.userId);
     }
   }
