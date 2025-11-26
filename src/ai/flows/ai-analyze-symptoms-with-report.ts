@@ -18,7 +18,7 @@ const SymptomEntrySchema = z.object({
   date: z.string(),
 });
 
-export const AnalyzeSymptomsWithReportInputSchema = z.object({
+const AnalyzeSymptomsWithReportInputSchema = z.object({
   symptoms: z
     .array(SymptomEntrySchema)
     .describe('An array of symptom data objects reported by the user.'),
@@ -32,7 +32,7 @@ export type AnalyzeSymptomsWithReportInput = z.infer<
   typeof AnalyzeSymptomsWithReportInputSchema
 >;
 
-export const AnalyzeSymptomsWithReportOutputSchema = z.object({
+const AnalyzeSymptomsWithReportOutputSchema = z.object({
   analysis: z
     .string()
     .describe(
