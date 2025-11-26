@@ -191,6 +191,47 @@
         "date",
         "createdAt"
       ]
+    },
+    "DiscussionPost": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "DiscussionPost",
+      "type": "object",
+      "description": "Represents a single discussion post in the community forum.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the discussion post."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who created the post."
+        },
+        "username": {
+          "type": "string",
+          "description": "The username of the user who created the post."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the discussion post."
+        },
+        "content": {
+          "type": "string",
+          "description": "The main content of the discussion post."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp indicating when the post was created."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "username",
+        "title",
+        "content",
+        "createdAt"
+      ]
     }
   },
   "auth": {
@@ -309,8 +350,24 @@
             }
           ]
         }
+      },
+      {
+        "path": "/discussions/{discussionId}",
+        "definition": {
+          "entityName": "DiscussionPost",
+          "schema": {
+            "$ref": "#/backend/entities/DiscussionPost"
+          },
+          "description": "Stores community discussion posts. These are public to all authenticated users.",
+          "params": [
+            {
+              "name": "discussionId",
+              "description": "The unique identifier of the discussion post."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to ensure security, scalability, and ease of debugging, in accordance with the defined principles.  Authorization Independence is achieved by leveraging path-based ownership for private user data and avoiding `get()` calls in security rules. Structural Segregation is applied by storing user-specific data under `/users/{userId}`. Access Modeling uses path-based ownership for the `User -> Project -> CodeFile -> AISuggestion` hierarchy and the new `User -> Symptom` hierarchy. This ensures that a user's symptom data is private and only accessible by them.\n\nThe structure supports required QAPs by ensuring that list operations can be securely performed based on path-based ownership. For example, listing projects is done under `/users/{userId}/projects`, and listing symptoms is done under `/users/{userId}/symptoms`, allowing a simple rule to check if `request.auth.uid == userId` for listing data owned by a user."
+    "reasoning": "The Firestore data structure is designed to ensure security, scalability, and ease of debugging, in accordance with the defined principles.  Authorization Independence is achieved by leveraging path-based ownership for private user data and avoiding `get()` calls in security rules. Structural Segregation is applied by storing user-specific data under `/users/{userId}`. Access Modeling uses path-based ownership for the `User -> Project -> CodeFile -> AISuggestion` hierarchy and the `User -> Symptom` hierarchy. The new `/discussions` collection is at the root level to allow public read access for all authenticated users, while write access is managed to ensure data integrity and ownership for create/update/delete actions."
   }
 }

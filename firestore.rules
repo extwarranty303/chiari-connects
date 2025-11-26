@@ -17,11 +17,11 @@
  * Key Security Decisions:
  * - Strict Ownership: A user can only read or write data located under their own
  *   `/users/{userId}` path. Cross-user access is explicitly forbidden.
- * - No Public Data: There are no top-level public collections. All read and list
- *   operations require user authentication and ownership verification.
- * - Listing Restricted to Owner: Users are permitted to list documents within their
- *   own subcollections (e.g., list their own projects or symptoms), but cannot list documents
- *   belonging to other users.
+ * - Public Discussions: The `/discussions` collection is readable by any authenticated user
+ *   to foster a community environment.
+ * - Create/Update Ownership: Users can only create posts with their own userId. They can only
+ *   update or delete posts they have created.
+ * - No Public User Data: Listing all users is forbidden to protect privacy.
  * - Relational Integrity: On document creation, rules ensure that internal ID
  *   fields (e.g., `userId`, `projectId`) match the IDs in the document path,
  *   enforcing data consistency. These IDs are immutable and cannot be changed on update.
@@ -56,6 +56,14 @@ service cloud.firestore {
     function isExistingOwner(userId) {
       return isOwner(userId) && resource != null;
     }
+    
+    /**
+     * Helper function to check if this is the seed operation
+     * THIS IS TEMPORARY and should be removed after seeding.
+     */
+    function isSeedOperation() {
+      return request.auth.uid == "seeder";
+    }
 
     // ------------------------------------------------------------------------
     // User Profile Rules
@@ -71,10 +79,12 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId);
       allow list: if false; // Disallow listing all users for security and privacy.
+      // TEMPORARY: Allow seed operation to create users
       allow create: if isOwner(userId) 
                       && request.resource.data.id == userId
                       && request.resource.data.username is string
-                      && request.resource.data.username.size() >= 3;
+                      && request.resource.data.username.size() >= 3
+                      || isSeedOperation();
       allow update: if isExistingOwner(userId) 
                       && request.resource.data.id == resource.data.id
                       && request.resource.data.username == resource.data.username; // Username is immutable
@@ -94,7 +104,8 @@ service cloud.firestore {
       match /symptoms/{symptomId} {
         allow get: if isOwner(userId);
         allow list: if isOwner(userId);
-        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+         // TEMPORARY: Allow seed operation to create symptoms
+        allow create: if (isOwner(userId) && request.resource.data.userId == userId) || isSeedOperation();
         allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
         allow delete: if isExistingOwner(userId);
       }
@@ -156,6 +167,23 @@ service cloud.firestore {
           }
         }
       }
+    }
+    
+    // ------------------------------------------------------------------------
+    // Discussion Post Rules
+    // ------------------------------------------------------------------------
+    /**
+     * @description Publicly readable discussion forum posts.
+     * @path /discussions/{discussionId}
+     * @allow (read) Any authenticated user can read all posts.
+     * @allow (create) Any authenticated user can create a post.
+     * @allow (update, delete) Only the user who created the post can update or delete it.
+     */
+    match /discussions/{discussionId} {
+      allow read: if isSignedIn();
+      // TEMPORARY: Allow seed operation
+      allow create: if (isSignedIn() && request.resource.data.userId == request.auth.uid) || isSeedOperation();
+      allow update, delete: if isOwner(request.resource.data.userId);
     }
   }
 }

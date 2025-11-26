@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { FileUp, FileDown, Activity } from 'lucide-react';
+import { FileUp, FileDown, Activity, MessageSquare } from 'lucide-react';
 import { UserNav } from '@/components/app/user-nav';
 import { Icons } from '@/components/app/icons';
 
@@ -38,6 +38,12 @@ export function AppHeader({ onUploadClick, onDownloadClick, showActions = true }
       <div className="flex items-center gap-4">
         <nav className="hidden md:flex items-center gap-2">
             <Button variant="ghost" asChild>
+                <Link href="/discussions">
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Discussions
+                </Link>
+            </Button>
+            <Button variant="ghost" asChild>
                 <Link href="/symptom-tracker">
                     <Activity className="mr-2 h-4 w-4" />
                     Symptom Tracker
@@ -61,5 +67,3 @@ export function AppHeader({ onUploadClick, onDownloadClick, showActions = true }
     </header>
   );
 }
-
-    

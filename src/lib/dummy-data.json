@@ -1,0 +1,64 @@
+{
+  "users": [
+    {
+      "id": "user001",
+      "email": "alex@example.com",
+      "username": "AlexRay",
+      "createdAt": "2023-10-26T10:00:00Z"
+    },
+    {
+      "id": "user002",
+      "email": "brianna@example.com",
+      "username": "BriannaC",
+      "createdAt": "2023-10-28T11:20:00Z"
+    },
+    {
+      "id": "user003",
+      "email": "charlie@example.com",
+      "username": "CharlieDay",
+      "createdAt": "2023-11-01T15:00:00Z"
+    }
+  ],
+  "discussionPosts": [
+    {
+      "id": "post001",
+      "userId": "user001",
+      "username": "AlexRay",
+      "title": "Just got my diagnosis, feeling a bit overwhelmed.",
+      "content": "Hi everyone, I'm new here. Just received my Chiari diagnosis and feeling a mix of relief to have an answer and fear of the unknown. How did you all cope when you were first diagnosed? Any advice on finding a good specialist?",
+      "createdAt": "2023-11-02T14:30:00Z"
+    },
+    {
+      "id": "post002",
+      "userId": "user002",
+      "username": "BriannaC",
+      "title": "Managing headaches and neck pain - what works for you?",
+      "content": "The constant headaches are the worst part for me. I've tried medication, but I'm looking for non-pharmacological ways to manage the pain. Has anyone had success with physical therapy, specific pillows, or other lifestyle changes? Would love to hear your experiences.",
+      "createdAt": "2023-11-03T09:00:00Z"
+    },
+    {
+      "id": "post003",
+      "userId": "user003",
+      "username": "CharlieDay",
+      "title": "Post-Decompression Surgery - Recovery Tips?",
+      "content": "I'm 2 weeks post-op from my decompression surgery. The immediate relief from some symptoms is amazing, but the recovery is definitely a journey. For those who've been through it, what did your recovery timeline look like? Any tips for dealing with fatigue and incision site discomfort?",
+      "createdAt": "2023-11-05T18:00:00Z"
+    },
+    {
+      "id": "post004",
+      "userId": "user001",
+      "username": "AlexRay",
+      "title": "Brain fog is seriously impacting my work.",
+      "content": "I'm a software developer and the brain fog has been making it so hard to concentrate and solve complex problems. It feels like my brain is wading through mud. How do you explain this to your employer? Any strategies for staying sharp and productive?",
+      "createdAt": "2023-11-06T11:45:00Z"
+    },
+    {
+      "id": "post005",
+      "userId": "user002",
+      "username": "BriannaC",
+      "title": "Success story! Finding a pillow that actually helps!",
+      "content": "Just wanted to share a small win. After trying about 5 different pillows, I finally found a cervical pillow that has made a noticeable difference in my morning neck pain and headaches. It's not a cure-all, but it's a huge improvement. Don't give up on finding the small things that can help!",
+      "createdAt": "2023-11-07T20:15:00Z"
+    }
+  ]
+}
