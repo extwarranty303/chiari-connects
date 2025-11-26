@@ -1,0 +1,248 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the React Refinery application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "username": {
+          "type": "string",
+          "description": "User's username."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user account was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "username",
+        "createdAt"
+      ]
+    },
+    "Project": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Project",
+      "type": "object",
+      "description": "Represents a project containing React code uploaded by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the project entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Project)"
+        },
+        "projectName": {
+          "type": "string",
+          "description": "The name of the project."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of the project."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the project was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "projectName",
+        "createdAt"
+      ]
+    },
+    "CodeFile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CodeFile",
+      "type": "object",
+      "description": "Represents a single React code file within a project.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the code file entity."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Reference to Project. (Relationship: Project 1:N CodeFile)"
+        },
+        "fileName": {
+          "type": "string",
+          "description": "The name of the code file."
+        },
+        "fileContent": {
+          "type": "string",
+          "description": "The actual content of the React code file."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the code file was uploaded.",
+          "format": "date-time"
+        },
+        "lastModified": {
+          "type": "string",
+          "description": "Timestamp indicating when the code file was last modified.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "projectId",
+        "fileName",
+        "fileContent",
+        "createdAt",
+        "lastModified"
+      ]
+    },
+    "AISuggestion": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AISuggestion",
+      "type": "object",
+      "description": "Represents an AI-powered refactoring suggestion for a code file.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AI suggestion entity."
+        },
+        "codeFileId": {
+          "type": "string",
+          "description": "Reference to CodeFile. (Relationship: CodeFile 1:N AISuggestion)"
+        },
+        "suggestionText": {
+          "type": "string",
+          "description": "The text of the AI suggestion."
+        },
+        "suggestedChange": {
+          "type": "string",
+          "description": "The suggested change to the code (e.g., a code snippet)."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the suggestion was generated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "codeFileId",
+        "suggestionText",
+        "suggestedChange",
+        "createdAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile data. Path-based ownership ensures only the authenticated user can access their own data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user.  This is equal to request.auth.uid."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/projects/{projectId}",
+        "definition": {
+          "entityName": "Project",
+          "schema": {
+            "$ref": "#/backend/entities/Project"
+          },
+          "description": "Stores project data. Path-based ownership ensures only the authenticated user (owner) can access their projects.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user (owner)."
+            },
+            {
+              "name": "projectId",
+              "description": "The unique identifier of the project."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/projects/{projectId}/codeFiles/{codeFileId}",
+        "definition": {
+          "entityName": "CodeFile",
+          "schema": {
+            "$ref": "#/backend/entities/CodeFile"
+          },
+          "description": "Stores code file data. Path-based ownership ensures only the owner can access their code files.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user (owner)."
+            },
+            {
+              "name": "projectId",
+              "description": "The unique identifier of the project."
+            },
+            {
+              "name": "codeFileId",
+              "description": "The unique identifier of the code file."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/projects/{projectId}/codeFiles/{codeFileId}/aiSuggestions/{aiSuggestionId}",
+        "definition": {
+          "entityName": "AISuggestion",
+          "schema": {
+            "$ref": "#/backend/entities/AISuggestion"
+          },
+          "description": "Stores AI suggestion data. Path-based ownership ensures only the owner can access the AI suggestions.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user (owner)."
+            },
+            {
+              "name": "projectId",
+              "description": "The unique identifier of the project."
+            },
+            {
+              "name": "codeFileId",
+              "description": "The unique identifier of the code file."
+            },
+            {
+              "name": "aiSuggestionId",
+              "description": "The unique identifier of the AI suggestion."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to ensure security, scalability, and ease of debugging, in accordance with the defined principles.  Authorization Independence is achieved by leveraging path-based ownership for private user data and avoiding `get()` calls in security rules. Structural Segregation is applied by storing user-specific data under `/users/{userId}`. Access Modeling uses path-based ownership for the `User -> Project -> CodeFile -> AISuggestion` hierarchy.\n\nThe structure supports required QAPs by ensuring that list operations can be securely performed based on path-based ownership. For example, listing projects is done under `/users/{userId}/projects`, allowing a simple rule to check if `request.auth.uid == userId` for listing projects owned by a user. Similarly, listing `codeFiles` and `aiSuggestions` follows the same pattern."
+  }
+}
