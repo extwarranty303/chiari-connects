@@ -20,6 +20,7 @@ export interface UserAuthState {
   isUserLoading: boolean;
   userError: Error | null;
   isAdmin: boolean;
+  isModerator: boolean;
 }
 
 // Combined state for the Firebase context
@@ -33,6 +34,7 @@ export interface FirebaseContextState {
   isUserLoading: boolean; // True during initial auth check
   userError: Error | null; // Error from auth listener
   isAdmin: boolean;
+  isModerator: boolean;
 }
 
 // Return type for useFirebase()
@@ -44,6 +46,7 @@ export interface FirebaseServicesAndUser {
   isUserLoading: boolean;
   userError: Error | null;
   isAdmin: boolean;
+  isModerator: boolean;
 }
 
 // Return type for useUser() - specific to user auth state
@@ -52,6 +55,7 @@ export interface UserHookResult {
   isUserLoading: boolean;
   userError: Error | null;
   isAdmin: boolean;
+  isModerator: boolean;
 }
 
 // React Context
@@ -79,7 +83,8 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       user: userAuthState.user,
       isUserLoading: userAuthState.isUserLoading,
       userError: userAuthState.userError,
-      isAdmin: userAuthState.isAdmin
+      isAdmin: userAuthState.isAdmin,
+      isModerator: userAuthState.isModerator,
     };
   }, [firebaseApp, firestore, auth, userAuthState]);
 
@@ -114,6 +119,7 @@ export const useFirebase = (): FirebaseServicesAndUser => {
     isUserLoading: context.isUserLoading,
     userError: context.userError,
     isAdmin: context.isAdmin,
+    isModerator: context.isModerator,
   };
 };
 
@@ -152,6 +158,8 @@ export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | 
  * @returns {UserHookResult} Object with user, isUserLoading, userError.
  */
 export const useUser = (): UserHookResult => {
-  const { user, isUserLoading, userError, isAdmin } = useFirebase();
-  return { user, isUserLoading, userError, isAdmin };
+  const { user, isUserLoading, userError, isAdmin, isModerator } = useFirebase();
+  return { user, isUserLoading, userError, isAdmin, isModerator };
 };
+
+    

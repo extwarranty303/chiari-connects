@@ -7,6 +7,7 @@ export interface DecodedIdToken {
     claims: {
         [key: string]: any;
         admin?: boolean;
+        moderator?: boolean;
     };
     exp: number;
     firebase: {
@@ -57,3 +58,5 @@ export async function getDecodedIdToken(user: User | null, forceRefresh: boolean
         throw new Error("Could not retrieve user claims.");
     }
 }
+
+    

@@ -19,6 +19,10 @@
           "type": "string",
           "description": "User's username."
         },
+        "points": {
+            "type": "number",
+            "description": "Gamification points earned by the user."
+        },
         "createdAt": {
           "type": "string",
           "description": "Timestamp indicating when the user account was created.",
@@ -245,6 +249,58 @@
         "category",
         "createdAt"
       ]
+    },
+    "Bookmark": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Bookmark",
+        "type": "object",
+        "description": "Represents a user's bookmark of a discussion post.",
+        "properties": {
+            "postId": {
+                "type": "string",
+                "description": "The ID of the bookmarked discussion post."
+            },
+            "userId": {
+                "type": "string",
+                "description": "The ID of the user who created the bookmark."
+            },
+            "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Timestamp indicating when the bookmark was created."
+            }
+        },
+        "required": ["postId", "userId", "createdAt"]
+    },
+    "PostReport": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "PostReport",
+        "type": "object",
+        "description": "Represents a report filed by a user against a discussion post.",
+        "properties": {
+            "id": {
+                "type": "string",
+                "description": "Unique identifier for the report."
+            },
+            "postId": {
+                "type": "string",
+                "description": "The ID of the reported discussion post."
+            },
+            "reporterId": {
+                "type": "string",
+                "description": "The ID of the user who filed the report."
+            },
+            "reason": {
+                "type": "string",
+                "description": "The reason for the report (e.g., 'spam', 'harassment')."
+            },
+            "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Timestamp indicating when the report was filed."
+            }
+        },
+        "required": ["id", "postId", "reporterId", "reason", "createdAt"]
     }
   },
   "auth": {
@@ -364,6 +420,26 @@
           ]
         }
       },
+       {
+        "path": "/users/{userId}/bookmarks/{postId}",
+        "definition": {
+          "entityName": "Bookmark",
+          "schema": {
+            "$ref": "#/backend/entities/Bookmark"
+          },
+          "description": "Stores a user's bookmarked discussion posts. Only the user can access their own bookmarks.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "postId",
+              "description": "The ID of the bookmarked discussion post."
+            }
+          ]
+        }
+      },
       {
         "path": "/discussions/{discussionId}",
         "definition": {
@@ -379,8 +455,30 @@
             }
           ]
         }
+      },
+      {
+        "path": "/discussions/{discussionId}/reports/{reportId}",
+        "definition": {
+          "entityName": "PostReport",
+          "schema": {
+            "$ref": "#/backend/entities/PostReport"
+          },
+          "description": "Stores reports filed against a discussion post. This collection is only writable by users and only readable by admins/moderators.",
+          "params": [
+            {
+              "name": "discussionId",
+              "description": "The ID of the discussion post being reported."
+            },
+            {
+              "name": "reportId",
+              "description": "The unique identifier for the report."
+            }
+          ]
+        }
       }
     ],
     "reasoning": "The Firestore data structure is designed to ensure security, scalability, and ease of debugging, in accordance with the defined principles.  Authorization Independence is achieved by leveraging path-based ownership for private user data and avoiding `get()` calls in security rules. Structural Segregation is applied by storing user-specific data under `/users/{userId}`. Access Modeling uses path-based ownership for the `User -> Project -> CodeFile -> AISuggestion` hierarchy and the `User -> Symptom` hierarchy. The new `/discussions` collection is at the root level to allow public read access for all authenticated users, while write access is managed to ensure data integrity and ownership for create/update/delete actions. The `category` field has been added to the `DiscussionPost` entity to allow for content organization without needing a separate categories collection for this MVP."
   }
 }
+
+    

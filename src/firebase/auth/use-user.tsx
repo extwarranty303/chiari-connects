@@ -9,6 +9,7 @@ export interface UserAuthState {
   isUserLoading: boolean;
   userError: Error | null;
   isAdmin: boolean;
+  isModerator: boolean;
 }
 
 /**
@@ -22,6 +23,7 @@ export function useUserAuthState(auth: Auth): UserAuthState {
     isUserLoading: true,
     userError: null,
     isAdmin: false,
+    isModerator: false,
   });
 
   useEffect(() => {
@@ -34,19 +36,20 @@ export function useUserAuthState(auth: Auth): UserAuthState {
           try {
             const decodedToken: DecodedIdToken | null = await getDecodedIdToken(user, true);
             const isAdmin = decodedToken?.claims?.admin === true;
+            const isModerator = decodedToken?.claims?.moderator === true;
             
-            setState({ user, isUserLoading: false, userError: null, isAdmin });
+            setState({ user, isUserLoading: false, userError: null, isAdmin, isModerator });
           } catch (error: any) {
             console.error("Error decoding ID token:", error);
-            setState({ user, isUserLoading: false, userError: error, isAdmin: false });
+            setState({ user, isUserLoading: false, userError: error, isAdmin: false, isModerator: false });
           }
         } else {
-          setState({ user: null, isUserLoading: false, userError: null, isAdmin: false });
+          setState({ user: null, isUserLoading: false, userError: null, isAdmin: false, isModerator: false });
         }
       },
       (error: Error) => {
         console.error("onIdTokenChanged error:", error);
-        setState({ user: null, isUserLoading: false, userError: error, isAdmin: false });
+        setState({ user: null, isUserLoading: false, userError: error, isAdmin: false, isModerator: false });
       }
     );
 
@@ -55,3 +58,5 @@ export function useUserAuthState(auth: Auth): UserAuthState {
 
   return state;
 }
+
+    

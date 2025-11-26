@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { format } from 'date-fns';
-import { Loader2, User as UserIcon, Activity, FileText, LogOut } from 'lucide-react';
+import { Loader2, User as UserIcon, Activity, FileText, LogOut, Award } from 'lucide-react';
 import Link from 'next/link';
 
 import { useFirebase, useUser, useCollection, useMemoFirebase, useDoc } from '@/firebase';
@@ -27,6 +27,7 @@ interface UserProfile {
   username: string;
   email: string;
   createdAt: string;
+  points?: number;
 }
 
 /**
@@ -134,11 +135,17 @@ export default function ProfilePage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-sm text-muted-foreground">
-                    <p>Account created on:</p>
-                    <p className="font-medium text-foreground">
-                      {userProfile?.createdAt ? format(new Date(userProfile.createdAt), 'MMMM d, yyyy') : 'N/A'}
-                    </p>
+                  <div className="text-sm text-muted-foreground space-y-2">
+                    <div>
+                      <p>Account created on:</p>
+                      <p className="font-medium text-foreground">
+                        {userProfile?.createdAt ? format(new Date(userProfile.createdAt), 'MMMM d, yyyy') : 'N/A'}
+                      </p>
+                    </div>
+                     <div>
+                        <p className="flex items-center gap-1"><Award className="w-4 h-4 text-amber-500" /> Community Points:</p>
+                        <p className="font-medium text-foreground text-lg">{userProfile?.points ?? 0}</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -210,3 +217,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    
