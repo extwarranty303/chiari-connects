@@ -31,6 +31,20 @@
         "isSeed": {
             "type": "boolean",
             "description": "A temporary flag used only for the initial database seeding process."
+        },
+        "roles": {
+            "type": "object",
+            "description": "Firebase custom claims for role-based access control.",
+            "properties": {
+                "admin": {
+                    "type": "boolean",
+                    "description": "Indicates if the user has administrative privileges."
+                },
+                "moderator": {
+                    "type": "boolean",
+                    "description": "Indicates if the user has content moderation privileges."
+                }
+            }
         }
       },
       "required": [
@@ -480,5 +494,3 @@
     "reasoning": "The Firestore data structure is designed to ensure security, scalability, and ease of debugging, in accordance with the defined principles.  Authorization Independence is achieved by leveraging path-based ownership for private user data and avoiding `get()` calls in security rules. Structural Segregation is applied by storing user-specific data under `/users/{userId}`. Access Modeling uses path-based ownership for the `User -> Project -> CodeFile -> AISuggestion` hierarchy and the `User -> Symptom` hierarchy. The new `/discussions` collection is at the root level to allow public read access for all authenticated users, while write access is managed to ensure data integrity and ownership for create/update/delete actions. The `category` field has been added to the `DiscussionPost` entity to allow for content organization without needing a separate categories collection for this MVP."
   }
 }
-
-    

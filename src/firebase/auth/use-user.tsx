@@ -11,6 +11,10 @@ export interface UserProfile {
   email: string;
   createdAt: string;
   points?: number;
+  roles?: {
+    admin?: boolean;
+    moderator?: boolean;
+  };
 }
 
 export interface UserAuthState {
@@ -54,15 +58,19 @@ export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthStat
 
         if (user) {
           try {
+            // Get user roles from custom claims.
             const decodedToken: DecodedIdToken | null = await getDecodedIdToken(user, true);
             const isAdmin = decodedToken?.claims?.admin === true;
             const isModerator = decodedToken?.claims?.moderator === true;
             
-            // Set up a real-time listener for the user's profile document
+            // Set up a real-time listener for the user's profile document.
+            // This also contains the roles field which may not be in sync with custom claims.
+            // The custom claims from the token are the source of truth for permissions.
             const profileRef = doc(firestore, 'users', user.uid);
             profileUnsubscribe = onSnapshot(profileRef, 
               (profileSnap) => {
                 const userProfile = profileSnap.exists() ? profileSnap.data() as UserProfile : null;
+                // We use roles from the token for security, but roles in the document are useful for UI.
                 setState({ user, isUserLoading: false, userError: null, isAdmin, isModerator, userProfile });
               },
               (profileError) => {

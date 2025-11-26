@@ -2,7 +2,7 @@
 
 import { collection, query, orderBy, collectionGroup } from 'firebase/firestore';
 import { format } from 'date-fns';
-import { Loader2, User, MessageSquare, Activity, Download, ShieldAlert, FileText } from 'lucide-react';
+import { Loader2, User, MessageSquare, Activity, Download, ShieldAlert, FileText, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 /**
  * @fileoverview This is the main page for the Admin Dashboard.
@@ -27,7 +28,7 @@ import { useToast } from '@/hooks/use-toast';
  * Key functionalities include:
  * - **Security**: Wrapped in an `AdminRouteGuard` to ensure only admins can access it.
  * - **Statistics**: Displays high-level site statistics like total users, posts, and symptom entries.
- * - **User Management**: Shows a table of all registered users with their details.
+ * - **User Management**: Shows a table of all registered users with their details and roles.
  * - **Content Moderation**: Displays tables for all discussion posts and user-submitted reports.
  * - **Data Export**: Allows admins to export user and post data as CSV files.
  * - **Data Fetching**: Uses admin-specific queries to fetch all user, content, and report data.
@@ -39,6 +40,10 @@ interface UserProfile {
   username: string;
   email: string;
   createdAt: string;
+  roles?: {
+    admin?: boolean;
+    moderator?: boolean;
+  };
 }
 
 interface DiscussionPost {
@@ -162,6 +167,14 @@ export default function AdminDashboardPage() {
     } else {
       toast({ variant: 'destructive', title: 'No post data to export.' });
     }
+  };
+  
+  const handleMakeModerator = (userId: string) => {
+    // Placeholder for the Cloud Function call
+    toast({
+        title: 'Feature In Development',
+        description: `Would assign moderator role to user: ${userId}. This requires a server-side function.`,
+    });
   };
 
 
@@ -298,13 +311,15 @@ export default function AdminDashboardPage() {
                                 <TableRow>
                                     <TableHead>Username</TableHead>
                                     <TableHead>Email</TableHead>
+                                    <TableHead>Role</TableHead>
                                     <TableHead>Date Joined</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {isLoadingUsers ? (
                                     <TableRow>
-                                        <TableCell colSpan={3} className="text-center">
+                                        <TableCell colSpan={5} className="text-center">
                                             <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
                                         </TableCell>
                                     </TableRow>
@@ -313,12 +328,38 @@ export default function AdminDashboardPage() {
                                         <TableRow key={user.id}>
                                             <TableCell className="font-medium">{user.username}</TableCell>
                                             <TableCell>{user.email}</TableCell>
+                                            <TableCell>
+                                                {user.roles?.admin ? (
+                                                    <Badge variant="destructive">Admin</Badge>
+                                                ) : user.roles?.moderator ? (
+                                                    <Badge variant="secondary">Moderator</Badge>
+                                                ) : (
+                                                    <Badge variant="outline">User</Badge>
+                                                )}
+                                            </TableCell>
                                             <TableCell>{format(new Date(user.createdAt), 'MMM d, yyyy')}</TableCell>
+                                            <TableCell className="text-right">
+                                                <Button 
+                                                    variant="outline" 
+                                                    size="sm"
+                                                    disabled={!!user.roles?.moderator}
+                                                    onClick={() => handleMakeModerator(user.id)}
+                                                >
+                                                  {user.roles?.moderator ? (
+                                                    <>
+                                                      <CheckCircle className="mr-2 h-4 w-4" />
+                                                      Moderator
+                                                    </>
+                                                  ) : (
+                                                     'Make Moderator'
+                                                  )}
+                                                </Button>
+                                            </TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={3} className="text-center">No users found.</TableCell>
+                                        <TableCell colSpan={5} className="text-center">No users found.</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>

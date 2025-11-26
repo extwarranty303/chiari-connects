@@ -98,7 +98,8 @@ service cloud.firestore {
       allow list: if isAdmin();
       // Owners can write to their own profile, admins can modify points/roles.
       allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isOwner(userId) || isAdmin(); // Admins can change points, etc.
+      // Admins can update any user's document. Users can only update their own, and cannot change their roles.
+      allow update: if isAdmin() || (isOwner(userId) && !('roles' in request.resource.data));
       // Seed operation is allowed to write.
       allow write: if isSeedOperation();
       allow delete: if isExistingOwner(userId);
