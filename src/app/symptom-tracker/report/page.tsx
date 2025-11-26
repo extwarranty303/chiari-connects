@@ -352,7 +352,7 @@ export default function SymptomReportPage() {
                 Generated on {format(new Date(), 'MMMM d, yyyy')} for {user.displayName || user.email}
               </p>
             </div>
-            <Icons.logo className="w-20 h-20 text-primary hidden sm:block print:hidden" />
+            <Icons.logo className="w-24 h-24 text-primary hidden sm:block print:hidden" />
           </div>
 
           {isLoadingSymptoms && (

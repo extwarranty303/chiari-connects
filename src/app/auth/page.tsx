@@ -213,7 +213,7 @@ export default function AuthPage() {
           <div className="absolute bottom-[-20%] right-[-20%] top-auto h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle_farthest-side,rgba(255,0,182,.15),rgba(255,255,255,0))]"></div>
       </div>
       <div className="relative z-10 flex items-center gap-3 mb-6">
-        <Icons.logo className="w-16 h-16 text-primary" />
+        <Icons.logo className="w-24 h-24 text-primary" />
         <h1 className="text-2xl font-semibold font-headline tracking-tight text-foreground">
           Chiari Connects
         </h1>
