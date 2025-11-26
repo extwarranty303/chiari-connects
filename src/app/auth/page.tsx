@@ -20,9 +20,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Icons } from '@/components/app/icons';
 import { useFirebase, useUser } from '@/firebase';
-import { initiateEmailSignIn, initiateEmailSignUp } from '@/firebase/non-blocking-login';
+import { initiateEmailSignIn, initiateEmailSignUp, initiateGoogleSignIn } from '@/firebase/non-blocking-login';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import { Separator } from '@/components/ui/separator';
 
 const signupSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -75,6 +76,11 @@ export default function AuthPage() {
      // Non-blocking, user is redirected by useEffect
   };
   
+  const handleGoogleSignIn = () => {
+    setIsPending(true);
+    initiateGoogleSignIn(auth);
+  };
+
   useEffect(() => {
     const subscription = auth.onAuthStateChanged(user => {
       setIsPending(false);
@@ -93,7 +99,10 @@ export default function AuthPage() {
     console.error = (...args: any[]) => {
       if (typeof args[0] === 'string' && args[0].includes('Firebase: Error')) {
         setIsPending(false);
-        const errorMessage = args[0].split('(auth/')[1]?.split(')')[0] || 'An unknown error occurred.';
+        let errorMessage = args[0].split('(auth/')[1]?.split(')')[0] || 'An unknown error occurred.';
+        if (errorMessage.includes('popup-closed-by-user')) {
+          return; // Don't show toast if user closes popup
+        }
         toast({
           variant: 'destructive',
           title: 'Authentication Failed',
@@ -140,6 +149,26 @@ export default function AuthPage() {
             </CardHeader>
             <form onSubmit={loginForm.handleSubmit(handleLogin)}>
               <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-4">
+                   <Button variant="outline" type="button" onClick={handleGoogleSignIn} disabled={isPending}>
+                      {isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Icons.google className="mr-2 h-4 w-4" />
+                      )}
+                      Google
+                    </Button>
+                </div>
+                 <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Or continue with
+                    </span>
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="login-email">Email</Label>
                   <Input
@@ -187,6 +216,26 @@ export default function AuthPage() {
             </CardHeader>
             <form onSubmit={signupForm.handleSubmit(handleSignup)}>
               <CardContent className="space-y-4">
+                 <div className="grid grid-cols-1 gap-4">
+                   <Button variant="outline" type="button" onClick={handleGoogleSignIn} disabled={isPending}>
+                      {isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Icons.google className="mr-2 h-4 w-4" />
+                      )}
+                      Google
+                    </Button>
+                </div>
+                 <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Or continue with
+                    </span>
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
                   <Input
