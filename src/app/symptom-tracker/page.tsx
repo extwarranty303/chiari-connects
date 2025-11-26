@@ -274,7 +274,7 @@ export default function SymptomTrackerPage() {
 
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-              <Card className="bg-card/60 backdrop-blur-xl border-white/20 shadow-lg">
+              <Card>
                 <CardHeader>
                   <CardTitle>Recent Symptom History</CardTitle>
                   <CardDescription>
@@ -333,7 +333,7 @@ export default function SymptomTrackerPage() {
             </div>
 
             <div>
-              <Card className="bg-card/60 backdrop-blur-xl border-white/20 shadow-lg">
+              <Card className="bg-card/60 backdrop-blur-xl border-white/20">
                 <CardHeader>
                   <CardTitle>Log a New Symptom</CardTitle>
                   <CardDescription>
@@ -470,5 +470,3 @@ export default function SymptomTrackerPage() {
     </div>
   );
 }
-
-    

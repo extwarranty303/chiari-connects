@@ -182,7 +182,7 @@ export default function AdminDashboardPage() {
             
              {/* High-level Stats */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
+              <Card className="bg-card/60 backdrop-blur-xl border-white/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Users</CardTitle>
                   <User className="h-4 w-4 text-muted-foreground" />
@@ -193,7 +193,7 @@ export default function AdminDashboardPage() {
                   </div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="bg-card/60 backdrop-blur-xl border-white/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Posts</CardTitle>
                   <MessageSquare className="h-4 w-4 text-muted-foreground" />
@@ -204,7 +204,7 @@ export default function AdminDashboardPage() {
                   </div>
                 </CardContent>
               </Card>
-               <Card>
+               <Card className="bg-card/60 backdrop-blur-xl border-white/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Symptom Entries</CardTitle>
                   <Activity className="h-4 w-4 text-muted-foreground" />
@@ -215,7 +215,7 @@ export default function AdminDashboardPage() {
                   </div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="bg-card/60 backdrop-blur-xl border-white/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Active Reports</CardTitle>
                   <ShieldAlert className="h-4 w-4 text-muted-foreground" />
@@ -229,7 +229,7 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Moderation Queue */}
-            <Card>
+            <Card className="bg-card/60 backdrop-blur-xl border-white/20">
                 <CardHeader>
                     <CardTitle>Moderation Queue</CardTitle>
                     <CardDescription>Review posts that have been reported by the community.</CardDescription>
@@ -281,7 +281,7 @@ export default function AdminDashboardPage() {
 
             <div className="grid gap-8 md:grid-cols-1">
                 {/* User Management Table */}
-                <Card>
+                <Card className="bg-card/60 backdrop-blur-xl border-white/20">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
                             <CardTitle>User Management</CardTitle>
@@ -327,7 +327,7 @@ export default function AdminDashboardPage() {
                 </Card>
 
                 {/* Content Moderation Table */}
-                <Card>
+                <Card className="bg-card/60 backdrop-blur-xl border-white/20">
                      <CardHeader className="flex flex-row items-center justify-between">
                         <div>
                             <CardTitle>All Discussion Posts</CardTitle>
