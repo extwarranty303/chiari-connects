@@ -333,7 +333,7 @@ export default function SymptomTrackerPage() {
             </div>
 
             <div>
-              <Card className="bg-card/60 backdrop-blur-xl border-white/20">
+              <Card>
                 <CardHeader>
                   <CardTitle>Log a New Symptom</CardTitle>
                   <CardDescription>

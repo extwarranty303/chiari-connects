@@ -342,7 +342,7 @@ export default function AdminDashboardPage() {
                                                 <Button 
                                                     variant="outline" 
                                                     size="sm"
-                                                    disabled={!!user.roles?.moderator}
+                                                    disabled={!!user.roles?.moderator || !!user.roles?.admin}
                                                     onClick={() => handleMakeModerator(user.id)}
                                                 >
                                                   {user.roles?.moderator ? (
@@ -350,6 +350,8 @@ export default function AdminDashboardPage() {
                                                       <CheckCircle className="mr-2 h-4 w-4" />
                                                       Moderator
                                                     </>
+                                                  ) : user.roles?.admin ? (
+                                                      'Admin'
                                                   ) : (
                                                      'Make Moderator'
                                                   )}
