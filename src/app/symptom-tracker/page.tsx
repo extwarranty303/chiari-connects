@@ -15,7 +15,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Loader2, FileText, AlertTriangle } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, FileText, AlertTriangle, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -43,6 +43,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import {
   useFirebase,
@@ -50,6 +61,7 @@ import {
   useCollection,
   addDocumentNonBlocking,
   useMemoFirebase,
+  deleteCollectionNonBlocking,
 } from '@/firebase';
 import { cn } from '@/lib/utils';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
@@ -88,6 +100,8 @@ export default function SymptomTrackerPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
 
   const {
     register,
@@ -171,6 +185,32 @@ export default function SymptomTrackerPage() {
         });
   };
 
+  /**
+   * Handles the deletion of all symptom data for the current user.
+   */
+  const handleDeleteAllSymptoms = () => {
+    if (!user) {
+       toast({
+        variant: 'destructive',
+        title: 'Not Authenticated',
+        description: 'You must be logged in to delete data.',
+      });
+      return;
+    }
+    setIsDeleting(true);
+    const collectionRef = collection(firestore, 'users', user.uid, 'symptoms');
+    deleteCollectionNonBlocking(collectionRef)
+        .then(() => {
+            toast({
+                title: 'Data Deleted',
+                description: 'All your symptom data has been successfully deleted.',
+            });
+        })
+        .finally(() => {
+            setIsDeleting(false);
+        });
+  };
+
   if (isUserLoading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -195,12 +235,37 @@ export default function SymptomTrackerPage() {
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
               Symptom Tracker
             </h1>
-            <Button asChild>
-                <Link href="/symptom-tracker/report">
-                    <FileText className="mr-2 h-4 w-4" />
-                    View Report
-                </Link>
-            </Button>
+            <div className="flex items-center gap-2">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={isDeleting || !symptoms || symptoms.length === 0}>
+                        {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                        Delete All Data
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete all
+                        of your symptom data from our servers.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteAllSymptoms}>
+                        Yes, delete my data
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <Button asChild>
+                    <Link href="/symptom-tracker/report">
+                        <FileText className="mr-2 h-4 w-4" />
+                        View Report
+                    </Link>
+                </Button>
+            </div>
           </div>
 
 

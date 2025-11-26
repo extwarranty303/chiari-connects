@@ -5,6 +5,8 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
+  getDocs,
+  writeBatch,
   CollectionReference,
   DocumentReference,
   SetOptions,
@@ -86,4 +88,38 @@ export function deleteDocumentNonBlocking(docRef: DocumentReference) {
         })
       )
     });
+}
+
+/**
+ * Initiates a non-blocking deletion of all documents in a collection.
+ * It fetches all documents and then deletes them in a batch.
+ */
+export function deleteCollectionNonBlocking(collectionRef: CollectionReference) {
+    const promise = getDocs(collectionRef)
+        .then(snapshot => {
+            if (snapshot.empty) {
+                return;
+            }
+            const batch = writeBatch(collectionRef.firestore);
+            snapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            // Return the promise from batch.commit()
+            return batch.commit();
+        })
+        .catch(error => {
+            // Differentiate between read error (getDocs) and write error (commit)
+            const isReadError = !('docs' in error); // Simple check, might need refinement
+            errorEmitter.emit(
+                'permission-error',
+                new FirestorePermissionError({
+                    path: collectionRef.path,
+                    // If we fail at getDocs, it's a 'list' op. If we fail at commit, it's a 'delete' op.
+                    operation: isReadError ? 'list' : 'delete',
+                })
+            );
+            // We need to re-throw or return a rejected promise so the caller's .catch can trigger
+            throw error;
+        });
+    return promise;
 }
