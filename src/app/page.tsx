@@ -1,66 +1,38 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { AppHeader } from '@/components/app/header';
-import { CodeEditor } from '@/components/app/code-editor';
-import { AiPanel } from '@/components/app/ai-panel';
-import { useToast } from "@/hooks/use-toast"
 import { useUser } from '@/firebase';
-import { AlertCircle, Loader2 } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Loader2, Activity, MessageSquare, User as UserIcon } from 'lucide-react';
+import Link from 'next/link';
+
+import { AppHeader } from '@/components/app/header';
 import { Footer } from '@/components/app/footer';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
 
 /**
- * @fileoverview This is the main page of the Chiari Connects application, serving as a placeholder workspace.
- * In a previous version of the app, this was `ReactRefinery`, a tool for code analysis. The UI elements
- * for code editing and AI analysis remain as examples of potential app functionality, but are not the
- * primary focus of the current `Chiari Connects` application.
+ * @fileoverview This is the main homepage of the Chiari Connects application.
+ * It serves as a welcome dashboard for authenticated users, providing quick access
+ * to the primary features of the platform: Symptom Tracking, Community Discussions,
+ * and the User Profile.
  *
- * Key functionalities (from the placeholder UI):
+ * Key functionalities:
  * - **Authentication Check**: Redirects unauthenticated users to the login page.
- * - **File Handling**: Allows users to upload and download text files.
- * - **Code Editor**: A central `CodeEditor` component to view and modify text.
- * - **AI Panel**: An `AiPanel` that demonstrates AI features like code refactoring and generation.
- * - **State Management**: Manages the state of the text content and the current file name.
- * - **User Feedback**: Uses toasts to provide feedback for actions like file uploads and downloads.
- * - **Medical Disclaimer**: Displays a prominent disclaimer about the informational nature of the app.
+ * - **Welcome Message**: Greets the logged-in user.
+ * - **Navigation Hub**: Features large, clickable cards for navigating to the app's main sections.
+ * - **Responsive Design**: Ensures the dashboard is usable on all screen sizes.
  */
 
-// Default content for the editor, providing a welcome message and basic instructions.
-const defaultCode = `import React from 'react';
-
-const MyComponent = () => {
-  const [count, setCount] = React.useState(0);
-
-  // A simple component to demonstrate the editor
-  return (
-    <div style={{padding: '20px', border: '1px solid #ccc', borderRadius: '8px'}}>
-      <h2>Welcome to Chiari Connects!</h2>
-      <p>This area is a placeholder for future features.</p>
-      <p>The main functionality is the Symptom Tracker.</p>
-      <button onClick={() => setCount(count + 1)}>
-        Increment: {count}
-      </button>
-    </div>
-  );
-};
-
-export default MyComponent;
-`;
-
 /**
- * The main page component for the application. It orchestrates the primary user workspace,
- * including authentication checks, file operations, and the layout of the main UI components.
+ * The main homepage component for the application. It orchestrates the primary
+ * user dashboard, including authentication checks and the layout of navigation cards.
  *
  * @returns {React.ReactElement} The rendered main page.
  */
 export default function MainPage() {
-  const [code, setCode] = useState<string>(defaultCode);
-  const [fileName, setFileName] = useState<string>('example.jsx');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
-  const { user, isUserLoading } = useUser();
+  const { user, userProfile, isUserLoading } = useUser();
   const router = useRouter();
 
   // Effect to handle authentication. Redirects to '/auth' if the user is not logged in.
@@ -70,81 +42,6 @@ export default function MainPage() {
     }
   }, [user, isUserLoading, router]);
 
-  /**
-   * Handles the file upload event. Reads the content of the selected file,
-   * and loads it into the editor.
-   * @param {React.ChangeEvent<HTMLInputElement>} event - The file input change event.
-   */
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Basic validation for text-based files, though the editor can display any text.
-       if (file.name.endsWith('.jsx') || file.name.endsWith('.js') || file.name.endsWith('.tsx') || file.name.endsWith('.ts') || file.name.endsWith('.txt')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const text = e.target?.result as string;
-          setCode(text);
-          setFileName(file.name);
-          toast({
-            title: "File Uploaded",
-            description: `${file.name} has been loaded into the editor.`,
-          })
-        };
-        reader.readAsText(file);
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Invalid File Type",
-          description: "Please upload a valid text file.",
-        })
-      }
-    }
-    // Reset file input to allow uploading the same file again if needed.
-    if(event.target) {
-        event.target.value = '';
-    }
-  };
-
-  /**
-   * Programmatically triggers the hidden file input element to open the file dialog.
-   */
-  const triggerFileUpload = () => {
-    fileInputRef.current?.click();
-  };
-  
-  /**
-   * Handles the download of the current content in the editor as a file.
-   */
-  const handleCodeDownload = () => {
-    const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    toast({
-      title: "Download Started",
-      description: `Your file ${fileName} is being downloaded.`,
-    })
-  };
-
-  /**
-   * Appends new content to the editor, used by the AI Panel.
-   * @param {string} newCode - The new code or text to append.
-   * @param {'component' | 'suggestion'} type - The type of content being added, for a descriptive comment.
-   */
-  const handleAppendToEditor = useCallback((newCode: string, type: 'component' | 'suggestion') => {
-    const comment = type === 'component' ? 'Generated Component' : 'AI Suggestion';
-    setCode(currentCode => `${currentCode}\n\n/* --- ${comment} --- */\n${newCode}`);
-    toast({
-        title: type === 'component' ? 'Component Added' : 'Code Added',
-        description: `The new code has been appended to the editor.`,
-    })
-  }, []);
-
   // Show a loading screen while user authentication is in progress.
   if (isUserLoading || !user) {
     return (
@@ -153,35 +50,98 @@ export default function MainPage() {
       </div>
     );
   }
+  
+  const welcomeName = userProfile?.username || user.displayName || 'User';
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-body">
       <AppHeader
-        onUploadClick={triggerFileUpload}
-        onDownloadClick={handleCodeDownload}
+        onUploadClick={() => {}}
+        onDownloadClick={() => {}}
+        showActions={false}
       />
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileUpload}
-        accept=".js,.jsx,.ts,.tsx,.txt"
-        className="hidden"
-      />
-      <main className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 xl:gap-6 p-4 xl:p-6 overflow-hidden">
-        <div className="lg:col-span-2 h-full flex flex-col gap-4">
-           <Alert variant="destructive" className="bg-amber-500/10 border-amber-500/50 text-amber-500 [&>svg]:text-amber-500">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Medical Disclaimer</AlertTitle>
-            <AlertDescription>
-              The AI-powered analysis provided here is for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment. Always consult a qualified health provider.
-            </AlertDescription>
-          </Alert>
-          <CodeEditor code={code} onCodeChange={setCode} fileName={fileName} />
-        </div>
-        <div className="h-full flex flex-col">
-          <AiPanel code={code} onAppendToEditor={handleAppendToEditor} />
+      
+      <main className="flex-1 overflow-y-auto p-4 md:p-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              Welcome back, {welcomeName}!
+            </h1>
+            <p className="text-muted-foreground mt-1">What would you like to do today?</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            {/* Symptom Tracker Card */}
+            <Link href="/symptom-tracker">
+                <Card className="glassmorphism hover:border-primary/50 transition-all duration-200 group flex flex-col h-full">
+                  <CardHeader>
+                    <div className="flex items-start gap-4">
+                        <div className="bg-primary/10 p-3 rounded-lg text-primary mt-1">
+                            <Activity />
+                        </div>
+                        <div className="flex-1">
+                            <CardTitle className="text-lg">Symptom Tracker</CardTitle>
+                            <CardDescription className="text-foreground/80 mt-1">Log your daily symptoms to track patterns and generate reports for your doctor.</CardDescription>
+                        </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="mt-auto">
+                    <span className="text-sm font-semibold text-primary flex items-center gap-2">
+                        Go to Tracker <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </span>
+                  </CardContent>
+                </Card>
+            </Link>
+
+            {/* Discussions Card */}
+             <Link href="/discussions">
+                <Card className="glassmorphism hover:border-primary/50 transition-all duration-200 group flex flex-col h-full">
+                  <CardHeader>
+                    <div className="flex items-start gap-4">
+                        <div className="bg-primary/10 p-3 rounded-lg text-primary mt-1">
+                            <MessageSquare />
+                        </div>
+                        <div className="flex-1">
+                            <CardTitle className="text-lg">Community Forums</CardTitle>
+                            <CardDescription className="text-foreground/80 mt-1">Connect with others, ask questions, and share your journey in our discussion forums.</CardDescription>
+                        </div>
+                    </div>
+                  </CardHeader>
+                   <CardContent className="mt-auto">
+                    <span className="text-sm font-semibold text-primary flex items-center gap-2">
+                        Browse Discussions <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </span>
+                  </CardContent>
+                </Card>
+            </Link>
+
+            {/* Profile Card */}
+            <Link href="/profile">
+                <Card className="glassmorphism hover:border-primary/50 transition-all duration-200 group flex flex-col h-full">
+                  <CardHeader>
+                    <div className="flex items-start gap-4">
+                        <div className="bg-primary/10 p-3 rounded-lg text-primary mt-1">
+                            <UserIcon />
+                        </div>
+                        <div className="flex-1">
+                            <CardTitle className="text-lg">Your Profile</CardTitle>
+                            <CardDescription className="text-foreground/80 mt-1">View your symptom summary, community points, and account details.</CardDescription>
+                        </div>
+                    </div>
+                  </CardHeader>
+                   <CardContent className="mt-auto">
+                    <span className="text-sm font-semibold text-primary flex items-center gap-2">
+                        View Profile <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </span>
+                  </CardContent>
+                </Card>
+            </Link>
+
+          </div>
         </div>
       </main>
+
       <Footer />
     </div>
   );
