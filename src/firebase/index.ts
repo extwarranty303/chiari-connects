@@ -4,6 +4,8 @@ import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore'
+import { errorEmitter } from './error-emitter';
+import { FirestorePermissionError } from './errors';
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
@@ -44,17 +46,24 @@ export function getSdks(firebaseApp: FirebaseApp) {
         if (!userSnap.exists()) {
             // This case handles Google Sign-In where user doc might not exist yet.
             const username = user.displayName?.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '') || `user${Math.random().toString().substring(2, 8)}`;
-            try {
-                await setDoc(userRef, {
-                    id: user.uid,
-                    email: user.email,
-                    username: username,
-                    createdAt: new Date().toISOString(),
-                    points: 0,
-                }, { merge: true });
-            } catch (e) {
-                console.error("Error creating user document on initial auth state change:", e);
-            }
+            const newUserDoc = {
+                id: user.uid,
+                email: user.email,
+                username: username,
+                createdAt: new Date().toISOString(),
+                points: 0,
+            };
+            
+            // Use non-blocking write with contextual error handling
+            setDoc(userRef, newUserDoc, { merge: true })
+              .catch(error => {
+                const contextualError = new FirestorePermissionError({
+                  path: userRef.path,
+                  operation: 'create',
+                  requestResourceData: newUserDoc
+                });
+                errorEmitter.emit('permission-error', contextualError);
+              });
         }
     }
   });
