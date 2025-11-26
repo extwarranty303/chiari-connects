@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
 import { Loader2, MessageSquare, AlertTriangle, Pill, Stethoscope, Brain, HeartHandshake, Briefcase, Users, Newspaper, PlusCircle } from 'lucide-react';
@@ -50,16 +50,16 @@ const categoryDetails: { [key: string]: { name: string; icon: React.ReactNode } 
  * The main component for displaying posts within a category.
  * It fetches and renders discussion posts filtered by the category from the URL.
  *
- * @param {{ params: { category: string } }} props - The props containing the dynamic category slug.
  * @returns {React.ReactElement} The rendered category posts page.
  */
-export default function CategoryPage({ params }: { params: { category: string } }) {
+export default function CategoryPage() {
   const { firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
+  const params = useParams();
+  const category = params.category as string;
   const [readPosts, setReadPosts] = useState<Set<string>>(new Set());
 
-  const { category } = params;
   const currentCategory = categoryDetails[category] || { name: 'Discussions', icon: <MessageSquare /> };
 
   // Load read posts from localStorage on component mount

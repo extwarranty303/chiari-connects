@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { doc, collection, runTransaction, increment } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { Loader2, AlertTriangle, ArrowLeft, Bookmark, Flag, Tags } from 'lucide-react';
@@ -68,30 +68,31 @@ const reportReasons = [
 /**
  * The main component for displaying a single discussion post.
  *
- * @param {{ params: { id: string } }} props - The props containing the dynamic post ID.
  * @returns {React.ReactElement} The rendered post detail page.
  */
-export default function PostPage({ params }: { params: { id: string } }) {
+export default function PostPage() {
   const { firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
+  const params = useParams();
+  const id = params.id as string;
   const { toast } = useToast();
   const [isReporting, setIsReporting] = useState(false);
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
 
   // Mark the post as read in localStorage when the component mounts
   useEffect(() => {
-    if (params.id) {
+    if (id) {
         try {
             const storedReadPosts = localStorage.getItem('readPosts');
             const readPosts = storedReadPosts ? new Set(JSON.parse(storedReadPosts)) : new Set();
-            readPosts.add(params.id);
+            readPosts.add(id);
             localStorage.setItem('readPosts', JSON.stringify(Array.from(readPosts)));
         } catch (error) {
             console.error("Failed to update read posts in localStorage", error);
         }
     }
-  }, [params.id]);
+  }, [id]);
 
   // Redirect unauthenticated users.
   useEffect(() => {
@@ -102,15 +103,15 @@ export default function PostPage({ params }: { params: { id: string } }) {
 
   // Memoized query to fetch the specific discussion post.
   const postRef = useMemoFirebase(() => {
-    if (!firestore || !params.id) return null;
-    return doc(firestore, 'discussions', params.id);
-  }, [firestore, params.id]);
+    if (!firestore || !id) return null;
+    return doc(firestore, 'discussions', id);
+  }, [firestore, id]);
 
   // Memoized query for the user's bookmark for this specific post.
   const bookmarkRef = useMemoFirebase(() => {
-    if (!firestore || !user || !params.id) return null;
-    return doc(firestore, 'users', user.uid, 'bookmarks', params.id);
-  }, [firestore, user, params.id]);
+    if (!firestore || !user || !id) return null;
+    return doc(firestore, 'users', user.uid, 'bookmarks', id);
+  }, [firestore, user, id]);
 
   const { data: post, isLoading: isLoadingPost, error: postError } = useDoc<DiscussionPost>(postRef);
   const { data: bookmark, isLoading: isLoadingBookmark } = useDoc<Bookmark>(bookmarkRef);

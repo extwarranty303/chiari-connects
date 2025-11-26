@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
 import { Loader2, Tag, AlertTriangle, PlusCircle } from 'lucide-react';
@@ -35,16 +35,16 @@ interface DiscussionPost {
 /**
  * The main component for displaying posts filtered by a tag.
  *
- * @param {{ params: { tag: string } }} props - The props containing the dynamic tag slug.
  * @returns {React.ReactElement} The rendered tag posts page.
  */
-export default function TagPage({ params }: { params: { tag: string } }) {
+export default function TagPage() {
   const { firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
+  const params = useParams();
+  const tag = decodeURIComponent(params.tag as string);
   const [readPosts, setReadPosts] = useState<Set<string>>(new Set());
 
-  const tag = decodeURIComponent(params.tag);
 
   // Load read posts from localStorage on component mount
   useEffect(() => {
