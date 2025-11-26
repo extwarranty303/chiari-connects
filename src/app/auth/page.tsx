@@ -129,7 +129,7 @@ export default function AuthPage() {
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-4">
       <div className="flex items-center gap-3 mb-6">
-        <Image src="/logo.svg" alt="Chiariconnects Logo" width={40} height={40} className="text-primary" />
+        <Icons.logo className="w-10 h-10 text-primary" />
         <h1 className="text-3xl font-semibold font-headline tracking-tight text-foreground">
           Chiariconnects
         </h1>
