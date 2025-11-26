@@ -7,7 +7,8 @@ import { CodeEditor } from '@/components/app/code-editor';
 import { AiPanel } from '@/components/app/ai-panel';
 import { useToast } from "@/hooks/use-toast"
 import { useUser } from '@/firebase';
-import { Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const defaultCode = `import React from 'react';
 
@@ -124,7 +125,14 @@ export default function ReactRefineryPage() {
         className="hidden"
       />
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 xl:gap-6 p-4 xl:p-6 overflow-hidden">
-        <div className="lg:col-span-2 h-full flex flex-col">
+        <div className="lg:col-span-2 h-full flex flex-col gap-4">
+           <Alert variant="destructive" className="bg-amber-500/10 border-amber-500/50 text-amber-500 [&>svg]:text-amber-500">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Medical Disclaimer</AlertTitle>
+            <AlertDescription>
+              The AI-powered analysis provided here is for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment. Always consult a qualified health provider.
+            </AlertDescription>
+          </Alert>
           <CodeEditor code={code} onCodeChange={setCode} fileName={fileName} />
         </div>
         <div className="h-full flex flex-col">
