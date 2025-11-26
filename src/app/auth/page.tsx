@@ -23,7 +23,7 @@ import { useFirebase, useUser } from '@/firebase';
 import { initiateEmailSignUp, initiateGoogleSignIn, initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Loader2 } from 'lucide-react';
-import { onAuthStateChanged, getRedirectResult } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
 
 
@@ -88,35 +88,12 @@ export default function AuthPage() {
     defaultValues: { email: '', password: '' },
   });
 
-  // This effect handles the redirect result from Google Sign-In.
-  useEffect(() => {
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result) {
-          // User has successfully signed in via redirect.
-          // The onAuthStateChanged listener will handle the rest.
-          toast({
-            title: 'Authentication Successful',
-            description: 'You are now logged in.',
-          });
-        }
-      })
-      .catch((error) => {
-        // Handle errors from the redirect result.
-        console.error("Google sign-in redirect error:", error);
-      })
-      .finally(() => {
-        // We can stop the initial pending state after checking for a redirect.
-         if (isPending) {
-           setIsPending(false);
-         }
-      });
-  }, [auth, toast, isPending]);
-
   // Redirects the user to the home page if they are already logged in.
   useEffect(() => {
     if (!isUserLoading && user) {
       router.push('/');
+    } else if (!isUserLoading && !user) {
+      setIsPending(false);
     }
   }, [user, isUserLoading, router]);
 
@@ -193,8 +170,8 @@ export default function AuthPage() {
         const errorCodeMatch = args[0].match(/\(auth\/([^)]+)\)/);
         if (errorCodeMatch && errorCodeMatch[1]) {
             const errorCode = errorCodeMatch[1];
-            // Don't show a toast if the user simply closes the Google sign-in popup or cancels the redirect.
-            if (errorCode === 'popup-closed-by-user' || errorCode === 'cancelled-popup-request' || errorCode === 'redirect-cancelled') {
+            // Don't show a toast if the user simply closes the Google sign-in popup.
+            if (errorCode === 'popup-closed-by-user' || errorCode === 'cancelled-popup-request') {
               return;
             }
             // Format the error code for better readability.
