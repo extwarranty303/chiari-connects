@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 /**
  * @fileoverview This is the main page for the Admin Dashboard.
@@ -26,6 +27,7 @@ import { Button } from '@/components/ui/button';
  * - **Statistics**: Displays high-level site statistics like total users, posts, and symptom entries.
  * - **User Management**: Shows a table of all registered users with their details.
  * - **Content Moderation**: Displays a table of all discussion posts for easy monitoring.
+ * - **Data Export**: Allows admins to export user and post data as CSV files.
  * - **Data Fetching**: Uses admin-specific queries to fetch all user and content data from Firestore.
  */
 
@@ -51,6 +53,46 @@ interface Symptom {
 
 
 /**
+ * Converts an array of objects to a CSV string and triggers a download.
+ * @param {string} filename - The desired name of the downloaded file (e.g., 'users.csv').
+ * @param {any[]} rows - The array of data objects to convert.
+ */
+function exportToCsv(filename: string, rows: any[]) {
+    if (!rows || rows.length === 0) {
+        return;
+    }
+    const headers = Object.keys(rows[0]);
+    const csvContent = [
+        headers.join(','),
+        ...rows.map(row =>
+            headers
+                .map(header => {
+                    let field = row[header];
+                    // Handle cases where the field might contain a comma or quote
+                    if (typeof field === 'string' && (field.includes(',') || field.includes('"'))) {
+                        return `"${field.replace(/"/g, '""')}"`;
+                    }
+                    return field;
+                })
+                .join(',')
+        ),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+}
+
+
+/**
  * The main component for the Admin Dashboard page.
  * It orchestrates data fetching and renders all the administrative modules.
  *
@@ -58,6 +100,7 @@ interface Symptom {
  */
 export default function AdminDashboardPage() {
   const { firestore } = useFirebase();
+  const { toast } = useToast();
 
   // Memoized query to fetch all users.
   const allUsersQuery = useMemoFirebase(() => {
@@ -81,6 +124,31 @@ export default function AdminDashboardPage() {
   const { data: symptoms, isLoading: isLoadingSymptoms } = useCollection<Symptom>(allSymptomsQuery);
   
   const isLoading = isLoadingUsers || isLoadingPosts || isLoadingSymptoms;
+
+  /**
+   * Handles the export of user data to a CSV file.
+   */
+  const handleExportUsers = () => {
+    if (users) {
+      exportToCsv(`chiari-connects-users-${new Date().toISOString().split('T')[0]}.csv`, users.map(({ id, username, email, createdAt }) => ({ id, username, email, createdAt })));
+      toast({ title: "User data export started." });
+    } else {
+       toast({ variant: "destructive", title: "No user data to export." });
+    }
+  };
+
+  /**
+   * Handles the export of post data to a CSV file.
+   */
+  const handleExportPosts = () => {
+    if (posts) {
+      exportToCsv(`chiari-connects-posts-${new Date().toISOString().split('T')[0]}.csv`, posts.map(({ id, title, username, category, createdAt }) => ({ id, title, username, category, createdAt })));
+      toast({ title: "Post data export started." });
+    } else {
+      toast({ variant: "destructive", title: "No post data to export." });
+    }
+  };
+
 
   return (
     <AdminRouteGuard>
@@ -143,7 +211,7 @@ export default function AdminDashboardPage() {
                             <CardTitle>User Management</CardTitle>
                             <CardDescription>View and manage all registered users.</CardDescription>
                         </div>
-                        <Button variant="outline" size="sm" disabled>
+                        <Button variant="outline" size="sm" onClick={handleExportUsers} disabled={isLoadingUsers || !users || users.length === 0}>
                            <Download className="mr-2 h-4 w-4" />
                            Export Users
                         </Button>
@@ -189,7 +257,7 @@ export default function AdminDashboardPage() {
                             <CardTitle>Content Moderation</CardTitle>
                             <CardDescription>View and manage all discussion posts.</CardDescription>
                         </div>
-                        <Button variant="outline" size="sm" disabled>
+                        <Button variant="outline" size="sm" onClick={handleExportPosts} disabled={isLoadingPosts || !posts || posts.length === 0}>
                            <Download className="mr-2 h-4 w-4" />
                            Export Posts
                         </Button>
@@ -236,3 +304,5 @@ export default function AdminDashboardPage() {
     </AdminRouteGuard>
   );
 }
+
+    
