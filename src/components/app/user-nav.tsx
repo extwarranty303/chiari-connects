@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useFirebase, useUser, useDoc, useMemoFirebase } from '@/firebase';
-import { LogOut, User as UserIcon, Loader2, LogIn, UserPlus, Activity, MessageSquare } from 'lucide-react';
+import { LogOut, User as UserIcon, Loader2, LogIn, UserPlus, Activity, MessageSquare, Shield } from 'lucide-react';
 import Link from 'next/link';
 import { doc } from 'firebase/firestore';
 
@@ -42,7 +42,7 @@ interface UserProfile {
  */
 export function UserNav() {
   const { auth, firestore } = useFirebase();
-  const { user, isUserLoading } = useUser();
+  const { user, isUserLoading, isAdmin } = useUser();
 
   // Memoized document reference to the user's profile in Firestore.
   const userProfileRef = useMemoFirebase(() => {
@@ -111,6 +111,14 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
+          {isAdmin && (
+              <DropdownMenuItem asChild>
+                <Link href="/admin">
+                  <Shield className="mr-2 h-4 w-4" />
+                  <span>Admin Dashboard</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
           <DropdownMenuItem asChild>
             <Link href="/profile">
               <UserIcon className="mr-2 h-4 w-4" />
