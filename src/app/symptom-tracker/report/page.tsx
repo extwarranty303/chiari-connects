@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { format, parseISO } from 'date-fns';
-import { Loader2, Printer } from 'lucide-react';
+import { Loader2, Printer, BrainCircuit, AlertTriangle } from 'lucide-react';
 
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { type SymptomData } from '@/app/symptom-tracker/page';
@@ -18,6 +18,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { analyzeSymptoms, AnalyzeSymptomsInput } from '@/ai/flows/ai-analyze-symptoms';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 /**
  * @fileoverview This page generates a professional, printable report of the user's logged symptoms.
@@ -25,6 +29,7 @@ import {
  * It fetches all symptom data for the current user, organizes it into a clean table format,
  * and provides a button to print the report or save it as a PDF. The page is designed to be
  * printer-friendly, hiding non-essential UI elements like buttons during printing.
+ * It also includes an AI-powered analysis of the symptom data.
  */
 
 /**
@@ -53,6 +58,76 @@ function getReportSummary(symptoms: SymptomData[]) {
     avgSeverity: (totalSeverity / totalEntries).toFixed(1),
     avgFrequency: (totalFrequency / totalEntries).toFixed(1),
   };
+}
+
+/**
+ * Component to display the AI-generated analysis of symptoms.
+ * @param {{symptoms: SymptomData[]}} props - The user's symptom data.
+ * @returns {React.ReactElement} The AI analysis section.
+ */
+function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
+    const [isPending, startTransition] = useTransition();
+    const [analysis, setAnalysis] = useState('');
+    const [error, setError] = useState('');
+
+    const handleGenerateAnalysis = () => {
+        startTransition(async () => {
+            setError('');
+            setAnalysis('');
+            try {
+                // We only need specific fields for the analysis
+                const analysisInput: AnalyzeSymptomsInput = {
+                    symptoms: symptoms.map(s => ({
+                        symptom: s.symptom,
+                        severity: s.severity,
+                        frequency: s.frequency,
+                        date: format(parseISO(s.date), 'yyyy-MM-dd')
+                    }))
+                };
+                const result = await analyzeSymptoms(analysisInput);
+                setAnalysis(result.analysis);
+            } catch (e) {
+                console.error("AI analysis failed:", e);
+                setError("An error occurred while generating the analysis. Please try again.");
+            }
+        });
+    };
+
+    return (
+        <div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <h3 className="text-xl font-semibold border-b pb-2 mb-4 flex-grow">AI-Generated Summary</h3>
+                <Button onClick={handleGenerateAnalysis} disabled={isPending || symptoms.length === 0} className="print:hidden -mt-4 sm:mt-0">
+                    <BrainCircuit className="mr-2 h-4 w-4" />
+                    {isPending ? 'Analyzing...' : 'Generate AI Summary'}
+                </Button>
+            </div>
+             <div className="mt-4 bg-muted/50 p-4 rounded-lg min-h-[150px] print:bg-white print:border print:border-gray-200">
+                {isPending && (
+                     <div className="space-y-3">
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-4/5" />
+                        <Skeleton className="h-4 w-1/2" />
+                    </div>
+                )}
+                {error && (
+                    <div className="text-destructive flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4" />
+                        <p>{error}</p>
+                    </div>
+                )}
+                {analysis && (
+                    <div className="whitespace-pre-wrap font-sans text-sm">{analysis}</div>
+                )}
+                {!isPending && !analysis && !error && (
+                    <p className="text-sm text-muted-foreground text-center pt-10">
+                        Click the button to generate an AI-powered summary of your symptom data.
+                    </p>
+                )}
+             </div>
+        </div>
+    );
 }
 
 /**
@@ -126,10 +201,10 @@ export default function SymptomReportPage() {
             <div>
               <h2 className="text-3xl font-bold text-foreground">Symptom History Report</h2>
               <p className="text-muted-foreground">
-                Generated on {format(new Date(), 'MMMM d, yyyy')}
+                Generated on {format(new Date(), 'MMMM d, yyyy')} for {user.displayName || user.email}
               </p>
             </div>
-            <Icons.logo className="w-20 h-20 text-primary hidden sm:block" />
+            <Icons.logo className="w-20 h-20 text-primary hidden sm:block print:hidden" />
           </div>
 
           {isLoadingSymptoms && (
@@ -139,18 +214,23 @@ export default function SymptomReportPage() {
           )}
 
           {symptomsError && (
-            <div className="text-center text-destructive py-10">
-              <p>Error: Could not load symptom data.</p>
-            </div>
+             <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>Could not load symptom data. Please try again later.</AlertDescription>
+            </Alert>
           )}
 
           {!isLoadingSymptoms && symptoms && (
             <>
               {symptoms.length > 0 ? (
-                <div className="space-y-8">
+                <div className="space-y-12">
+                   {/* AI Analysis Section */}
+                   <AiAnalysis symptoms={symptoms} />
+                  
                   {/* Summary Section */}
                   <div>
-                    <h3 className="text-xl font-semibold border-b pb-2 mb-4">Summary</h3>
+                    <h3 className="text-xl font-semibold border-b pb-2 mb-4">Data Summary</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
                         <div className="bg-muted/50 p-4 rounded-lg">
                             <p className="text-2xl font-bold">{summary.totalEntries}</p>
@@ -174,31 +254,39 @@ export default function SymptomReportPage() {
                   {/* Detailed Log Section */}
                   <div>
                     <h3 className="text-xl font-semibold border-b pb-2 mb-4">Detailed Log</h3>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-1/4">Date</TableHead>
-                          <TableHead>Symptom</TableHead>
-                          <TableHead className="text-center">Severity (1-10)</TableHead>
-                          <TableHead className="text-center">Frequency (1-10)</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {symptoms.map(symptom => (
-                          <TableRow key={symptom.id}>
-                            <TableCell>{format(parseISO(symptom.date), 'PPP')}</TableCell>
-                            <TableCell className="font-medium">{symptom.symptom}</TableCell>
-                            <TableCell className="text-center">{symptom.severity}</TableCell>
-                            <TableCell className="text-center">{symptom.frequency}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                    <div className="border rounded-lg overflow-hidden">
+                        <Table>
+                        <TableHeader>
+                            <TableRow>
+                            <TableHead className="w-1/4">Date</TableHead>
+                            <TableHead>Symptom</TableHead>
+                            <TableHead className="text-center">Severity (1-10)</TableHead>
+                            <TableHead className="text-center">Frequency (1-10)</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {symptoms.map(symptom => (
+                            <TableRow key={symptom.id}>
+                                <TableCell>{format(parseISO(symptom.date), 'PPP')}</TableCell>
+                                <TableCell className="font-medium">{symptom.symptom}</TableCell>
+                                <TableCell className="text-center">{symptom.severity}</TableCell>
+                                <TableCell className="text-center">{symptom.frequency}</TableCell>
+                            </TableRow>
+                            ))}
+                        </TableBody>
+                        </Table>
+                    </div>
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-10">
-                  <p className="text-muted-foreground">No symptom data available to generate a report.</p>
+                <div className="text-center py-10 border-2 border-dashed rounded-lg">
+                  <h3 className="text-lg font-medium">No Data to Report</h3>
+                  <p className="text-muted-foreground mt-2">
+                    Once you start logging symptoms, you can generate a report here.
+                  </p>
+                   <Button variant="outline" className="mt-4" onClick={() => router.push('/symptom-tracker')}>
+                      Go to Symptom Tracker
+                   </Button>
                 </div>
               )}
             </>
@@ -219,17 +307,26 @@ export default function SymptomReportPage() {
             background-color: #fff;
             color: #000;
           }
-          .print\:hidden {
+          .print\\:hidden {
             display: none;
           }
-          .print\:shadow-none {
+          .print\\:shadow-none {
             box-shadow: none;
           }
-           .print\:border-none {
+           .print\\:border-none {
             border: none;
           }
-          .print\:p-0 {
+          .print\\:p-0 {
             padding: 0;
+          }
+          .print\\:bg-white {
+            background-color: #fff;
+          }
+          .print\\:border {
+            border-width: 1px;
+          }
+          .print\\:border-gray-200 {
+            border-color: #e5e7eb;
           }
         }
       `}</style>

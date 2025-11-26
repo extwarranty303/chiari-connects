@@ -207,10 +207,12 @@ export default function AuthPage() {
                     id="login-email"
                     type="email"
                     placeholder="m@example.com"
+                    aria-invalid={loginForm.formState.errors.email ? 'true' : 'false'}
+                    aria-describedby="login-email-error"
                     {...loginForm.register('email')}
                   />
                   {loginForm.formState.errors.email && (
-                    <p className="text-xs text-destructive">
+                    <p id="login-email-error" className="text-xs text-destructive">
                       {loginForm.formState.errors.email.message}
                     </p>
                   )}
@@ -220,10 +222,12 @@ export default function AuthPage() {
                   <Input
                     id="login-password"
                     type="password"
+                     aria-invalid={loginForm.formState.errors.password ? 'true' : 'false'}
+                    aria-describedby="login-password-error"
                     {...loginForm.register('password')}
                   />
                   {loginForm.formState.errors.password && (
-                    <p className="text-xs text-destructive">
+                    <p id="login-password-error" className="text-xs text-destructive">
                       {loginForm.formState.errors.password.message}
                     </p>
                   )}
@@ -273,10 +277,12 @@ export default function AuthPage() {
                   <Input
                     id="signup-username"
                     placeholder="yourusername"
+                    aria-invalid={signupForm.formState.errors.username ? 'true' : 'false'}
+                    aria-describedby="signup-username-error"
                     {...signupForm.register('username')}
                   />
                   {signupForm.formState.errors.username && (
-                    <p className="text-xs text-destructive">
+                    <p id="signup-username-error" className="text-xs text-destructive">
                       {signupForm.formState.errors.username.message}
                     </p>
                   )}
@@ -287,10 +293,12 @@ export default function AuthPage() {
                     id="signup-email"
                     type="email"
                     placeholder="m@example.com"
+                    aria-invalid={signupForm.formState.errors.email ? 'true' : 'false'}
+                    aria-describedby="signup-email-error"
                     {...signupForm.register('email')}
                   />
                   {signupForm.formState.errors.email && (
-                    <p className="text-xs text-destructive">
+                    <p id="signup-email-error" className="text-xs text-destructive">
                       {signupForm.formState.errors.email.message}
                     </p>
                   )}
@@ -300,10 +308,12 @@ export default function AuthPage() {
                   <Input
                     id="signup-password"
                     type="password"
+                    aria-invalid={signupForm.formState.errors.password ? 'true' : 'false'}
+                    aria-describedby="signup-password-error"
                     {...signupForm.register('password')}
                   />
                   {signupForm.formState.errors.password && (
-                    <p className="text-xs text-destructive">
+                    <p id="signup-password-error" className="text-xs text-destructive">
                       {signupForm.formState.errors.password.message}
                     </p>
                   )}

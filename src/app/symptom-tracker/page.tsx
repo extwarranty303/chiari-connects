@@ -15,7 +15,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Loader2, FileText } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, FileText, AlertTriangle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -52,7 +52,9 @@ import {
   useMemoFirebase,
 } from '@/firebase';
 import { cn } from '@/lib/utils';
-import { collection } from 'firebase/firestore';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
 
 /**
  * @fileoverview This page allows users to track their symptoms over time.
@@ -112,7 +114,8 @@ export default function SymptomTrackerPage() {
 
   const symptomsQuery = useMemoFirebase(() => {
     if (!user) return null;
-    return collection(firestore, 'users', user.uid, 'symptoms');
+    // Query to get the last 30 symptoms, ordered by date
+    return query(collection(firestore, 'users', user.uid, 'symptoms'), orderBy('date', 'desc'), limit(30));
   }, [firestore, user]);
 
   const {
@@ -170,11 +173,12 @@ export default function SymptomTrackerPage() {
     );
   }
 
+  // sort data ascending for the chart
   const formattedData =
     symptoms?.map(item => ({
       ...item,
       date: format(new Date(item.date), 'MMM d'),
-    })) ?? [];
+    })).reverse() ?? [];
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-body">
@@ -198,9 +202,9 @@ export default function SymptomTrackerPage() {
             <div className="lg:col-span-2">
               <Card className="bg-card/60 backdrop-blur-xl border-white/20 shadow-lg">
                 <CardHeader>
-                  <CardTitle>Symptom History</CardTitle>
+                  <CardTitle>Recent Symptom History</CardTitle>
                   <CardDescription>
-                    Visualize your symptom severity and frequency over time.
+                    Visualizing your last 30 symptom entries by severity and frequency.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -210,8 +214,14 @@ export default function SymptomTrackerPage() {
                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
                        </div>
                     ) : symptomsError ? (
-                        <div className="flex items-center justify-center h-full text-destructive">
-                            <p>Error loading symptom data.</p>
+                        <div className="flex items-center justify-center h-full">
+                           <Alert variant="destructive" className="w-full">
+                             <AlertTriangle className="h-4 w-4" />
+                             <AlertTitle>Error</AlertTitle>
+                             <AlertDescription>
+                               Could not load symptom data. Please check your connection or try again later.
+                             </AlertDescription>
+                           </Alert>
                         </div>
                     ) : symptoms && symptoms.length > 0 ? (
                       <BarChart data={formattedData}>
@@ -238,8 +248,9 @@ export default function SymptomTrackerPage() {
                         />
                       </BarChart>
                     ) : (
-                         <div className="flex items-center justify-center h-full text-muted-foreground">
-                            <p>No symptoms logged yet. Add one to see your chart!</p>
+                         <div className="flex flex-col items-center justify-center h-full text-muted-foreground border-2 border-dashed rounded-lg">
+                            <p className="font-medium">No symptoms logged yet.</p>
+                            <p className="text-sm mt-1">Add a symptom using the form to see your chart!</p>
                         </div>
                     )}
                   </ResponsiveContainer>
@@ -266,9 +277,11 @@ export default function SymptomTrackerPage() {
                         id="symptom"
                         placeholder="e.g., Headache, Dizziness"
                         {...register('symptom')}
+                        aria-invalid={errors.symptom ? 'true' : 'false'}
+                        aria-describedby="symptom-error"
                       />
                       {errors.symptom && (
-                        <p className="text-xs text-destructive">
+                        <p id="symptom-error" className="text-xs text-destructive">
                           {errors.symptom.message}
                         </p>
                       )}
@@ -282,7 +295,7 @@ export default function SymptomTrackerPage() {
                                 control={control}
                                 render={({ field }) => (
                                     <Select onValueChange={(val) => field.onChange(Number(val))} value={String(field.value)}>
-                                        <SelectTrigger>
+                                        <SelectTrigger id="severity" aria-label="Select severity">
                                             <SelectValue placeholder="Select severity" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -306,7 +319,7 @@ export default function SymptomTrackerPage() {
                                 control={control}
                                 render={({ field }) => (
                                     <Select onValueChange={(val) => field.onChange(Number(val))} value={String(field.value)}>
-                                        <SelectTrigger>
+                                        <SelectTrigger id="frequency" aria-label="Select frequency">
                                             <SelectValue placeholder="Select frequency" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -327,7 +340,7 @@ export default function SymptomTrackerPage() {
 
 
                     <div className="space-y-2">
-                      <Label htmlFor="date">Date</Label>
+                      <Label>Date</Label>
                       <Controller
                         name="date"
                         control={control}
@@ -340,6 +353,7 @@ export default function SymptomTrackerPage() {
                                   'w-full justify-start text-left font-normal',
                                   !field.value && 'text-muted-foreground'
                                 )}
+                                aria-label="Pick a date"
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {field.value ? (
@@ -355,6 +369,7 @@ export default function SymptomTrackerPage() {
                                 selected={field.value}
                                 onSelect={field.onChange}
                                 initialFocus
+                                disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                               />
                             </PopoverContent>
                           </Popover>
