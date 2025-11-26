@@ -129,8 +129,8 @@ export default function AuthPage() {
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-4">
       <div className="flex items-center gap-3 mb-6">
-        <Icons.logo className="w-12 h-12 text-primary" />
-        <h1 className="text-3xl font-semibold font-headline tracking-tight text-foreground">
+        <Icons.logo className="w-16 h-16 text-primary" />
+        <h1 className="text-2xl font-semibold font-headline tracking-tight text-foreground">
           Chiari Connects
         </h1>
       </div>
