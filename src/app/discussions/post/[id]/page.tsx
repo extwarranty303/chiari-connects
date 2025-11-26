@@ -25,14 +25,15 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-
+import { Footer } from '@/components/app/footer';
+import Link from 'next/link';
 
 /**
  * @fileoverview This page displays a single, detailed discussion post.
  *
  * It fetches a specific post from the `/discussions` collection using the ID from the URL.
- * It shows the full content of the post, along with author and date details, and provides
- * actions for bookmarking and reporting the post.
+ * It shows the full content, author, and date details, provides actions for bookmarking and
+ * reporting, and marks the post as "read" in the user's localStorage.
  */
 
 // Defines the shape of a discussion post retrieved from Firestore.
@@ -76,6 +77,20 @@ export default function PostPage({ params }: { params: { id: string } }) {
   const { toast } = useToast();
   const [isReporting, setIsReporting] = useState(false);
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
+
+  // Mark the post as read when the component mounts
+  useEffect(() => {
+    if (params.id) {
+        try {
+            const storedReadPosts = localStorage.getItem('readPosts');
+            const readPosts = storedReadPosts ? new Set(JSON.parse(storedReadPosts)) : new Set();
+            readPosts.add(params.id);
+            localStorage.setItem('readPosts', JSON.stringify(Array.from(readPosts)));
+        } catch (error) {
+            console.error("Failed to update read posts in localStorage", error);
+        }
+    }
+  }, [params.id]);
 
   // Redirect unauthenticated users.
   useEffect(() => {
@@ -261,7 +276,9 @@ export default function PostPage({ params }: { params: { id: string } }) {
                         <div className="mt-6 flex flex-wrap items-center gap-2">
                             <Tags className="h-4 w-4 text-muted-foreground"/>
                             {post.tags.map(tag => (
-                                <Badge key={tag} variant="secondary">{tag}</Badge>
+                                <Link key={tag} href={`/discussions/tag/${encodeURIComponent(tag)}`}>
+                                    <Badge variant="secondary" className="cursor-pointer hover:bg-primary/20">{tag}</Badge>
+                                </Link>
                             ))}
                         </div>
                    )}
@@ -278,6 +295,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
           )}
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
-import { Loader2, MessageSquare, AlertTriangle, Pill, Stethoscope, Brain, HeartHandshake, Briefcase, Users, Newspaper, PlusCircle } from 'lucide-react';
+import { Loader2, Tag, AlertTriangle, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
@@ -16,11 +16,10 @@ import { cn } from '@/lib/utils';
 import { Footer } from '@/components/app/footer';
 
 /**
- * @fileoverview This page displays a list of discussion posts within a specific category.
+ * @fileoverview This page displays a list of discussion posts filtered by a specific tag.
  *
- * It fetches all posts from the `/discussions` collection that match the category slug
- * from the URL and displays them in a chronological list. It handles loading and error states,
- * and visually distinguishes between read and unread posts using localStorage.
+ * It fetches all posts from the `/discussions` collection that contain the tag from the
+ * URL in their `tags` array and displays them in a chronological list.
  */
 
 interface DiscussionPost {
@@ -33,33 +32,19 @@ interface DiscussionPost {
   category: string;
 }
 
-const categoryDetails: { [key: string]: { name: string; icon: React.ReactNode } } = {
-  'symptom-management': { name: 'Symptom Management', icon: <Pill /> },
-  'diagnosis-newly-diagnosed': { name: 'Diagnosis & Newly Diagnosed', icon: <Stethoscope /> },
-  'surgery-recovery': { name: 'Surgery & Recovery', icon: <Brain /> },
-  'mental-health-wellness': { name: 'Mental Health & Wellness', icon: <HeartHandshake /> },
-  'daily-life-work': { name: 'Daily Life & Work', icon: <Briefcase /> },
-  'treatments-therapies': { name: 'Treatments & Therapies', icon: <Pill /> },
-  'family-relationships': { name: 'Family & Relationships', icon: <Users /> },
-  'research-news': { name: 'Research & News', icon: <Newspaper /> },
-};
-
-
 /**
- * The main component for displaying posts within a category.
- * It fetches and renders discussion posts filtered by the category from the URL.
+ * The main component for displaying posts filtered by a tag.
  *
- * @param {{ params: { category: string } }} props - The props containing the dynamic category slug.
- * @returns {React.ReactElement} The rendered category posts page.
+ * @param {{ params: { tag: string } }} props - The props containing the dynamic tag slug.
+ * @returns {React.ReactElement} The rendered tag posts page.
  */
-export default function CategoryPage({ params }: { params: { category: string } }) {
+export default function TagPage({ params }: { params: { tag: string } }) {
   const { firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const [readPosts, setReadPosts] = useState<Set<string>>(new Set());
 
-  const { category } = params;
-  const currentCategory = categoryDetails[category] || { name: 'Discussions', icon: <MessageSquare /> };
+  const tag = decodeURIComponent(params.tag);
 
   // Load read posts from localStorage on component mount
   useEffect(() => {
@@ -80,15 +65,15 @@ export default function CategoryPage({ params }: { params: { category: string } 
     }
   }, [user, isUserLoading, router]);
 
-  // Memoized query to fetch discussion posts for the specific category.
+  // Memoized query to fetch discussion posts for the specific tag.
   const discussionsQuery = useMemoFirebase(() => {
-    if (!firestore || !category) return null;
+    if (!firestore || !tag) return null;
     return query(
       collection(firestore, 'discussions'),
-      where('category', '==', category),
+      where('tags', 'array-contains', tag),
       orderBy('createdAt', 'desc')
     );
-  }, [firestore, category]);
+  }, [firestore, tag]);
 
   const { data: posts, isLoading, error } = useCollection<DiscussionPost>(discussionsQuery);
 
@@ -108,8 +93,8 @@ export default function CategoryPage({ params }: { params: { category: string } 
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
-                <Button variant="ghost" onClick={() => router.push('/discussions')}>
-                    &larr; Back to Categories
+                <Button variant="ghost" onClick={() => router.back()}>
+                    &larr; Back
                 </Button>
                 <Button asChild>
                     <Link href="/discussions/create">
@@ -119,10 +104,9 @@ export default function CategoryPage({ params }: { params: { category: string } 
                 </Button>
              </div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
-              <span className="text-primary">{currentCategory.icon}</span>
-              {currentCategory.name}
+              <Tag className="h-8 w-8 text-primary" />
+              Posts tagged with "{tag}"
             </h1>
-            <p className="text-muted-foreground">Ask questions, share experiences, and connect with others.</p>
           </div>
           
           {error && (
@@ -130,7 +114,7 @@ export default function CategoryPage({ params }: { params: { category: string } 
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Error Loading Discussions</AlertTitle>
               <AlertDescription>
-                Could not load posts for this category. Please check your connection or try again later.
+                Could not load posts for this tag. Please check your connection or try again later.
               </AlertDescription>
             </Alert>
           )}
@@ -169,8 +153,8 @@ export default function CategoryPage({ params }: { params: { category: string } 
           ) : (
              !isLoading && !error && (
                 <div className="flex flex-col items-center justify-center h-64 text-muted-foreground border-2 border-dashed rounded-lg">
-                    <p className="font-medium">No discussions in this category yet.</p>
-                    <p className="text-sm mt-1">Be the first to start a conversation!</p>
+                    <p className="font-medium">No posts found with this tag.</p>
+                    <p className="text-sm mt-1">Try searching for another tag or create a new post.</p>
                 </div>
              )
           )}

@@ -1,18 +1,20 @@
 'use client';
 
 import Link from 'next/link';
+import { useMemo } from 'react';
 import { AppHeader } from '@/components/app/header';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Brain, Stethoscope, HeartHandshake, Briefcase, Pill, Users, Newspaper, MessageSquare, PlusCircle } from 'lucide-react';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
+import { Footer } from '@/components/app/footer';
 
 /**
  * @fileoverview This page serves as the main entry point for the community discussions, displaying a list of categories.
  *
  * It provides a directory of different forum categories, allowing users to navigate to the topic that interests them.
- * Each category is presented as a clickable card with an icon and a brief description.
+ * Each category is presented as a clickable card with an icon, a brief description, and a post count.
  */
 
 // A static list of forum categories with metadata.
@@ -45,7 +47,7 @@ export default function DiscussionsPage() {
     const { data: posts } = useCollection<{category: string}>(allPostsQuery);
 
     // Calculate post counts for each category
-    const postCounts = useMemoFirebase(() => {
+    const postCounts = useMemo(() => {
         const counts: { [key: string]: number } = {};
         categories.forEach(cat => counts[cat.slug] = 0);
         if (posts) {
@@ -106,6 +108,7 @@ export default function DiscussionsPage() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

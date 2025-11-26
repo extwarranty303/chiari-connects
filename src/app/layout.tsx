@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import { Toaster } from "@/components/ui/toaster"
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { Footer } from '@/components/app/footer';
 
 export const metadata: Metadata = {
   title: 'Chiariconnects',
@@ -21,8 +22,10 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-body antialiased">
-        <FirebaseClientProvider>{children}</FirebaseClientProvider>
+      <body className="font-body antialiased flex flex-col min-h-screen">
+        <FirebaseClientProvider>
+          <div className="flex-1">{children}</div>
+        </FirebaseClientProvider>
         <Toaster />
       </body>
     </html>

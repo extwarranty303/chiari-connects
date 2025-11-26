@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useUser } from '@/firebase';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Footer } from '@/components/app/footer';
 
 /**
  * @fileoverview This is the main page of the Chiari Connects application, serving as a placeholder workspace.
@@ -181,6 +182,7 @@ export default function MainPage() {
           <AiPanel code={code} onAppendToEditor={handleAppendToEditor} />
         </div>
       </main>
+      <Footer />
     </div>
   );
 }
