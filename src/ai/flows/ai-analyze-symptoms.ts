@@ -18,12 +18,12 @@ const SymptomEntrySchema = z.object({
   date: z.string(),
 });
 
-export const AnalyzeSymptomsInputSchema = z.object({
+const AnalyzeSymptomsInputSchema = z.object({
   symptoms: z.array(SymptomEntrySchema).describe('An array of symptom data objects reported by the user.'),
 });
 export type AnalyzeSymptomsInput = z.infer<typeof AnalyzeSymptomsInputSchema>;
 
-export const AnalyzeSymptomsOutputSchema = z.object({
+const AnalyzeSymptomsOutputSchema = z.object({
   analysis: z.string().describe('A concise, professional analysis of the user\'s symptom patterns, trends, and key observations, suitable for sharing with a healthcare provider. The tone should be objective and data-driven.'),
 });
 export type AnalyzeSymptomsOutput = z.infer<typeof AnalyzeSymptomsOutputSchema>;
