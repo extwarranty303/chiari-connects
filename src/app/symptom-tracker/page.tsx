@@ -149,18 +149,24 @@ export default function SymptomTrackerPage() {
 
     const collectionRef = collection(firestore, 'users', user.uid, 'symptoms');
 
+    // addDocumentNonBlocking returns a promise. We can use .then, .catch, and .finally
+    // to manage the UI state for this specific operation without blocking the main thread.
     addDocumentNonBlocking(collectionRef, newSymptom)
-        .then(() => {
-            toast({
-                title: 'Symptom Logged!',
-                description: `${values.symptom} has been added to your tracker.`,
-            });
-            reset();
-        })
-        .catch(() => {
-            // Error is handled by the global error emitter in non-blocking-updates
+        .then((docRef) => {
+            // This 'then' block will execute if the document is successfully created locally
+            // and the promise from addDoc resolves.
+            if(docRef) { // Check if docRef is not undefined (it won't be on success)
+                 toast({
+                    title: 'Symptom Logged!',
+                    description: `${values.symptom} has been added to your tracker.`,
+                });
+                reset();
+            }
+            // If docRef is undefined, it means the catch block in addDocumentNonBlocking was triggered
+            // and the global error handler is already managing the error feedback.
         })
         .finally(() => {
+            // This will run after the promise either resolves or is handled by the catch block.
             setIsSubmitting(false);
         });
   };
