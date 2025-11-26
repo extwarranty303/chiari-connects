@@ -30,6 +30,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  experimental: {
+    // This allows requests from the development environment's preview URL.
+    allowedDevOrigins: [
+        "https://*.cluster-zsqzu5kebnaemxbyqrvoim2lxo.cloudworkstations.dev"
+    ]
+  }
 };
 
 export default nextConfig;
