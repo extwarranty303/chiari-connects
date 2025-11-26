@@ -80,14 +80,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId);
       allow list: if false; // Disallow listing all users for security and privacy.
-      allow create: if (isOwner(userId) 
-                      && request.resource.data.id == userId
-                      && request.resource.data.username is string
-                      && request.resource.data.username.size() >= 3)
-                      || isSeedOperation(); // Allow seed operation
-      allow update: if isExistingOwner(userId) 
-                      && request.resource.data.id == resource.data.id
-                      && request.resource.data.username == resource.data.username; // Username is immutable
+      allow write: if (isOwner(userId) && request.resource.data.id == userId) || isSeedOperation();
       allow delete: if isExistingOwner(userId);
       
       // ----------------------------------------------------------------------
@@ -180,8 +173,9 @@ service cloud.firestore {
      */
     match /discussions/{discussionId} {
       allow read: if isSignedIn();
-      allow create: if (isSignedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.category is string && request.resource.data.category.size() > 0) || isSeedOperation();
+      allow create: if (isSignedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.category is string && request.resource.data.category.size() > 0);
       allow update, delete: if isOwner(request.resource.data.userId);
+      allow write: if isSeedOperation();
     }
   }
 }
