@@ -20,6 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { Footer } from '@/components/app/footer';
 
 /**
  * @fileoverview This is the main page for the Admin Dashboard.
@@ -169,18 +170,26 @@ export default function AdminDashboardPage() {
     }
   };
   
+  /**
+   * Placeholder function for making a user a moderator.
+   * This would typically call a Firebase Cloud Function to set custom claims.
+   * @param {string} userId - The ID of the user to make a moderator.
+   */
   const handleMakeModerator = (userId: string) => {
-    // Placeholder for the Cloud Function call
+    // In a production app, this would trigger a Firebase Cloud Function.
+    // For example:
+    // const makeModerator = httpsCallable(functions, 'makeModerator');
+    // makeModerator({ userId: userId }).then(...).catch(...);
     toast({
         title: 'Feature In Development',
-        description: `Would assign moderator role to user: ${userId}. This requires a server-side function.`,
+        description: `Would assign moderator role to user: ${userId}. This requires a server-side function to set custom claims securely.`,
     });
   };
 
 
   return (
     <AdminRouteGuard>
-      <div className="flex flex-col h-screen bg-background text-foreground font-body">
+      <div className="flex flex-col min-h-screen bg-background text-foreground font-body">
         <AppHeader onUploadClick={() => { }} onDownloadClick={() => { }} showActions={false} />
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="max-w-7xl mx-auto grid gap-8">
@@ -419,6 +428,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         </main>
+        <Footer />
       </div>
     </AdminRouteGuard>
   );

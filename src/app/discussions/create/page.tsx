@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { Footer } from '@/components/app/footer';
 
 /**
  * @fileoverview This page allows authenticated users to create a new discussion post.
@@ -150,7 +151,7 @@ export default function CreatePostPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground font-body">
+    <div className="flex flex-col min-h-screen bg-background text-foreground font-body">
       <AppHeader onUploadClick={() => {}} onDownloadClick={() => {}} showActions={false} />
       <main className="flex-1 overflow-y-auto p-4 md:p-8">
         <div className="max-w-3xl mx-auto">
@@ -229,6 +230,7 @@ export default function CreatePostPage() {
           </Card>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

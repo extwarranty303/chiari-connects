@@ -26,7 +26,9 @@ import { doc } from 'firebase/firestore';
  * for user-related actions like viewing the profile or logging out. If the user is not
  * authenticated, it shows Login and Sign Up buttons.
  *
- * It fetches the user's profile from Firestore to display their username.
+ * It fetches the user's profile from Firestore to display their username and correctly
+ * determines the avatar fallback initial. It also conditionally renders an "Admin Dashboard"
+ * link if the user has admin claims.
  */
 
 // Defines the shape of the user profile data stored in Firestore.

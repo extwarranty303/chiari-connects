@@ -13,14 +13,20 @@ import {
 
 /**
  * @fileoverview AppHeader component serves as the main navigation bar for the application.
- * It displays the application logo and title, action buttons for placeholder features
- * (file upload/download), a link to the Symptom Tracker, and the user navigation menu.
+ * It provides a responsive navigation experience, displaying key links and user actions.
+ *
+ * Key functionalities:
+ * - **Logo and Branding**: Displays the "Chiari Connects" logo, linking to the home page.
+ * - **Desktop Navigation**: Shows primary navigation links (Discussions, Symptom Tracker) on larger screens.
+ * - **Mobile Navigation**: On smaller screens, it collapses navigation into a slide-out sheet menu for better usability.
+ * - **User Actions**: Integrates the `UserNav` component for user-specific actions like profile and logout.
+ * - **Placeholder Actions**: Includes "Upload" and "Download" buttons as placeholders for potential future file-handling features.
  *
  * @param {AppHeaderProps} props - The props for the AppHeader component.
- * @param {() => void} props.onUploadClick - Callback function to trigger file upload.
- * @param {() => void} props.onDownloadClick - Callback function to trigger file download.
+ * @param {() => void} props.onUploadClick - Callback function for the placeholder upload button.
+ * @param {() => void} props.onDownloadClick - Callback function for the placeholder download button.
  * @param {boolean} [props.showActions=true] - Whether to show the Upload/Download buttons.
- * @returns {React.ReactElement} The header component for the application.
+ * @returns {React.ReactElement} The responsive header component for the application.
  */
 
 type AppHeaderProps = {
@@ -109,7 +115,9 @@ export function AppHeader({ onUploadClick, onDownloadClick, showActions = true }
                             </>
                          )}
                         <hr className="my-4" />
-                        <UserNav />
+                        <div className="flex justify-center">
+                            <UserNav />
+                        </div>
                     </nav>
                 </SheetContent>
             </Sheet>

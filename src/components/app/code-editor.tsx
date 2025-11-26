@@ -3,16 +3,11 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 
-type CodeEditorProps = {
-  code: string;
-  onCodeChange: (code: string) => void;
-  fileName: string;
-};
-
 /**
  * @fileoverview A simple, reusable component for editing text content within a card.
  * Originally designed for code, it now serves as a general-purpose text editor in the app.
  * It displays the current file name in the header and allows the user to modify the content.
+ * This component is primarily a placeholder from a previous version of the application.
  *
  * @param {CodeEditorProps} props - The props for the CodeEditor component.
  * @param {string} props.code - The text content to display in the editor.
@@ -20,6 +15,12 @@ type CodeEditorProps = {
  * @param {string} props.fileName - The name of the file or content being edited.
  * @returns {React.ReactElement} A card-based text editor component.
  */
+type CodeEditorProps = {
+  code: string;
+  onCodeChange: (code: string) => void;
+  fileName: string;
+};
+
 export function CodeEditor({ code, onCodeChange, fileName }: CodeEditorProps) {
   return (
     <Card className="h-full flex-grow flex flex-col glassmorphism">

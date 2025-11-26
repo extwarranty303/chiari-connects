@@ -23,6 +23,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeSymptoms, AnalyzeSymptomsInput } from '@/ai/flows/ai-analyze-symptoms';
 import { analyzeSymptomsWithImaging, AnalyzeSymptomsWithImagingInput } from '@/ai/flows/ai-analyze-symptoms-with-imaging';
+import { Footer } from '@/components/app/footer';
 
 
 /**
@@ -261,7 +262,7 @@ export default function SymptomReportPage() {
   const summary = getReportSummary(symptoms || []);
 
   return (
-    <div className="bg-background text-foreground min-h-screen">
+    <div className="bg-background text-foreground min-h-screen flex flex-col">
       {/* Header section, hidden from print output. */}
       <header className="p-4 sm:p-8 flex justify-between items-center print:hidden">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Symptom Report</h1>
@@ -277,7 +278,7 @@ export default function SymptomReportPage() {
       </header>
 
       {/* Main report content, styled for screen and print. */}
-      <main className="p-4 sm:p-8">
+      <main className="p-4 sm:p-8 flex-1">
         <div className="max-w-4xl mx-auto bg-card p-6 sm:p-10 rounded-lg shadow-md border print:shadow-none print:border-none print:p-0">
           <div className="flex justify-between items-start mb-8">
             <div>
@@ -374,13 +375,14 @@ export default function SymptomReportPage() {
             </>
           )}
 
-          <div className="mt-12 pt-6 border-t text-xs text-muted-foreground text-center">
+          <div className="mt-12 pt-6 border-t text-xs text-muted-foreground text-center print:hidden">
             <p>
               <strong>Disclaimer:</strong> This report is a log of self-reported data and is intended for informational purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment.
             </p>
           </div>
         </div>
       </main>
+      <Footer />
 
       {/* Print-specific styles to hide UI elements and optimize layout for printing. */}
       <style jsx global>{`
@@ -415,5 +417,3 @@ export default function SymptomReportPage() {
     </div>
   );
 }
-
-    

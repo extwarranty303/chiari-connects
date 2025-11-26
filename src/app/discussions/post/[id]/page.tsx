@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { doc, collection, getDoc, runTransaction, increment } from 'firebase/firestore';
+import { doc, collection, runTransaction, increment } from 'firebase/firestore';
 import { format } from 'date-fns';
-import { Loader2, AlertTriangle, User, Calendar, ArrowLeft, Bookmark, Flag, Tags } from 'lucide-react';
+import { Loader2, AlertTriangle, ArrowLeft, Bookmark, Flag, Tags } from 'lucide-react';
 import { useFirebase, useUser, useDoc, useMemoFirebase, setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
 import { AppHeader } from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -55,6 +55,7 @@ interface Bookmark {
     createdAt: string;
 }
 
+// Standard reasons for reporting a post.
 const reportReasons = [
     { id: 'spam', label: 'Spam or Misleading' },
     { id: 'harassment', label: 'Harassment or Bullying' },
@@ -78,7 +79,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
   const [isReporting, setIsReporting] = useState(false);
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
 
-  // Mark the post as read when the component mounts
+  // Mark the post as read in localStorage when the component mounts
   useEffect(() => {
     if (params.id) {
         try {
@@ -119,6 +120,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
 
   /**
    * Toggles the bookmark status for the current post.
+   * If bookmarking, it awards points to the post's author.
    */
   const handleToggleBookmark = async () => {
     if (!user || !post) return;
@@ -155,6 +157,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
 
   /**
    * Handles submitting a report for the current post.
+   * Creates a report document in a subcollection of the post.
    */
   const handleReportSubmit = () => {
     if (!user || !post || !selectedReason) {
@@ -191,7 +194,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
   const userInitial = post?.username ? post.username.charAt(0).toUpperCase() : '?';
 
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground font-body">
+    <div className="flex flex-col min-h-screen bg-background text-foreground font-body">
       <AppHeader onUploadClick={() => {}} onDownloadClick={() => {}} showActions={false} />
       <main className="flex-1 overflow-y-auto p-4 md:p-8">
         <div className="max-w-3xl mx-auto">
@@ -263,7 +266,9 @@ export default function PostPage({ params }: { params: { id: string } }) {
                        <span className="font-semibold text-primary">{post.username}</span>
                      </div>
                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
+                        <span className="capitalize">{post.category.replace(/-/g, ' ')}</span>
+                     </div>
+                     <div className="flex items-center gap-2 text-muted-foreground">
                         <span>{format(new Date(post.createdAt), 'MMMM d, yyyy')}</span>
                      </div>
                   </CardDescription>

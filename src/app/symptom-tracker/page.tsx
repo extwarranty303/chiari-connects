@@ -66,6 +66,7 @@ import {
 import { cn } from '@/lib/utils';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Footer } from '@/components/app/footer';
 
 
 /**
@@ -472,6 +473,7 @@ export default function SymptomTrackerPage() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

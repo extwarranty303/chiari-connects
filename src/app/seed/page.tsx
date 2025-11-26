@@ -76,7 +76,7 @@ export default function SeedPage() {
 
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-4">
-      <Card className="max-w-md w-full">
+      <Card className="max-w-md w-full glassmorphism">
         <CardHeader>
           <CardTitle>Database Seeder</CardTitle>
           <CardDescription>

@@ -2,7 +2,8 @@ import type { SVGProps } from 'react';
 
 /**
  * @fileoverview This file contains a collection of SVG icons used throughout the application.
- * The `Icons` object exports each icon as a functional React component.
+ * The `Icons` object exports each icon as a functional React component, making them easy to
+ * import and use with consistent styling and accessibility properties.
  */
 
 export const Icons = {

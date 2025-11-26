@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { AppHeader } from '@/components/app/header';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Footer } from '@/components/app/footer';
 
 /**
  * @fileoverview This page serves as the user's personal dashboard.
@@ -20,6 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
  * It provides a comprehensive overview of the user's account information and
  * a summary of their tracked symptom data. It also offers quick links to
  * key sections of the application, such as the Symptom Tracker and the full report.
+ * It also displays the user's earned community points from the gamification system.
  */
 
 // Defines the shape of the user profile data stored in Firestore.
@@ -214,6 +216,7 @@ export default function ProfilePage() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

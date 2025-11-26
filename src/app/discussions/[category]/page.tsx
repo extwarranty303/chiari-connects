@@ -33,6 +33,7 @@ interface DiscussionPost {
   category: string;
 }
 
+// A static mapping of category slugs to their display names and icons.
 const categoryDetails: { [key: string]: { name: string; icon: React.ReactNode } } = {
   'symptom-management': { name: 'Symptom Management', icon: <Pill /> },
   'diagnosis-newly-diagnosed': { name: 'Diagnosis & Newly Diagnosed', icon: <Stethoscope /> },
@@ -102,7 +103,7 @@ export default function CategoryPage({ params }: { params: { category: string } 
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground font-body">
+    <div className="flex flex-col min-h-screen bg-background text-foreground font-body">
       <AppHeader onUploadClick={() => {}} onDownloadClick={() => {}} showActions={false} />
       <main className="flex-1 overflow-y-auto p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
@@ -142,7 +143,7 @@ export default function CategoryPage({ params }: { params: { category: string } 
                   key={post.id} 
                   className={cn(
                     "glassmorphism hover:border-primary/50 transition-all duration-200",
-                    readPosts.has(post.id) && "opacity-60 hover:opacity-100"
+                    readPosts.has(post.id) && "opacity-60 hover:opacity-100" // Dim read posts
                   )}
                 >
                    <Link href={`/discussions/post/${post.id}`} className="block">
