@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { format, parseISO } from 'date-fns';
 import { Loader2, Printer, BrainCircuit, AlertTriangle, Upload, File, X, Image as ImageIcon } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { type SymptomData } from '@/app/symptom-tracker/page';
@@ -224,7 +225,6 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
                     onChange={handleFileChange}
                     accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,.doc,.docx,.txt"
                     className="hidden"
-                    multiple={false} // Handle one file at a time
                 />
                 <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isPending}>
                     <Upload className="mr-2 h-4 w-4" />
@@ -265,7 +265,9 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
                     </div>
                 )}
                 {analysis && (
-                    <div className="whitespace-pre-wrap font-sans text-sm">{analysis}</div>
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                        <ReactMarkdown>{analysis}</ReactMarkdown>
+                    </div>
                 )}
                 {!isPending && !analysis && !error && (
                     <p className="text-sm text-muted-foreground text-center pt-10">

@@ -18,6 +18,9 @@ const SymptomEntrySchema = z.object({
   date: z.string(),
 });
 
+export type AnalyzeSymptomsWithImagingInput = z.infer<
+  typeof AnalyzeSymptomsWithImagingInputSchema
+>;
 const AnalyzeSymptomsWithImagingInputSchema = z.object({
   symptoms: z
     .array(SymptomEntrySchema)
@@ -28,20 +31,17 @@ const AnalyzeSymptomsWithImagingInputSchema = z.object({
       "A medical image (e.g., an MRI scan) as a data URI. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
 });
-export type AnalyzeSymptomsWithImagingInput = z.infer<
-  typeof AnalyzeSymptomsWithImagingInputSchema
->;
 
+export type AnalyzeSymptomsWithImagingOutput = z.infer<
+  typeof AnalyzeSymptomsWithImagingOutputSchema
+>;
 const AnalyzeSymptomsWithImagingOutputSchema = z.object({
   analysis: z
     .string()
     .describe(
-      'A concise, professional analysis combining observations from the medical imaging and the user\'s symptom patterns. The tone must be objective and data-driven.'
+      'A concise, professional analysis combining observations from the medical imaging and the user\'s symptom patterns, formatted in Markdown. The tone must be objective and data-driven.'
     ),
 });
-export type AnalyzeSymptomsWithImagingOutput = z.infer<
-  typeof AnalyzeSymptomsWithImagingOutputSchema
->;
 
 /**
  * An AI flow that analyzes symptom data and a medical image to generate a summary.
@@ -58,13 +58,14 @@ const prompt = ai.definePrompt({
   name: 'analyzeSymptomsWithImagingPrompt',
   input: {schema: AnalyzeSymptomsWithImagingInputSchema},
   output: {schema: AnalyzeSymptomsWithImagingOutputSchema},
-  prompt: `You are a medical data analyst AI. Your task is to analyze self-reported symptom data alongside a provided medical image (like an MRI) and generate a clear, objective summary for a patient to share with their doctor.
+  prompt: `You are a medical data analyst AI. Your task is to analyze self-reported symptom data alongside a provided medical image (like an MRI) and generate a clear, objective summary formatted in Markdown for a patient to share with their doctor.
 
   **CRITICAL INSTRUCTIONS**:
   1.  **DO NOT PROVIDE A DIAGNOSIS, PROGNOSIS, OR MEDICAL ADVICE.** Your role is strictly observational.
   2.  **Describe, Do Not Interpret**: When analyzing the image, describe what you see in factual, anatomical terms. For example, "The image shows the cerebellar tonsils extending below the foramen magnum." Do NOT say "This image shows a Chiari malformation."
   3.  **Correlate, Do Not Conclude**: Relate the imaging observations to the symptom data observationally. For example, "The observed tonsillar ectopia may be relevant to the user's reports of headaches and dizziness." Do NOT say "The tonsillar ectopia is causing the headaches."
   4.  **Maintain Neutral, Objective Tone**: The output must be professional and data-driven, suitable for a healthcare provider.
+  5.  **Use Markdown Formatting**: Structure the output using Markdown. Use headings (e.g., '### Imaging Observations'), bullet points (e.g., '- Symptom: ...'), and bold text to improve readability.
 
   **Symptom Data:**
   {{#each symptoms}}
@@ -75,12 +76,12 @@ const prompt = ai.definePrompt({
   {{media url=imagingDataUri}}
 
   **Analysis Task:**
-  Based on all provided data, generate a summary that includes:
-  1.  **Imaging Observations**: Describe notable anatomical features or anomalies in the image using precise, objective language.
-  2.  **Symptom Patterns**: Mention the most frequent/severe symptoms and any apparent trends from the data log.
-  3.  **Potential Correlations**: Objectively note any potential links between the imaging observations and the reported symptoms without claiming causality.
+  Based on all provided data, generate a Markdown-formatted summary that includes:
+  1.  **Imaging Observations**: Under a '### Imaging Observations' heading, describe notable anatomical features or anomalies in the image using precise, objective language.
+  2.  **Symptom Patterns**: Under a '### Symptom Patterns' heading, mention the most frequent/severe symptoms and any apparent trends from the data log.
+  3.  **Potential Correlations**: Under a '### Potential Correlations' heading, objectively note any potential links between the imaging observations and the reported symptoms without claiming causality.
 
-  Structure the output as a professional, easy-to-read summary. Start with a neutral introductory sentence and use bullet points for clarity.
+  Start with a neutral introductory sentence.
   
   Analysis:`,
 });
