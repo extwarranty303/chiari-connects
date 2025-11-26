@@ -63,6 +63,13 @@ export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthStat
             const isAdmin = decodedToken?.claims?.admin === true;
             const isModerator = decodedToken?.claims?.moderator === true;
             
+            // Wait for auth to be fully ready before fetching profile
+            if (auth.currentUser?.uid !== user.uid) {
+                // This can happen briefly during auth state transitions.
+                // We'll wait for the next auth state change to be certain.
+                return;
+            }
+
             // Set up a real-time listener for the user's profile document.
             // This also contains the roles field which may not be in sync with custom claims.
             // The custom claims from the token are the source of truth for permissions.
