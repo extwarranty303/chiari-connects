@@ -37,3 +37,5 @@ export function initiateGoogleSignIn(authInstance: Auth): void {
   signInWithPopup(authInstance, provider);
   // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
 }
+
+    

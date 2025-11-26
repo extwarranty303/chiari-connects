@@ -20,10 +20,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Icons } from '@/components/app/icons';
 import { useFirebase, useUser } from '@/firebase';
-import { initiateEmailSignUp, initiateGoogleSignIn } from '@/firebase/non-blocking-login';
+import { initiateEmailSignUp, initiateGoogleSignIn, initiateEmailSignIn } from '@/firebase/non-blocking-login';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Loader2 } from 'lucide-react';
-import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc } from 'firebase/firestore';
 
 const signupSchema = z.object({
   username: z.string().min(3, { message: 'Username must be at least 3 characters.'}),
@@ -65,22 +66,14 @@ export default function AuthPage() {
     }
   }, [user, isUserLoading, router]);
 
-  const handleSignup = async (values: SignupFormValues) => {
+  const handleSignup = (values: SignupFormValues) => {
     setIsPending(true);
-    initiateEmailSignUp(auth, values.email, values.password)
+    initiateEmailSignUp(auth, values.email, values.password);
   };
 
-  const handleLogin = async (values: LoginFormValues) => {
+  const handleLogin = (values: LoginFormValues) => {
     setIsPending(true);
-    signInWithEmailAndPassword(auth, values.email, values.password)
-    .catch(error => {
-        setIsPending(false);
-        toast({
-          variant: 'destructive',
-          title: 'Authentication Failed',
-          description: error.message.replace('Firebase: Error (auth/', '').replace(').', '').replace(/-/g, ' '),
-        });
-    });
+    initiateEmailSignIn(auth, values.email, values.password);
   };
   
   const handleGoogleSignIn = () => {
@@ -89,24 +82,20 @@ export default function AuthPage() {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         // If it's a new user from email/password signup, the username will be in the form state
         const signupUsername = signupForm.getValues('username');
         if (signupUsername) {
-            try {
-                const userRef = doc(firestore, 'users', user.uid);
-                await setDoc(userRef, {
-                    id: user.uid,
-                    email: user.email,
-                    username: signupUsername,
-                    createdAt: new Date().toISOString()
-                }, { merge: true });
-                // Reset form to prevent re-triggering this on auth state changes
-                signupForm.reset(); 
-            } catch(e) {
-                console.error("Error setting user document:", e)
-            }
+            const userRef = doc(firestore, 'users', user.uid);
+            setDocumentNonBlocking(userRef, {
+                id: user.uid,
+                email: user.email,
+                username: signupUsername,
+                createdAt: new Date().toISOString()
+            }, { merge: true });
+            // Reset form to prevent re-triggering this on auth state changes
+            signupForm.reset(); 
         }
         
         setIsPending(false);
@@ -115,31 +104,45 @@ export default function AuthPage() {
           description: 'You are now logged in.',
         });
         router.push('/');
-      } else {
-        setIsPending(false);
       }
+      // Note: We don't set isPending(false) in the 'else' case
+      // because the error handler below will manage the state for failed attempts.
     });
-
+    
+    // Centralized error handling for auth
     const originalConsoleError = console.error;
-    console.error = (...args: any[]) => {
-      if (typeof args[0] === 'string' && args[0].includes('Firebase: Error')) {
-        setIsPending(false);
-        let errorMessage = args[0].split('(auth/')[1]?.split(')')[0] || 'An unknown error occurred.';
-        if (errorMessage.includes('popup-closed-by-user')) {
-          return; // Don't show toast if user closes popup
+    const newConsoleError = (...args: any[]) => {
+      // Firebase auth errors are often logged to the console by the SDK
+      if (typeof args[0] === 'string' && args[0].includes('Firebase: Error (auth/')) {
+        setIsPending(false); // Stop loading indicator on auth error
+        
+        let errorMessage = 'An unknown authentication error occurred.';
+        const errorCodeMatch = args[0].match(/\(auth\/([^)]+)\)/);
+        if (errorCodeMatch && errorCodeMatch[1]) {
+            const errorCode = errorCodeMatch[1];
+            // Don't show toast if user closes Google sign-in popup
+            if (errorCode === 'popup-closed-by-user' || errorCode === 'cancelled-popup-request') {
+              return;
+            }
+            // Capitalize and format for readability
+            errorMessage = errorCode.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         }
+
         toast({
           variant: 'destructive',
           title: 'Authentication Failed',
-          description: errorMessage.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          description: errorMessage,
         });
       }
+      // Call the original console.error to maintain default behavior for other errors
       originalConsoleError.apply(console, args);
     };
+
+    console.error = newConsoleError;
     
     return () => {
       unsubscribe();
-      console.error = originalConsoleError;
+      console.error = originalConsoleError; // Restore original console.error on cleanup
     };
   }, [auth, router, toast, firestore, signupForm]);
 
@@ -322,3 +325,5 @@ export default function AuthPage() {
     </div>
   );
 }
+
+    
