@@ -2,7 +2,9 @@
 
 import { collection, query, orderBy, collectionGroup } from 'firebase/firestore';
 import { format } from 'date-fns';
-import { Loader2, User, MessageSquare, Activity, Download } from 'lucide-react';
+import { Loader2, User, MessageSquare, Activity, Download, ShieldAlert, FileText } from 'lucide-react';
+import Link from 'next/link';
+
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { AppHeader } from '@/components/app/header';
 import AdminRouteGuard from '@/components/app/admin-route-guard';
@@ -26,9 +28,9 @@ import { useToast } from '@/hooks/use-toast';
  * - **Security**: Wrapped in an `AdminRouteGuard` to ensure only admins can access it.
  * - **Statistics**: Displays high-level site statistics like total users, posts, and symptom entries.
  * - **User Management**: Shows a table of all registered users with their details.
- * - **Content Moderation**: Displays a table of all discussion posts for easy monitoring.
+ * - **Content Moderation**: Displays tables for all discussion posts and user-submitted reports.
  * - **Data Export**: Allows admins to export user and post data as CSV files.
- * - **Data Fetching**: Uses admin-specific queries to fetch all user and content data from Firestore.
+ * - **Data Fetching**: Uses admin-specific queries to fetch all user, content, and report data.
  */
 
 // Data-shape interfaces for clarity.
@@ -48,7 +50,15 @@ interface DiscussionPost {
 }
 
 interface Symptom {
-    id: string;
+  id: string;
+}
+
+interface PostReport {
+  id: string;
+  postId: string;
+  reporterId: string;
+  reason: string;
+  createdAt: string;
 }
 
 
@@ -58,37 +68,37 @@ interface Symptom {
  * @param {any[]} rows - The array of data objects to convert.
  */
 function exportToCsv(filename: string, rows: any[]) {
-    if (!rows || rows.length === 0) {
-        return;
-    }
-    const headers = Object.keys(rows[0]);
-    const csvContent = [
-        headers.join(','),
-        ...rows.map(row =>
-            headers
-                .map(header => {
-                    let field = row[header];
-                    // Handle cases where the field might contain a comma or quote
-                    if (typeof field === 'string' && (field.includes(',') || field.includes('"'))) {
-                        return `"${field.replace(/"/g, '""')}"`;
-                    }
-                    return field;
-                })
-                .join(',')
-        ),
-    ].join('\n');
+  if (!rows || rows.length === 0) {
+    return;
+  }
+  const headers = Object.keys(rows[0]);
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row =>
+      headers
+        .map(header => {
+          let field = row[header];
+          // Handle cases where the field might contain a comma or quote
+          if (typeof field === 'string' && (field.includes(',') || field.includes('"'))) {
+            return `"${field.replace(/"/g, '""')}"`;
+          }
+          return field;
+        })
+        .join(',')
+    ),
+  ].join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    if (link.download !== undefined) {
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', filename);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  if (link.download !== undefined) {
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 }
 
 
@@ -114,16 +124,21 @@ export default function AdminDashboardPage() {
 
   // Memoized query to fetch all symptom documents (only for counting).
   const allSymptomsQuery = useMemoFirebase(() => {
-    // This uses a collection group query to get all 'symptoms' from all users.
     return collectionGroup(firestore, 'symptoms');
+  }, [firestore]);
+  
+  // Memoized query to fetch all reports from the 'reports' subcollection group.
+  const allReportsQuery = useMemoFirebase(() => {
+    return query(collectionGroup(firestore, 'reports'), orderBy('createdAt', 'desc'));
   }, [firestore]);
 
 
   const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(allUsersQuery);
   const { data: posts, isLoading: isLoadingPosts } = useCollection<DiscussionPost>(allDiscussionsQuery);
   const { data: symptoms, isLoading: isLoadingSymptoms } = useCollection<Symptom>(allSymptomsQuery);
+  const { data: reports, isLoading: isLoadingReports } = useCollection<PostReport>(allReportsQuery);
   
-  const isLoading = isLoadingUsers || isLoadingPosts || isLoadingSymptoms;
+  const isLoading = isLoadingUsers || isLoadingPosts || isLoadingSymptoms || isLoadingReports;
 
   /**
    * Handles the export of user data to a CSV file.
@@ -131,9 +146,9 @@ export default function AdminDashboardPage() {
   const handleExportUsers = () => {
     if (users) {
       exportToCsv(`chiari-connects-users-${new Date().toISOString().split('T')[0]}.csv`, users.map(({ id, username, email, createdAt }) => ({ id, username, email, createdAt })));
-      toast({ title: "User data export started." });
+      toast({ title: 'User data export started.' });
     } else {
-       toast({ variant: "destructive", title: "No user data to export." });
+      toast({ variant: 'destructive', title: 'No user data to export.' });
     }
   };
 
@@ -143,9 +158,9 @@ export default function AdminDashboardPage() {
   const handleExportPosts = () => {
     if (posts) {
       exportToCsv(`chiari-connects-posts-${new Date().toISOString().split('T')[0]}.csv`, posts.map(({ id, title, username, category, createdAt }) => ({ id, title, username, category, createdAt })));
-      toast({ title: "Post data export started." });
+      toast({ title: 'Post data export started.' });
     } else {
-      toast({ variant: "destructive", title: "No post data to export." });
+      toast({ variant: 'destructive', title: 'No post data to export.' });
     }
   };
 
@@ -153,7 +168,7 @@ export default function AdminDashboardPage() {
   return (
     <AdminRouteGuard>
       <div className="flex flex-col h-screen bg-background text-foreground font-body">
-        <AppHeader onUploadClick={() => {}} onDownloadClick={() => {}} showActions={false} />
+        <AppHeader onUploadClick={() => { }} onDownloadClick={() => { }} showActions={false} />
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="max-w-7xl mx-auto grid gap-8">
             <div>
@@ -166,7 +181,7 @@ export default function AdminDashboardPage() {
             </div>
             
              {/* High-level Stats */}
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -200,7 +215,68 @@ export default function AdminDashboardPage() {
                   </div>
                 </CardContent>
               </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Active Reports</CardTitle>
+                  <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                   <div className="text-2xl font-bold">
+                     {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : reports?.length ?? 0}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
+
+            {/* Moderation Queue */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Moderation Queue</CardTitle>
+                    <CardDescription>Review posts that have been reported by the community.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Reported Post ID</TableHead>
+                                <TableHead>Reason</TableHead>
+                                <TableHead>Reported By (UID)</TableHead>
+                                <TableHead>Date Reported</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoadingReports ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center">
+                                        <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
+                                    </TableCell>
+                                </TableRow>
+                            ) : reports && reports.length > 0 ? (
+                                reports.map(report => (
+                                    <TableRow key={report.id}>
+                                        <TableCell className="font-mono text-xs">{report.postId}</TableCell>
+                                        <TableCell>{report.reason}</TableCell>
+                                        <TableCell className="font-mono text-xs">{report.reporterId}</TableCell>
+                                        <TableCell>{format(new Date(report.createdAt), 'MMM d, yyyy, h:mm a')}</TableCell>
+                                        <TableCell className="text-right">
+                                            <Button asChild variant="outline" size="sm">
+                                                <Link href={`/discussions/post/${report.postId}`} target="_blank">
+                                                    <FileText className="mr-2 h-4 w-4" /> View Post
+                                                </Link>
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center h-24">No active reports.</TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
 
 
             <div className="grid gap-8 md:grid-cols-1">
@@ -254,8 +330,8 @@ export default function AdminDashboardPage() {
                 <Card>
                      <CardHeader className="flex flex-row items-center justify-between">
                         <div>
-                            <CardTitle>Content Moderation</CardTitle>
-                            <CardDescription>View and manage all discussion posts.</CardDescription>
+                            <CardTitle>All Discussion Posts</CardTitle>
+                            <CardDescription>A view of all posts across the community.</CardDescription>
                         </div>
                         <Button variant="outline" size="sm" onClick={handleExportPosts} disabled={isLoadingPosts || !posts || posts.length === 0}>
                            <Download className="mr-2 h-4 w-4" />
@@ -304,5 +380,3 @@ export default function AdminDashboardPage() {
     </AdminRouteGuard>
   );
 }
-
-    

@@ -200,7 +200,7 @@ service cloud.firestore {
      */
     match /discussions/{discussionId} {
       allow read: if isSignedIn();
-      allow create: if (isSignedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.category is string && request.resource.data.category.size() > 0);
+      allow create: if (isSignedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.category is string && request.resource.data.category.size() > 0) || isSeedOperation();
       // Owners can update/delete their own posts. Admins/Moderators can update/delete any post.
       allow update, delete: if isOwner(resource.data.userId) || isAdmin() || isModerator();
       allow write: if isSeedOperation();
@@ -212,7 +212,9 @@ service cloud.firestore {
         // Any signed-in user can create a report.
         allow create: if isSignedIn() && request.resource.data.reporterId == request.auth.uid;
         // Only Admins and Moderators can read or delete reports.
-        allow get, list, delete: if isAdmin() || isModerator();
+        allow read, delete: if isAdmin() || isModerator();
+        // Admins and moderators can list all reports
+        allow list: if isAdmin() || isModerator();
         // Nobody can update a report.
         allow update: if false;
       }
