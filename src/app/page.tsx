@@ -1,10 +1,13 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/app/header';
 import { CodeEditor } from '@/components/app/code-editor';
 import { AiPanel } from '@/components/app/ai-panel';
 import { useToast } from "@/hooks/use-toast"
+import { useUser } from '@/firebase';
+import { Loader2 } from 'lucide-react';
 
 const defaultCode = `import React from 'react';
 
@@ -32,6 +35,15 @@ export default function ReactRefineryPage() {
   const [fileName, setFileName] = useState<string>('component.jsx');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/auth');
+    }
+  }, [user, isUserLoading, router]);
+
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -90,6 +102,13 @@ export default function ReactRefineryPage() {
     })
   }, []);
 
+  if (isUserLoading || !user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-body">
