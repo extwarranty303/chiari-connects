@@ -4,7 +4,7 @@ import './globals.css';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
-  title: 'React Refinery',
+  title: 'Chiariconnects',
   description: 'Upload, analyze, and refine your React components with AI assistance.',
 };
 

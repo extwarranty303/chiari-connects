@@ -22,6 +22,7 @@ import { Icons } from '@/components/app/icons';
 import { useFirebase, useUser } from '@/firebase';
 import { initiateEmailSignIn, initiateEmailSignUp } from '@/firebase/non-blocking-login';
 import { Loader2 } from 'lucide-react';
+import Image from 'next/image';
 
 const signupSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -119,9 +120,9 @@ export default function AuthPage() {
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-4">
       <div className="flex items-center gap-3 mb-6">
-        <Icons.logo className="h-10 w-10 text-primary" />
+        <Image src="/logo.svg" alt="Chiariconnects Logo" width={40} height={40} className="text-primary" />
         <h1 className="text-3xl font-semibold font-headline tracking-tight text-foreground">
-          React Refinery
+          Chiariconnects
         </h1>
       </div>
       <Tabs defaultValue="login" className="w-full max-w-md">
