@@ -134,11 +134,15 @@ export default function AuthPage() {
         const signupUsername = signupForm.getValues('username');
         if (signupUsername) {
             const userRef = doc(firestore, 'users', user.uid);
+            // This set is now technically redundant but safe.
+            // The logic in firebase/index.ts is the primary source of truth.
+            // We keep it here to associate the chosen username immediately on sign-up.
             setDocumentNonBlocking(userRef, {
                 id: user.uid,
                 email: user.email,
                 username: signupUsername,
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                points: 0
             }, { merge: true });
             // Reset form to prevent re-triggering this on subsequent auth state changes.
             signupForm.reset(); 

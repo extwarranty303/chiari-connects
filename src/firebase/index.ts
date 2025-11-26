@@ -43,13 +43,14 @@ export function getSdks(firebaseApp: FirebaseApp) {
 
         if (!userSnap.exists()) {
             // This case handles Google Sign-In where user doc might not exist yet.
-            const username = user.displayName?.split(' ')[0].toLowerCase() || `user${Math.random().toString().substring(2, 8)}`;
+            const username = user.displayName?.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '') || `user${Math.random().toString().substring(2, 8)}`;
             try {
                 await setDoc(userRef, {
                     id: user.uid,
                     email: user.email,
                     username: username,
-                    createdAt: new Date().toISOString()
+                    createdAt: new Date().toISOString(),
+                    points: 0,
                 }, { merge: true });
             } catch (e) {
                 console.error("Error creating user document on initial auth state change:", e);
