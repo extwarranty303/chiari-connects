@@ -47,7 +47,7 @@ const ResultDisplay = ({ result, onAppend, appendType }: { result: string; onApp
     };
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-2 animate-in fade-in-0 duration-500">
             <pre className="text-sm font-code bg-muted/50 p-3 rounded-md whitespace-pre-wrap">{result}</pre>
             <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={handleCopy}><Copy className="mr-2 h-4 w-4" />Copy</Button>
