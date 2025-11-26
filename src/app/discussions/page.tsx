@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { AppHeader } from '@/components/app/header';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Brain, Stethoscope, HeartHandshake, Briefcase, Pill, Users, Newspaper, MessageSquare } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ArrowRight, Brain, Stethoscope, HeartHandshake, Briefcase, Pill, Users, Newspaper, MessageSquare, PlusCircle } from 'lucide-react';
 
 /**
  * @fileoverview This page serves as the main entry point for the community discussions, displaying a list of categories.
@@ -36,12 +37,20 @@ export default function DiscussionsPage() {
       <AppHeader onUploadClick={() => {}} onDownloadClick={() => {}} showActions={false} />
       <main className="flex-1 overflow-y-auto p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <MessageSquare className="w-8 h-8 text-primary" />
-              Community Forums
-            </h1>
-            <p className="text-muted-foreground">Choose a category to start browsing discussions.</p>
+          <div className="mb-8 flex justify-between items-center">
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                <MessageSquare className="w-8 h-8 text-primary" />
+                Community Forums
+                </h1>
+                <p className="text-muted-foreground">Choose a category to start browsing discussions.</p>
+            </div>
+             <Button asChild>
+                <Link href="/discussions/create">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    New Post
+                </Link>
+             </Button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
-import { Loader2, MessageSquare, AlertTriangle, Pill, Stethoscope, Brain, HeartHandshake, Briefcase, Users, Newspaper } from 'lucide-react';
+import { Loader2, MessageSquare, AlertTriangle, Pill, Stethoscope, Brain, HeartHandshake, Briefcase, Users, Newspaper, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
@@ -92,9 +92,17 @@ export default function CategoryPage({ params }: { params: { category: string } 
       <main className="flex-1 overflow-y-auto p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
-             <Button variant="ghost" onClick={() => router.push('/discussions')} className="mb-4">
-                &larr; Back to Categories
-             </Button>
+             <div className="flex justify-between items-center mb-4">
+                <Button variant="ghost" onClick={() => router.push('/discussions')}>
+                    &larr; Back to Categories
+                </Button>
+                <Button asChild>
+                    <Link href="/discussions/create">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        New Post
+                    </Link>
+                </Button>
+             </div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
               <span className="text-primary">{currentCategory.icon}</span>
               {currentCategory.name}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { doc, collection } from 'firebase/firestore';
+import { doc, collection, getDoc, runTransaction, increment } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { Loader2, AlertTriangle, User, Calendar, ArrowLeft, Bookmark, Flag } from 'lucide-react';
 import { useFirebase, useUser, useDoc, useMemoFirebase, setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
@@ -103,8 +103,9 @@ export default function PostPage({ params }: { params: { id: string } }) {
   /**
    * Toggles the bookmark status for the current post.
    */
-  const handleToggleBookmark = () => {
+  const handleToggleBookmark = async () => {
     if (!user || !post) return;
+
     if (isBookmarked) {
         // Delete the bookmark
         deleteDocumentNonBlocking(bookmarkRef!);
@@ -117,7 +118,21 @@ export default function PostPage({ params }: { params: { id: string } }) {
             createdAt: new Date().toISOString(),
         };
         setDocumentNonBlocking(bookmarkRef!, newBookmark, { merge: false });
-        toast({ title: 'Post bookmarked!' });
+
+        // Award points to the post author
+        const authorRef = doc(firestore, 'users', post.userId);
+        try {
+            await runTransaction(firestore, async (transaction) => {
+                const authorDoc = await transaction.get(authorRef);
+                if (authorDoc.exists()) {
+                    transaction.update(authorRef, { points: increment(5) });
+                }
+            });
+            toast({ title: 'Post bookmarked!', description: "The author has been awarded 5 points." });
+        } catch (error) {
+            console.error("Failed to award points:", error);
+            toast({ title: 'Post bookmarked!', description: "Could not award points to the author." });
+        }
     }
   };
 
