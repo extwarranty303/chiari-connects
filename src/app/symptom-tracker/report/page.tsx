@@ -21,9 +21,13 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { analyzeSymptoms, AnalyzeSymptomsInput } from '@/ai/flows/ai-analyze-symptoms';
-import { analyzeSymptomsWithImaging, AnalyzeSymptomsWithImagingInput } from '@/ai/flows/ai-analyze-symptoms-with-imaging';
+import { analyzeSymptoms, type AnalyzeSymptomsInput } from '@/ai/flows/ai-analyze-symptoms';
+import { analyzeSymptomsWithImaging, type AnalyzeSymptomsWithImagingInput } from '@/ai/flows/ai-analyze-symptoms-with-imaging';
+import { analyzeSymptomsWithReport, type AnalyzeSymptomsWithReportInput } from '@/ai/flows/ai-analyze-symptoms-with-report';
 import { Footer } from '@/components/app/footer';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 
 /**
@@ -78,6 +82,8 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
     const [error, setError] = useState('');
     const [imagingFile, setImagingFile] = useState<File | null>(null);
     const [imagingPreview, setImagingPreview] = useState<string | null>(null);
+    const [reportText, setReportText] = useState('');
+    const [activeTab, setActiveTab] = useState('image');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
 
@@ -105,6 +111,7 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
             if (file.type.startsWith('image/')) {
                 setImagingFile(file);
                 setImagingPreview(URL.createObjectURL(file));
+                setReportText(''); // Clear report text when image is selected
             } else {
                 toast({
                     variant: 'destructive',
@@ -135,16 +142,15 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
                 };
 
                 let result;
-                if (imagingFile) {
-                    // If an image is provided, use the imaging analysis flow.
+                if (activeTab === 'image' && imagingFile) {
                     const imagingDataUri = await toDataURL(imagingFile);
-                    const imagingInput: AnalyzeSymptomsWithImagingInput = {
-                        ...symptomInput,
-                        imagingDataUri: imagingDataUri,
-                    };
+                    const imagingInput: AnalyzeSymptomsWithImagingInput = { ...symptomInput, imagingDataUri };
                     result = await analyzeSymptomsWithImaging(imagingInput);
+                } else if (activeTab === 'report' && reportText) {
+                    const reportInput: AnalyzeSymptomsWithReportInput = { ...symptomInput, reportText };
+                    result = await analyzeSymptomsWithReport(reportInput);
                 } else {
-                    // Otherwise, use the text-only symptom analysis flow.
+                    // Default to symptom-only analysis if no extra data provided
                     result = await analyzeSymptoms(symptomInput);
                 }
 
@@ -155,36 +161,76 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
             }
         });
     };
+    
+    const onTabChange = (value: string) => {
+      setActiveTab(value);
+      // Clear data from the other tab to avoid confusion
+      if (value === 'image') {
+        setReportText('');
+      } else {
+        setImagingFile(null);
+        setImagingPreview(null);
+      }
+    }
 
     return (
         <div>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <h3 className="text-xl font-semibold border-b pb-2 mb-4 flex-grow">AI-Generated Summary</h3>
                 <div className="flex gap-2 print:hidden -mt-4 sm:mt-0">
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileChange}
-                        accept="image/*"
-                        className="hidden"
-                    />
-                    <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isPending}>
-                        <Upload className="mr-2 h-4 w-4" />
-                        {imagingFile ? 'Change Image' : 'Upload Imaging'}
-                    </Button>
                     <Button onClick={handleGenerateAnalysis} disabled={isPending || symptoms.length === 0}>
                         <BrainCircuit className="mr-2 h-4 w-4" />
                         {isPending ? 'Analyzing...' : 'Generate AI Summary'}
                     </Button>
                 </div>
             </div>
-             <div className="mt-4 bg-muted/50 p-4 rounded-lg min-h-[150px] print:bg-white print:border print:border-gray-200">
-                {imagingPreview && (
-                    <div className="mb-4 print:hidden">
-                        <p className="text-sm font-medium mb-2">Imaging Preview:</p>
-                        <img src={imagingPreview} alt="Imaging preview" className="max-w-full rounded-md max-h-48" />
+            
+             <Tabs defaultValue="image" onValueChange={onTabChange} className="w-full print:hidden">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="image">Upload Image</TabsTrigger>
+                    <TabsTrigger value="report">Paste Report Text</TabsTrigger>
+                </TabsList>
+                <TabsContent value="image">
+                    <div className="flex flex-col items-center gap-4 mt-4">
+                         <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            accept="image/*"
+                            className="hidden"
+                        />
+                        <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isPending}>
+                            <Upload className="mr-2 h-4 w-4" />
+                            {imagingFile ? 'Change Image' : 'Upload Medical Image'}
+                        </Button>
+                        {imagingPreview && (
+                            <div className="mt-2">
+                                <p className="text-sm font-medium mb-2 text-center">Image Preview:</p>
+                                <img src={imagingPreview} alt="Imaging preview" className="max-w-full rounded-md max-h-48" />
+                            </div>
+                        )}
                     </div>
-                 )}
+                </TabsContent>
+                <TabsContent value="report">
+                     <div className="space-y-2 mt-4">
+                        <Label htmlFor="report-text">Imaging Report Text</Label>
+                        <Textarea
+                            id="report-text"
+                            placeholder="Paste the full text from your diagnostic report here..."
+                            className="min-h-[150px]"
+                            value={reportText}
+                            onChange={(e) => {
+                              setReportText(e.target.value);
+                              setImagingFile(null);
+                              setImagingPreview(null);
+                            }}
+                            disabled={isPending}
+                        />
+                    </div>
+                </TabsContent>
+            </Tabs>
+             
+             <div className="mt-4 bg-muted/50 p-4 rounded-lg min-h-[150px] print:bg-white print:border print:border-gray-200">
                 {isPending && (
                      <div className="space-y-3">
                         <Skeleton className="h-4 w-full" />
@@ -204,7 +250,7 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
                 )}
                 {!isPending && !analysis && !error && (
                     <p className="text-sm text-muted-foreground text-center pt-10">
-                        Optionally upload medical imaging, then click the button to generate an AI-powered summary of your symptom data.
+                        Provide a medical image or report text, then click "Generate AI Summary" to get an analysis of your symptom data.
                     </p>
                 )}
              </div>
