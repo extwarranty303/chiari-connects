@@ -2,8 +2,8 @@
 
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore'
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore'
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
@@ -33,10 +33,36 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
+  const auth = getAuth(firebaseApp);
+  const firestore = getFirestore(firebaseApp);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        const userRef = doc(firestore, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) {
+            // This case handles Google Sign-In where user doc might not exist yet.
+            const username = user.displayName?.split(' ')[0].toLowerCase() || `user${Math.random().toString().substring(2, 8)}`;
+            try {
+                await setDoc(userRef, {
+                    id: user.uid,
+                    email: user.email,
+                    username: username,
+                    createdAt: new Date().toISOString()
+                }, { merge: true });
+            } catch (e) {
+                console.error("Error creating user document on initial auth state change:", e);
+            }
+        }
+    }
+  });
+
+
   return {
     firebaseApp,
-    auth: getAuth(firebaseApp),
-    firestore: getFirestore(firebaseApp)
+    auth,
+    firestore
   };
 }
 
@@ -48,3 +74,5 @@ export * from './non-blocking-updates';
 export * from './non-blocking-login';
 export * from './errors';
 export * from './error-emitter';
+
+    

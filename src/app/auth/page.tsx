@@ -20,10 +20,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Icons } from '@/components/app/icons';
 import { useFirebase, useUser } from '@/firebase';
-import { initiateEmailSignIn, initiateEmailSignUp, initiateGoogleSignIn } from '@/firebase/non-blocking-login';
+import { initiateEmailSignUp, initiateGoogleSignIn } from '@/firebase/non-blocking-login';
 import { Loader2 } from 'lucide-react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 const signupSchema = z.object({
+  username: z.string().min(3, { message: 'Username must be at least 3 characters.'}),
   email: z.string().email({ message: 'Invalid email address.' }),
   password: z
     .string()
@@ -40,7 +43,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function AuthPage() {
   const { toast } = useToast();
-  const { auth } = useFirebase();
+  const { auth, firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
 
@@ -48,7 +51,7 @@ export default function AuthPage() {
 
   const signupForm = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { username: '', email: '', password: '' },
   });
 
   const loginForm = useForm<LoginFormValues>({
@@ -64,14 +67,20 @@ export default function AuthPage() {
 
   const handleSignup = async (values: SignupFormValues) => {
     setIsPending(true);
-    initiateEmailSignUp(auth, values.email, values.password);
-    // Non-blocking, user is redirected by useEffect
+    initiateEmailSignUp(auth, values.email, values.password)
   };
 
   const handleLogin = async (values: LoginFormValues) => {
     setIsPending(true);
-    initiateEmailSignIn(auth, values.email, values.password);
-     // Non-blocking, user is redirected by useEffect
+    signInWithEmailAndPassword(auth, values.email, values.password)
+    .catch(error => {
+        setIsPending(false);
+        toast({
+          variant: 'destructive',
+          title: 'Authentication Failed',
+          description: error.message.replace('Firebase: Error (auth/', '').replace(').', '').replace(/-/g, ' '),
+        });
+    });
   };
   
   const handleGoogleSignIn = () => {
@@ -80,19 +89,37 @@ export default function AuthPage() {
   };
 
   useEffect(() => {
-    const subscription = auth.onAuthStateChanged(user => {
-      setIsPending(false);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        // If it's a new user from email/password signup, the username will be in the form state
+        const signupUsername = signupForm.getValues('username');
+        if (signupUsername) {
+            try {
+                const userRef = doc(firestore, 'users', user.uid);
+                await setDoc(userRef, {
+                    id: user.uid,
+                    email: user.email,
+                    username: signupUsername,
+                    createdAt: new Date().toISOString()
+                }, { merge: true });
+                // Reset form to prevent re-triggering this on auth state changes
+                signupForm.reset(); 
+            } catch(e) {
+                console.error("Error setting user document:", e)
+            }
+        }
+        
+        setIsPending(false);
         toast({
           title: 'Authentication Successful',
           description: 'You are now logged in.',
         });
         router.push('/');
+      } else {
+        setIsPending(false);
       }
     });
-    
-    // This is a workaround to catch auth errors since the non-blocking
-    // sign-in functions don't return promises that reject.
+
     const originalConsoleError = console.error;
     console.error = (...args: any[]) => {
       if (typeof args[0] === 'string' && args[0].includes('Firebase: Error')) {
@@ -111,10 +138,10 @@ export default function AuthPage() {
     };
     
     return () => {
-      subscription();
+      unsubscribe();
       console.error = originalConsoleError;
     };
-  }, [auth, router, toast]);
+  }, [auth, router, toast, firestore, signupForm]);
 
   if (isUserLoading || user) {
     return (
@@ -213,7 +240,7 @@ export default function AuthPage() {
             <CardHeader>
               <CardTitle>Sign Up</CardTitle>
               <CardDescription className='text-foreground/80'>
-                Create an account to start refining your React code.
+                Choose a username and create an account. Your username cannot be changed later.
               </CardDescription>
             </CardHeader>
             <form onSubmit={signupForm.handleSubmit(handleSignup)}>
@@ -237,6 +264,19 @@ export default function AuthPage() {
                       Or continue with
                     </span>
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-username">Username</Label>
+                  <Input
+                    id="signup-username"
+                    placeholder="yourusername"
+                    {...signupForm.register('username')}
+                  />
+                  {signupForm.formState.errors.username && (
+                    <p className="text-xs text-destructive">
+                      {signupForm.formState.errors.username.message}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
@@ -279,3 +319,5 @@ export default function AuthPage() {
     </div>
   );
 }
+
+    

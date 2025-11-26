@@ -15,19 +15,31 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useFirebase, useUser } from '@/firebase';
+import { useFirebase, useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { LogOut, User as UserIcon, Loader2, LogIn, UserPlus } from 'lucide-react';
 import Link from 'next/link';
+import { doc } from 'firebase/firestore';
+
+interface UserProfile {
+  username: string;
+}
 
 export function UserNav() {
-  const { auth } = useFirebase();
+  const { auth, firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
+
+  const userProfileRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
   const handleLogout = () => {
     auth.signOut();
   };
   
-  if (isUserLoading) {
+  if (isUserLoading || (user && isProfileLoading)) {
     return <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />;
   }
   
@@ -50,14 +62,14 @@ export function UserNav() {
     );
   }
 
-  const userInitial = user.email ? user.email.charAt(0).toUpperCase() : '?';
+  const userInitial = userProfile?.username ? userProfile.username.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : '?');
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? 'User'} />
+            <AvatarImage src={user.photoURL ?? ''} alt={userProfile?.username ?? user.displayName ?? 'User'} />
             <AvatarFallback>{userInitial}</AvatarFallback>
           </Avatar>
         </Button>
@@ -66,7 +78,7 @@ export function UserNav() {
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">
-              {user.displayName ?? 'User'}
+              {userProfile?.username ?? user.displayName ?? 'User'}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}
@@ -89,3 +101,5 @@ export function UserNav() {
     </DropdownMenu>
   );
 }
+
+    

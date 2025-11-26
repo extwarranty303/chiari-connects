@@ -71,8 +71,13 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId);
       allow list: if false; // Disallow listing all users for security and privacy.
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow create: if isOwner(userId) 
+                      && request.resource.data.id == userId
+                      && request.resource.data.username is string
+                      && request.resource.data.username.size() >= 3;
+      allow update: if isExistingOwner(userId) 
+                      && request.resource.data.id == resource.data.id
+                      && request.resource.data.username == resource.data.username; // Username is immutable
       allow delete: if isExistingOwner(userId);
 
       // ----------------------------------------------------------------------
@@ -134,3 +139,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
