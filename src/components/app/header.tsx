@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { FileUp, FileDown, Activity, MessageSquare, Menu } from 'lucide-react';
+import { FileUp, FileDown, Activity, MessageSquare, Menu, LogOut } from 'lucide-react';
 import { UserNav } from '@/components/app/user-nav';
 import { Icons } from '@/components/app/icons';
 import {
@@ -10,6 +10,8 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { useFirebase } from '@/firebase';
+import { useRouter } from 'next/navigation';
 
 /**
  * @fileoverview AppHeader component serves as the main navigation bar for the application.
@@ -36,6 +38,15 @@ type AppHeaderProps = {
 };
 
 export function AppHeader({ onUploadClick, onDownloadClick, showActions = true }: AppHeaderProps) {
+  const { auth } = useFirebase();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    auth.signOut().then(() => {
+      router.push('/auth');
+    });
+  };
+  
   return (
     <header className="flex items-center justify-between p-4 border-b bg-card/60 backdrop-blur-xl sticky top-0 z-50 shadow-sm">
       <div className="flex items-center gap-3">
@@ -115,9 +126,13 @@ export function AppHeader({ onUploadClick, onDownloadClick, showActions = true }
                             </>
                          )}
                         <hr className="my-4" />
-                        <div className="flex justify-center">
+                        <div className="flex justify-center mb-4">
                             <UserNav />
                         </div>
+                        <Button variant="outline" onClick={handleLogout} className="justify-center">
+                            <LogOut className="mr-2 h-4 w-4" />
+                            Logout
+                        </Button>
                     </nav>
                 </SheetContent>
             </Sheet>

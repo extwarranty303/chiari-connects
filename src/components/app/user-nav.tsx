@@ -18,6 +18,7 @@ import {
 import { useFirebase, useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { LogOut, User as UserIcon, Loader2, LogIn, UserPlus, Activity, MessageSquare, Shield } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { doc } from 'firebase/firestore';
 
 
@@ -45,6 +46,7 @@ interface UserProfile {
 export function UserNav() {
   const { auth, firestore } = useFirebase();
   const { user, isUserLoading, isAdmin } = useUser();
+  const router = useRouter();
 
   // Memoized document reference to the user's profile in Firestore.
   const userProfileRef = useMemoFirebase(() => {
@@ -58,7 +60,9 @@ export function UserNav() {
    * Handles the user logout process by calling Firebase's signOut method.
    */
   const handleLogout = () => {
-    auth.signOut();
+    auth.signOut().then(() => {
+        router.push('/auth');
+    });
   };
   
   // Display a loader while authentication or profile data is being fetched.
