@@ -24,6 +24,13 @@ interface UserProfile {
   username: string;
 }
 
+/**
+ * @fileoverview UserNav component displays the user's avatar and a dropdown menu
+ * for user-related actions like viewing profile or logging out.
+ * If the user is not authenticated, it shows Login and Sign Up buttons.
+ *
+ * @returns {React.ReactElement} A user navigation component.
+ */
 export function UserNav() {
   const { auth, firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
@@ -101,5 +108,3 @@ export function UserNav() {
     </DropdownMenu>
   );
 }
-
-    

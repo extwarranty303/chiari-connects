@@ -10,6 +10,16 @@ type AppHeaderProps = {
   onDownloadClick: () => void;
 };
 
+/**
+ * @fileoverview AppHeader component serves as the main navigation bar for the application.
+ * It displays the application logo and title, action buttons for file upload and download,
+ * and the user navigation menu.
+ *
+ * @param {AppHeaderProps} props - The props for the AppHeader component.
+ * @param {() => void} props.onUploadClick - Callback function to trigger file upload.
+ * @param {() => void} props.onDownloadClick - Callback function to trigger file download.
+ * @returns {React.ReactElement} The header component for the application.
+ */
 export function AppHeader({ onUploadClick, onDownloadClick }: AppHeaderProps) {
   return (
     <header className="flex items-center justify-between p-4 border-b bg-card shadow-sm">

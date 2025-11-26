@@ -9,6 +9,16 @@ type CodeEditorProps = {
   fileName: string;
 };
 
+/**
+ * @fileoverview CodeEditor component provides a simple textarea-based editor for code.
+ * It displays the current file name in the header and allows the user to modify the code.
+ *
+ * @param {CodeEditorProps} props - The props for the CodeEditor component.
+ * @param {string} props.code - The code content to display in the editor.
+ * @param {(code: string) => void} props.onCodeChange - Callback function to handle code changes.
+ * @param {string} props.fileName - The name of the file being edited.
+ * @returns {React.ReactElement} A card-based code editor component.
+ */
 export function CodeEditor({ code, onCodeChange, fileName }: CodeEditorProps) {
   return (
     <Card className="h-full flex-grow flex flex-col shadow-lg">

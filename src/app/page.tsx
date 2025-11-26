@@ -18,7 +18,7 @@ const MyComponent = () => {
   // A simple component to demonstrate the editor
   return (
     <div style={{padding: '20px', border: '1px solid #ccc', borderRadius: '8px'}}>
-      <h2>Welcome to React Refinery!</h2>
+      <h2>Welcome to Chiari Connects!</h2>
       <p>You can upload your React code or edit this example.</p>
       <p>Current count: {count}</p>
       <button onClick={() => setCount(count + 1)}>
@@ -31,6 +31,19 @@ const MyComponent = () => {
 export default MyComponent;
 `;
 
+/**
+ * @fileoverview This is the main page of the React Refinery application.
+ * It serves as the primary workspace for users to upload, edit, analyze, and download React component code.
+ *
+ * Key functionalities:
+ * - **Authentication Check**: Redirects unauthenticated users to the login page.
+ * - **File Handling**: Allows users to upload local React files (.jsx, .js, .tsx, .ts) into the editor and download the current code.
+ * - **Code Editor**: A central `CodeEditor` component where users can view and modify their code.
+ * - **AI Panel**: An `AiPanel` that provides AI-powered features like code refactoring, analysis, and generation.
+ * - **State Management**: Manages the state of the code content and the current file name.
+ * - **User Feedback**: Uses toasts to provide feedback for actions like file uploads and downloads.
+ * - **Medical Disclaimer**: Displays a prominent disclaimer about the informational nature of the AI analysis.
+ */
 export default function ReactRefineryPage() {
   const [code, setCode] = useState<string>(defaultCode);
   const [fileName, setFileName] = useState<string>('component.jsx');
@@ -45,7 +58,12 @@ export default function ReactRefineryPage() {
     }
   }, [user, isUserLoading, router]);
 
-
+  /**
+   * Handles the file upload event.
+   * Reads the content of the selected file, validates its extension,
+   * and loads it into the code editor.
+   * @param {React.ChangeEvent<HTMLInputElement>} event - The file input change event.
+   */
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -75,10 +93,17 @@ export default function ReactRefineryPage() {
     }
   };
 
+  /**
+   * Programmatically triggers the hidden file input element.
+   */
   const triggerFileUpload = () => {
     fileInputRef.current?.click();
   };
   
+  /**
+   * Handles the download of the current code in the editor
+   * as a file with the current file name.
+   */
   const handleCodeDownload = () => {
     const blob = new Blob([code], { type: 'text/javascript;charset=utf-t' });
     const url = URL.createObjectURL(blob);
@@ -95,6 +120,10 @@ export default function ReactRefineryPage() {
     })
   };
 
+  /**
+   * Appends new code (from AI suggestions or generation) to the
+   * end of the current code in the editor, separated by a comment.
+   */
   const handleAppendToEditor = useCallback((newCode: string, type: 'component' | 'suggestion') => {
     setCode(currentCode => `${currentCode}\n\n/* --- ${type === 'component' ? 'Generated Component' : 'AI Suggestion'} --- */\n${newCode}`);
     toast({

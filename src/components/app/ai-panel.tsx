@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useTransition } from 'react';
+import React, { useState, useTransition } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -155,6 +155,18 @@ const GenerateTab = ({ onAppendToEditor }: { onAppendToEditor: (code: string, ty
     );
 };
 
+/**
+ * @fileoverview AiPanel component displays a tabbed interface for AI-powered code assistance.
+ * It includes three main features:
+ * 1. Refactor Code: Suggests improvements for the provided code.
+ * 2. Codebase Assistant: Provides contextual help based on user requirements.
+ * 3. Generate Component: Creates new React components from a textual description.
+ *
+ * @param {AiPanelProps} props - The props for the AiPanel component.
+ * @param {string} props.code - The current code from the editor.
+ * @param {(code: string, type: 'component' | 'suggestion') => void} props.onAppendToEditor - Callback to append generated code to the editor.
+ * @returns {React.ReactElement} A card component with tabbed AI features.
+ */
 export function AiPanel({ code, onAppendToEditor }: AiPanelProps) {
   return (
     <Card className="h-full flex flex-col">

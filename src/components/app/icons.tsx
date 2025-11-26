@@ -1,6 +1,16 @@
 import type { SVGProps } from 'react';
 
+/**
+ * @fileoverview This file contains a collection of SVG icons used throughout the application.
+ * The `Icons` object exports each icon as a functional React component.
+ */
+
 export const Icons = {
+  /**
+   * The main logo for the Chiari Connects application.
+   * It features a stylized representation of a brain or neural network,
+   * symbolizing connectivity and analysis.
+   */
   logo: (props: SVGProps<SVGSVGElement>) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -57,6 +67,9 @@ export const Icons = {
 
     </svg>
   ),
+  /**
+   * The Google 'G' logo, used for the Google Sign-In button.
+   */
   google: (props: SVGProps<SVGSVGElement>) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
