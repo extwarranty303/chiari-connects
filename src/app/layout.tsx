@@ -5,8 +5,12 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Footer } from '@/components/app/footer';
 
 export const metadata: Metadata = {
-  title: 'Chiari Connects',
-  description: 'A community platform for Chiari malformation support, symptom tracking, and discussion.',
+  title: {
+    default: 'Chiari Connects | #1 Chiari Malformation Forum & Symptom Tracker',
+    template: '%s | Chiari Connects',
+  },
+  description: 'Join Chiari Connects, the leading online community and forum for individuals with Chiari malformation. Track your symptoms, share experiences, discuss surgery and recovery, and find support from others who understand. The #1 resource for Chiari symptom tracking and discussion.',
+  keywords: ['Chiari malformation', 'Chiari forum', 'symptom tracker', 'decompression surgery', 'syringomyelia', 'headaches', 'chronic illness support', 'patient community'],
 };
 
 /**
@@ -37,7 +41,6 @@ export default function RootLayout({
       <body className="font-body antialiased flex flex-col min-h-screen">
         <FirebaseClientProvider>
           <div className="flex-1">{children}</div>
-          <Footer />
         </FirebaseClientProvider>
         <Toaster />
       </body>
