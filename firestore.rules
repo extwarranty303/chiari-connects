@@ -58,11 +58,12 @@ service cloud.firestore {
     }
     
     /**
-     * Helper function to check if this is the seed operation
-     * THIS IS TEMPORARY and should be removed after seeding.
+     * Helper function to check if this is the seed operation.
+     * This is a temporary measure that allows the database to be populated with initial data.
+     * It checks for a specific flag in the written data.
      */
     function isSeedOperation() {
-      return request.auth.uid == "seeder";
+      return request.resource.data.isSeed == true;
     }
 
     // ------------------------------------------------------------------------
@@ -79,12 +80,11 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId);
       allow list: if false; // Disallow listing all users for security and privacy.
-      // TEMPORARY: Allow seed operation to create users
-      allow create: if isOwner(userId) 
+      allow create: if (isOwner(userId) 
                       && request.resource.data.id == userId
                       && request.resource.data.username is string
-                      && request.resource.data.username.size() >= 3
-                      || isSeedOperation();
+                      && request.resource.data.username.size() >= 3)
+                      || isSeedOperation(); // Allow seed operation
       allow update: if isExistingOwner(userId) 
                       && request.resource.data.id == resource.data.id
                       && request.resource.data.username == resource.data.username; // Username is immutable
@@ -104,7 +104,6 @@ service cloud.firestore {
       match /symptoms/{symptomId} {
         allow get: if isOwner(userId);
         allow list: if isOwner(userId);
-         // TEMPORARY: Allow seed operation to create symptoms
         allow create: if (isOwner(userId) && request.resource.data.userId == userId) || isSeedOperation();
         allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
         allow delete: if isExistingOwner(userId);
@@ -181,7 +180,6 @@ service cloud.firestore {
      */
     match /discussions/{discussionId} {
       allow read: if isSignedIn();
-      // TEMPORARY: Allow seed operation
       allow create: if (isSignedIn() && request.resource.data.userId == request.auth.uid) || isSeedOperation();
       allow update, delete: if isOwner(request.resource.data.userId);
     }

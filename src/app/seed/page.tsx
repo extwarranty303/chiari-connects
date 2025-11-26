@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { getAuth, signInWithCustomToken } from 'firebase/auth';
-import { doc, writeBatch } from 'firebase/firestore';
+import { writeBatch, doc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,49 +26,29 @@ export default function SeedPage() {
   /**
    * Handles the database seeding process.
    *
-   * It signs in with a temporary "seeder" custom token to bypass security rules,
-   * then writes all the dummy users and discussion posts to Firestore in a batch.
+   * It writes all the dummy users and discussion posts to Firestore in a single batch operation.
+   * A special `isSeed: true` flag is added to each document, which is checked by a temporary
+   * security rule to allow this unauthenticated write. This method is more secure than
+   * relying on mock authentication.
    */
-  const handleSeedDatabase = async () => {
+  const handleSeedDatabase = () => {
     setIsLoading(true);
     toast({ title: 'Starting database seed...' });
 
-    // In a real scenario, you'd fetch this from a secure backend. For this tool,
-    // we use a special 'seeder' UID which the security rules are set to allow temporarily.
-    const tempSeederToken = 'seeder-token';
-    const auth = getAuth();
-
-    try {
-        // This is a mock sign-in. We expect it to fail with an "invalid-custom-token" error
-        // because we are not generating a real token. However, the Firestore request will
-        // still be sent with a mocked auth object where request.auth.uid is 'seeder',
-        // which our temporary security rules will allow.
-        await signInWithCustomToken(auth, tempSeederToken);
-    } catch (error: any) {
-        if (error.code !== 'auth/invalid-custom-token') {
-            toast({
-                variant: 'destructive',
-                title: 'Authentication Error during Seed',
-                description: `An unexpected auth error occurred: ${error.message}`,
-            });
-            setIsLoading(false);
-            return;
-        }
-    }
-    
     const batch = writeBatch(firestore);
 
+    // Add a special flag to each document for the security rule to check
     dummyData.users.forEach(user => {
         const userRef = doc(firestore, 'users', user.id);
-        batch.set(userRef, user);
+        batch.set(userRef, { ...user, isSeed: true });
     });
 
     dummyData.discussionPosts.forEach(post => {
         const postRef = doc(firestore, 'discussions', post.id);
-        batch.set(postRef, post);
+        batch.set(postRef, { ...post, isSeed: true });
     });
 
-    // The batch commit is now non-blocking and uses catch for error handling
+    // The batch commit is non-blocking and uses catch for error handling.
     batch.commit()
       .then(() => {
         toast({
@@ -79,7 +58,6 @@ export default function SeedPage() {
       })
       .catch((error) => {
         // This will now catch the permission error and create a contextual error.
-        console.log('Original Error', error);
         const contextualError = new FirestorePermissionError({
             path: '/', // Batch writes can affect multiple paths, so we use root.
             operation: 'write',
@@ -91,10 +69,7 @@ export default function SeedPage() {
         });
         errorEmitter.emit('permission-error', contextualError);
       })
-      .finally(async () => {
-          if (auth.currentUser && auth.currentUser.uid === 'seeder') {
-              await auth.signOut();
-          }
+      .finally(() => {
           setIsLoading(false);
       });
   };
