@@ -202,7 +202,7 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create: if (isSignedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.category is string && request.resource.data.category.size() > 0);
       // Owners can update/delete their own posts. Admins/Moderators can update/delete any post.
-      allow update, delete: if isOwner(request.resource.data.userId) || isAdmin() || isModerator();
+      allow update, delete: if isOwner(resource.data.userId) || isAdmin() || isModerator();
       allow write: if isSeedOperation();
 
       // --------------------------------------------------------------------
@@ -219,5 +219,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
