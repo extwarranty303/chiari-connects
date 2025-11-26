@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { format, parseISO } from 'date-fns';
-import { Loader2, Printer, BrainCircuit, AlertTriangle } from 'lucide-react';
+import { Loader2, Printer, BrainCircuit, AlertTriangle, Upload } from 'lucide-react';
 
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { type SymptomData } from '@/app/symptom-tracker/page';
@@ -19,8 +19,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { analyzeSymptoms, AnalyzeSymptomsInput } from '@/ai/flows/ai-analyze-symptoms';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { analyzeSymptoms, AnalyzeSymptomsInput } from '@/ai/flows/ai-analyze-symptoms';
+import { analyzeSymptomsWithImaging, AnalyzeSymptomsWithImagingInput } from '@/ai/flows/ai-analyze-symptoms-with-imaging';
 
 
 /**
@@ -29,7 +31,7 @@ import { Skeleton } from '@/components/ui/skeleton';
  * It fetches all symptom data for the current user, organizes it into a clean table format,
  * and provides a button to print the report or save it as a PDF. The page is designed to be
  * printer-friendly, hiding non-essential UI elements like buttons during printing.
- * It also includes an AI-powered analysis of the symptom data.
+ * It also includes an AI-powered analysis of the symptom data, with an option to upload medical imaging.
  */
 
 /**
@@ -69,14 +71,47 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
     const [isPending, startTransition] = useTransition();
     const [analysis, setAnalysis] = useState('');
     const [error, setError] = useState('');
+    const [imagingFile, setImagingFile] = useState<File | null>(null);
+    const [imagingPreview, setImagingPreview] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const { toast } = useToast();
+
+    /**
+     * Converts a File object to a Base64 encoded data URI.
+     * @param {File} file The file to convert.
+     * @returns {Promise<string>} A promise that resolves with the data URI.
+     */
+    const toDataURL = (file: File): Promise<string> =>
+        new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+    });
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            if (file.type.startsWith('image/')) {
+                setImagingFile(file);
+                setImagingPreview(URL.createObjectURL(file));
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Invalid File Type',
+                    description: 'Please upload a valid image file.',
+                });
+            }
+        }
+    };
 
     const handleGenerateAnalysis = () => {
         startTransition(async () => {
             setError('');
             setAnalysis('');
             try {
-                // We only need specific fields for the analysis
-                const analysisInput: AnalyzeSymptomsInput = {
+                // Prepare the base symptom input
+                const symptomInput: AnalyzeSymptomsInput = {
                     symptoms: symptoms.map(s => ({
                         symptom: s.symptom,
                         severity: s.severity,
@@ -84,7 +119,21 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
                         date: format(parseISO(s.date), 'yyyy-MM-dd')
                     }))
                 };
-                const result = await analyzeSymptoms(analysisInput);
+
+                let result;
+                if (imagingFile) {
+                    // If there's an image, use the imaging analysis flow
+                    const imagingDataUri = await toDataURL(imagingFile);
+                    const imagingInput: AnalyzeSymptomsWithImagingInput = {
+                        ...symptomInput,
+                        imagingDataUri: imagingDataUri,
+                    };
+                    result = await analyzeSymptomsWithImaging(imagingInput);
+                } else {
+                    // Otherwise, use the text-only analysis flow
+                    result = await analyzeSymptoms(symptomInput);
+                }
+
                 setAnalysis(result.analysis);
             } catch (e) {
                 console.error("AI analysis failed:", e);
@@ -97,12 +146,31 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
         <div>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <h3 className="text-xl font-semibold border-b pb-2 mb-4 flex-grow">AI-Generated Summary</h3>
-                <Button onClick={handleGenerateAnalysis} disabled={isPending || symptoms.length === 0} className="print:hidden -mt-4 sm:mt-0">
-                    <BrainCircuit className="mr-2 h-4 w-4" />
-                    {isPending ? 'Analyzing...' : 'Generate AI Summary'}
-                </Button>
+                <div className="flex gap-2 print:hidden -mt-4 sm:mt-0">
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        accept="image/*"
+                        className="hidden"
+                    />
+                    <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isPending}>
+                        <Upload className="mr-2 h-4 w-4" />
+                        {imagingFile ? 'Change Image' : 'Upload Imaging'}
+                    </Button>
+                    <Button onClick={handleGenerateAnalysis} disabled={isPending || symptoms.length === 0}>
+                        <BrainCircuit className="mr-2 h-4 w-4" />
+                        {isPending ? 'Analyzing...' : 'Generate AI Summary'}
+                    </Button>
+                </div>
             </div>
              <div className="mt-4 bg-muted/50 p-4 rounded-lg min-h-[150px] print:bg-white print:border print:border-gray-200">
+                {imagingPreview && (
+                    <div className="mb-4 print:hidden">
+                        <p className="text-sm font-medium mb-2">Imaging Preview:</p>
+                        <img src={imagingPreview} alt="Imaging preview" className="max-w-full rounded-md max-h-48" />
+                    </div>
+                 )}
                 {isPending && (
                      <div className="space-y-3">
                         <Skeleton className="h-4 w-full" />
@@ -122,7 +190,7 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
                 )}
                 {!isPending && !analysis && !error && (
                     <p className="text-sm text-muted-foreground text-center pt-10">
-                        Click the button to generate an AI-powered summary of your symptom data.
+                        Optionally upload medical imaging, then click the button to generate an AI-powered summary of your symptom data.
                     </p>
                 )}
              </div>
