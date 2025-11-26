@@ -61,7 +61,7 @@ export function UserNav() {
    */
   const handleLogout = () => {
     auth.signOut().then(() => {
-        router.push('/auth');
+        router.push('/');
     });
   };
   

@@ -46,7 +46,7 @@ export function AppHeader({ onUploadClick, onDownloadClick, showActions = true }
 
   const handleLogout = () => {
     auth.signOut().then(() => {
-      router.push('/auth');
+      router.push('/');
     });
   };
   

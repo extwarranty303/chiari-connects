@@ -91,8 +91,9 @@ export default function ProfilePage() {
   const { data: symptoms, isLoading: isLoadingSymptoms } = useCollection<SymptomData>(symptomsQuery);
 
   const handleLogout = () => {
-    auth.signOut();
-    router.push('/auth');
+    auth.signOut().then(() => {
+      router.push('/');
+    });
   };
 
   const isLoading = isUserLoading || isProfileLoading || isLoadingSymptoms;
