@@ -4,18 +4,57 @@ export const Icons = {
   logo: (props: SVGProps<SVGSVGElement>) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      viewBox="0 0 100 70"
       {...props}
     >
-      <title>React Refinery Logo</title>
-      <path d="M12 2l-2.4 4.8L4 8l4.8 2.4L12 14l2.4-4.8L20 8l-4.8-2.4L12 2z" />
-      <path d="M2 14h6l2 4 2-4h6" />
-      <path d="M12 22V10" />
+      <title>Chiari Connects Logo</title>
+      {/* Circle with nodes */}
+      <g strokeWidth="0.5" stroke="#4a90e2">
+        {/* Top arc */}
+        <circle cx="50" cy="35" r="14" fill="none" stroke="none" />
+        <circle cx="50" cy="21" r="1.5" fill="#4a90e2" stroke="none" />
+        <circle cx="59" cy="25" r="1.5" fill="#4a90e2" stroke="none" />
+        <circle cx="41" cy="25" r="1.5" fill="white" stroke="#4a90e2" />
+        <circle cx="65" cy="32" r="1.5" fill="#4a90e2" stroke="none" />
+        <circle cx="35" cy="32" r="1.5" fill="white" stroke="#4a90e2" />
+        <circle cx="66" cy="40" r="1.5" fill="#50e3c2" stroke="none" />
+        <circle cx="34" cy="40" r="1.5" fill="#50e3c2" stroke="none" />
+        <circle cx="62" cy="48" r="1.5" fill="#b8e986" stroke="none" />
+        <circle cx="38" cy="48" r="1.5" fill="white" stroke="#b8e986" />
+        <circle cx="55" cy="53" r="1.5" fill="#b8e986" stroke="none" />
+        <circle cx="45" cy="53" r="1.5" fill="#b8e986" stroke="none" />
+
+        <path d="M50 21 a14,14 0 0,1 9,4" fill="none" />
+        <path d="M59 25 a14,14 0 0,1 6,7" fill="none" />
+        <path d="M41 25 a14,14 0 0,0 -6,7" fill="none" />
+        <path d="M65 32 a14,14 0 0,1 1,8" fill="none" stroke="#50e3c2" />
+        <path d="M35 32 a14,14 0 0,0 -1,8" fill="none" stroke="#50e3c2" />
+        <path d="M66 40 a14,14 0 0,1 -4,8" fill="none" stroke="#b8e986" />
+        <path d="M34 40 a14,14 0 0,0 4,8" fill="none" stroke="#b8e986" />
+        <path d="M62 48 a14,14 0 0,1 -7,5" fill="none" stroke="#b8e986" />
+        <path d="M38 48 a14,14 0 0,0 7,5" fill="none" stroke="#b8e986" />
+      </g>
+      
+      {/* Inner "S" shape */}
+      <path 
+        d="M 50 28 C 55 33, 45 38, 50 43 C 55 48, 45 53, 50 58"
+        stroke="#0b3d91"
+        strokeWidth="0.8"
+        fill="none"
+      />
+      <path 
+        d="M 50 28 C 45 33, 55 38, 50 43 C 45 48, 55 53, 50 58"
+        stroke="#0b3d91"
+        strokeWidth="0.8"
+        fill="none"
+        transform="translate(1, -0.5)"
+      />
+      
+       {/* Powered by text */}
+      <text x="50" y="65" fontFamily="sans-serif" fontSize="4" fill="#a0aec0" textAnchor="middle">
+        Powered by chiarivoices.org
+      </text>
+
     </svg>
   ),
   google: (props: SVGProps<SVGSVGElement>) => (
