@@ -73,6 +73,8 @@ export function useCollection<T = any>(
     setIsLoading(true);
     setError(null);
 
+    const isCollectionGroupQuery = !(memoizedTargetRefOrQuery as any).path;
+
     // Directly use memoizedTargetRefOrQuery as it's assumed to be the final query
     const unsubscribe = onSnapshot(
       memoizedTargetRefOrQuery,
@@ -87,10 +89,9 @@ export function useCollection<T = any>(
       },
       (error: FirestoreError) => {
         // This logic extracts the path from either a ref or a query
-        const path: string =
-          memoizedTargetRefOrQuery.type === 'collection'
-            ? (memoizedTargetRefOrQuery as CollectionReference).path
-            : (memoizedTargetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString()
+        const path: string = isCollectionGroupQuery 
+            ? `Collection Group: ${(memoizedTargetRefOrQuery as any)._query.collectionId}`
+            : (memoizedTargetRefOrQuery as any).path;
 
         const contextualError = new FirestorePermissionError({
           operation: 'list',
@@ -108,6 +109,7 @@ export function useCollection<T = any>(
 
     return () => unsubscribe();
   }, [memoizedTargetRefOrQuery]); // Re-run if the target query/reference changes.
+  
   if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
     // A collection group query is a special case, it does not have a path property.
     // The query is constructed with collectionGroup(firestore, 'collectionName')
@@ -117,5 +119,6 @@ export function useCollection<T = any>(
       throw new Error(memoizedTargetRefOrQuery + ' was not properly memoized using useMemoFirebase');
     }
   }
+
   return { data, isLoading, error };
 }

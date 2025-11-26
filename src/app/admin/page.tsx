@@ -1,6 +1,6 @@
 'use client';
 
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, collectionGroup } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { Loader2, User, MessageSquare, Activity, Download } from 'lucide-react';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
@@ -72,7 +72,7 @@ export default function AdminDashboardPage() {
   // Memoized query to fetch all symptom documents (only for counting).
   const allSymptomsQuery = useMemoFirebase(() => {
     // This uses a collection group query to get all 'symptoms' from all users.
-    return query(collection(firestore, 'symptoms'));
+    return collectionGroup(firestore, 'symptoms');
   }, [firestore]);
 
 
