@@ -219,7 +219,7 @@ export default function AuthPage() {
           <TabsTrigger value="signup">Sign Up</TabsTrigger>
         </TabsList>
         <TabsContent value="login">
-          <Card className="bg-card/60 backdrop-blur-xl border-white/20 shadow-lg">
+          <Card className="glassmorphism">
             <CardHeader>
               <CardTitle>Login</CardTitle>
               <CardDescription className='text-foreground/80'>
@@ -243,7 +243,7 @@ export default function AuthPage() {
                     <span className="w-full border-t" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-transparent px-2 text-muted-foreground">
+                    <span className="bg-card/60 px-2 text-muted-foreground backdrop-blur-xl">
                       Or continue with
                     </span>
                   </div>
@@ -290,7 +290,7 @@ export default function AuthPage() {
           </Card>
         </TabsContent>
         <TabsContent value="signup">
-          <Card className="bg-card/60 backdrop-blur-xl border-white/20 shadow-lg">
+          <Card className="glassmorphism">
             <CardHeader>
               <CardTitle>Sign Up</CardTitle>
               <CardDescription className='text-foreground/80'>
@@ -314,7 +314,7 @@ export default function AuthPage() {
                     <span className="w-full border-t" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-transparent px-2 text-muted-foreground">
+                    <span className="bg-card/60 px-2 text-muted-foreground backdrop-blur-xl">
                       Or continue with
                     </span>
                   </div>
@@ -382,5 +382,3 @@ export default function AuthPage() {
     </div>
   );
 }
-
-    

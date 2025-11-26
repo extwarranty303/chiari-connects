@@ -22,7 +22,7 @@ type CodeEditorProps = {
  */
 export function CodeEditor({ code, onCodeChange, fileName }: CodeEditorProps) {
   return (
-    <Card className="h-full flex-grow flex flex-col shadow-lg">
+    <Card className="h-full flex-grow flex flex-col glassmorphism">
       <CardHeader className="p-4 border-b">
         <p className="text-sm font-medium font-mono">{fileName}</p>
       </CardHeader>
@@ -31,12 +31,10 @@ export function CodeEditor({ code, onCodeChange, fileName }: CodeEditorProps) {
           value={code}
           onChange={(e) => onCodeChange(e.target.value)}
           placeholder="Upload or write your content here..."
-          className="w-full h-full min-h-[200px] resize-none border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 font-code text-base p-4 bg-card"
+          className="w-full h-full min-h-[200px] resize-none border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 font-code text-base p-4 bg-transparent"
           spellCheck="false"
         />
       </CardContent>
     </Card>
   );
 }
-
-    

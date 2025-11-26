@@ -6,7 +6,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { collection, doc, runTransaction, increment } from 'firebase/firestore';
-import { Loader2, Brain, Stethoscope, HeartHandshake, Briefcase, Pill, Users, Newspaper } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 import { useFirebase, useUser, addDocumentNonBlocking } from '@/firebase';
 import { AppHeader } from '@/components/app/header';
@@ -49,6 +49,7 @@ const postSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters long.'),
   content: z.string().min(20, 'Content must be at least 20 characters long.'),
   category: z.string().min(1, 'Please select a category.'),
+  tags: z.string().optional(),
 });
 
 type PostFormValues = z.infer<typeof postSchema>;
@@ -73,7 +74,7 @@ export default function CreatePostPage() {
     formState: { errors },
   } = useForm<PostFormValues>({
     resolver: zodResolver(postSchema),
-    defaultValues: { title: '', content: '', category: '' },
+    defaultValues: { title: '', content: '', category: '', tags: '' },
   });
 
   // Redirect unauthenticated users.
@@ -96,8 +97,13 @@ export default function CreatePostPage() {
     }
     setIsSubmitting(true);
 
+    const tagsArray = values.tags ? values.tags.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
+
     const newPostData = {
-      ...values,
+      title: values.title,
+      content: values.content,
+      category: values.category,
+      tags: tagsArray,
       userId: user.uid,
       username: userProfile.username,
       createdAt: new Date().toISOString(),
@@ -148,7 +154,7 @@ export default function CreatePostPage() {
       <AppHeader onUploadClick={() => {}} onDownloadClick={() => {}} showActions={false} />
       <main className="flex-1 overflow-y-auto p-4 md:p-8">
         <div className="max-w-3xl mx-auto">
-          <Card>
+          <Card className="glassmorphism">
             <CardHeader>
               <CardTitle>Create a New Discussion Post</CardTitle>
               <CardDescription>Share your experience, ask a question, or start a conversation with the community.</CardDescription>
@@ -176,27 +182,39 @@ export default function CreatePostPage() {
                   {errors.content && <p className="text-xs text-destructive">{errors.content.message}</p>}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                   <Controller
-                      name="category"
-                      control={control}
-                      render={({ field }) => (
-                          <Select onValueChange={field.onChange} value={field.value}>
-                              <SelectTrigger id="category">
-                                  <SelectValue placeholder="Select a category" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                  {categories.map(cat => (
-                                      <SelectItem key={cat.slug} value={cat.slug}>
-                                          {cat.name}
-                                      </SelectItem>
-                                  ))}
-                              </SelectContent>
-                          </Select>
-                      )}
-                  />
-                  {errors.category && <p className="text-xs text-destructive">{errors.category.message}</p>}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                    <Label htmlFor="category">Category</Label>
+                    <Controller
+                        name="category"
+                        control={control}
+                        render={({ field }) => (
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <SelectTrigger id="category">
+                                    <SelectValue placeholder="Select a category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {categories.map(cat => (
+                                        <SelectItem key={cat.slug} value={cat.slug}>
+                                            {cat.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                    />
+                    {errors.category && <p className="text-xs text-destructive">{errors.category.message}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="tags">Tags (optional)</Label>
+                        <Input
+                            id="tags"
+                            placeholder="e.g., headache, surgery, recovery"
+                            {...register('tags')}
+                        />
+                        <p className="text-xs text-muted-foreground">Separate tags with a comma.</p>
+                    </div>
                 </div>
                 
                 <div className="flex justify-end gap-2">

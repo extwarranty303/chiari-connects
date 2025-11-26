@@ -5,6 +5,8 @@ import { AppHeader } from '@/components/app/header';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Brain, Stethoscope, HeartHandshake, Briefcase, Pill, Users, Newspaper, MessageSquare, PlusCircle } from 'lucide-react';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 /**
  * @fileoverview This page serves as the main entry point for the community discussions, displaying a list of categories.
@@ -32,12 +34,36 @@ const categories = [
  * @returns {React.ReactElement} The rendered category browser page.
  */
 export default function DiscussionsPage() {
+    const { firestore } = useFirebase();
+
+    // Query to get all posts, which we'll use for counting.
+    const allPostsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'discussions');
+    }, [firestore]);
+
+    const { data: posts } = useCollection<{category: string}>(allPostsQuery);
+
+    // Calculate post counts for each category
+    const postCounts = useMemoFirebase(() => {
+        const counts: { [key: string]: number } = {};
+        categories.forEach(cat => counts[cat.slug] = 0);
+        if (posts) {
+            for (const post of posts) {
+                if (post.category in counts) {
+                    counts[post.category]++;
+                }
+            }
+        }
+        return counts;
+    }, [posts]);
+
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-body">
       <AppHeader onUploadClick={() => {}} onDownloadClick={() => {}} showActions={false} />
       <main className="flex-1 overflow-y-auto p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
-          <div className="mb-8 flex justify-between items-center">
+          <div className="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
                 <MessageSquare className="w-8 h-8 text-primary" />
@@ -56,19 +82,23 @@ export default function DiscussionsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {categories.map((category) => (
               <Link href={`/discussions/${category.slug}`} key={category.slug}>
-                <Card className="hover:border-primary/50 hover:bg-muted/30 transition-all duration-200 group flex flex-col h-full">
-                  <CardHeader className="flex-row gap-4 items-center">
-                    <div className="bg-primary/10 p-3 rounded-lg text-primary">
-                        {category.icon}
-                    </div>
-                    <div>
-                        <CardTitle className="text-lg">{category.name}</CardTitle>
-                        <CardDescription className="text-foreground/80 mt-1">{category.description}</CardDescription>
+                <Card className="glassmorphism hover:border-primary/50 transition-all duration-200 group flex flex-col h-full">
+                  <CardHeader className="flex-grow">
+                    <div className="flex flex-row gap-4 items-start">
+                        <div className="bg-primary/10 p-3 rounded-lg text-primary mt-1">
+                            {category.icon}
+                        </div>
+                        <div className="flex-1">
+                            <CardTitle className="text-lg">{category.name}</CardTitle>
+                            <CardDescription className="text-foreground/80 mt-1">{category.description}</CardDescription>
+                        </div>
                     </div>
                   </CardHeader>
-                  <div className="flex-grow" />
-                  <div className="p-6 pt-0 text-right text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <ArrowRight className="inline-block" />
+                  <div className="p-6 pt-2 flex justify-between items-center text-sm text-muted-foreground">
+                    <span>{postCounts?.[category.slug] ?? 0} Posts</span>
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-primary">
+                        <ArrowRight className="inline-block" />
+                    </div>
                   </div>
                 </Card>
               </Link>

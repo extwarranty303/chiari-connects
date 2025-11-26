@@ -92,7 +92,7 @@ export default function CategoryPage({ params }: { params: { category: string } 
       <main className="flex-1 overflow-y-auto p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
-             <div className="flex justify-between items-center mb-4">
+             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
                 <Button variant="ghost" onClick={() => router.push('/discussions')}>
                     &larr; Back to Categories
                 </Button>
@@ -123,7 +123,7 @@ export default function CategoryPage({ params }: { params: { category: string } 
           {!isLoading && !error && posts && posts.length > 0 ? (
             <div className="space-y-6">
               {posts.map((post) => (
-                <Card key={post.id} className="hover:border-primary/50 transition-colors duration-200">
+                <Card key={post.id} className="glassmorphism hover:border-primary/50 transition-colors duration-200">
                    <Link href={`/discussions/post/${post.id}`} className="block">
                       <CardHeader>
                         <CardTitle>{post.title}</CardTitle>

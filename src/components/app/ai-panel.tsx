@@ -38,7 +38,7 @@ type AiPanelProps = {
  * A reusable wrapper for the content of each tab in the AI Panel.
  */
 const AIPanelTabContent = ({ title, description, children }: { title: string; description: string; children: React.ReactNode }) => (
-    <Card className="h-full flex flex-col border-0 shadow-none">
+    <Card className="h-full flex flex-col border-0 shadow-none bg-transparent">
         <CardHeader>
             <CardTitle className="flex items-center gap-2">{title}</CardTitle>
             <CardDescription>{description}</CardDescription>
@@ -104,7 +104,7 @@ const RefactorTab = ({ code, onAppendToEditor }: AiPanelProps) => {
                 <Wand2 className="mr-2 h-4 w-4" />
                 {isPending ? 'Analyzing...' : 'Suggest Refactoring'}
             </Button>
-            <ScrollArea className="flex-1 rounded-md border p-4 bg-background">
+            <ScrollArea className="flex-1 rounded-md border p-4 bg-background/50">
                 {isPending && <LoadingSkeleton />}
                 {suggestions && <ResultDisplay result={suggestions} onAppend={onAppendToEditor} appendType="suggestion" />}
                 {!isPending && !suggestions && <p className="text-sm text-muted-foreground">Click the button to get refactoring suggestions.</p>}
@@ -136,13 +136,13 @@ const AssistTab = ({ code, onAppendToEditor }: AiPanelProps) => {
                 placeholder="Describe your project requirements or what you want to achieve..."
                 value={requirements}
                 onChange={(e) => setRequirements(e.target.value)}
-                className="h-32"
+                className="h-32 bg-transparent"
             />
             <Button onClick={handleAssistance} disabled={isPending || !requirements}>
                 <BrainCircuit className="mr-2 h-4 w-4" />
                 {isPending ? 'Analyzing...' : 'Get Assistance'}
             </Button>
-            <ScrollArea className="flex-1 rounded-md border p-4 bg-background">
+            <ScrollArea className="flex-1 rounded-md border p-4 bg-background/50">
                 {isPending && <LoadingSkeleton />}
                 {assistance && <ResultDisplay result={assistance} onAppend={onAppendToEditor} appendType="suggestion" />}
                 {!isPending && !assistance && <p className="text-sm text-muted-foreground">Describe your needs and get AI assistance.</p>}
@@ -174,13 +174,13 @@ const GenerateTab = ({ onAppendToEditor }: { onAppendToEditor: (code: string, ty
                 placeholder="e.g., 'A button component with a primary and secondary variant that shows a loading spinner.'"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="h-32"
+                className="h-32 bg-transparent"
             />
             <Button onClick={handleGenerate} disabled={isPending || !description}>
                 <Cuboid className="mr-2 h-4 w-4" />
                 {isPending ? 'Generating...' : 'Generate Component'}
             </Button>
-            <ScrollArea className="flex-1 rounded-md border p-4 bg-background">
+            <ScrollArea className="flex-1 rounded-md border p-4 bg-background/50">
                 {isPending && <LoadingSkeleton />}
                 {generatedCode && <ResultDisplay result={generatedCode} onAppend={onAppendToEditor} appendType="component" />}
                 {!isPending && !generatedCode && <p className="text-sm text-muted-foreground">Describe a component to generate it with AI.</p>}
@@ -194,7 +194,7 @@ const GenerateTab = ({ onAppendToEditor }: { onAppendToEditor: (code: string, ty
  */
 export function AiPanel({ code, onAppendToEditor }: AiPanelProps) {
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="h-full flex flex-col glassmorphism">
       <Tabs defaultValue="refactor" className="h-full flex flex-col">
         <TabsList className="grid w-full grid-cols-3 mx-auto mt-2 max-w-sm">
           <TabsTrigger value="refactor"><Wand2 className="mr-1 h-4 w-4" />Refactor</TabsTrigger>
@@ -214,5 +214,3 @@ export function AiPanel({ code, onAppendToEditor }: AiPanelProps) {
     </Card>
   );
 }
-
-    

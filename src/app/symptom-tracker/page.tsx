@@ -234,10 +234,13 @@ export default function SymptomTrackerPage() {
       <AppHeader onUploadClick={() => {}} onDownloadClick={() => {}} showActions={false} />
       <main className="flex-1 overflow-y-auto p-4 md:p-8">
         <div className="max-w-7xl mx-auto grid gap-8">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              Symptom Tracker
-            </h1>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                Symptom Tracker
+              </h1>
+              <p className="text-muted-foreground mt-1">Log your symptoms daily to visualize patterns and create reports.</p>
+            </div>
             <div className="flex items-center gap-2">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -274,7 +277,7 @@ export default function SymptomTrackerPage() {
 
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-              <Card>
+              <Card className="glassmorphism">
                 <CardHeader>
                   <CardTitle>Recent Symptom History</CardTitle>
                   <CardDescription>
@@ -304,9 +307,11 @@ export default function SymptomTrackerPage() {
                         <YAxis stroke="hsl(var(--muted-foreground))" />
                         <Tooltip
                             contentStyle={{
-                                background: 'hsl(var(--background))',
+                                background: 'hsl(var(--card))',
                                 border: '1px solid hsl(var(--border))',
                                 borderRadius: 'var(--radius)',
+                                backdropFilter: 'blur(10px)',
+                                backgroundColor: 'hsla(var(--card), 0.6)'
                             }}
                         />
                         <Legend wrapperStyle={{ color: 'hsl(var(--muted-foreground))' }} />
@@ -333,7 +338,7 @@ export default function SymptomTrackerPage() {
             </div>
 
             <div>
-              <Card>
+              <Card className="glassmorphism">
                 <CardHeader>
                   <CardTitle>Log a New Symptom</CardTitle>
                   <CardDescription>

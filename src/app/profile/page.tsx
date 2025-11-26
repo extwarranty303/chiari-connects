@@ -123,7 +123,7 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column: User Info & Actions */}
             <div className="lg:col-span-1 space-y-8">
-              <Card>
+              <Card className="glassmorphism">
                 <CardHeader className="flex flex-row items-center gap-4">
                   <Avatar className="h-16 w-16">
                     <AvatarImage src={user.photoURL ?? ''} alt={userProfile?.username ?? 'User'} />
@@ -150,7 +150,7 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="glassmorphism">
                 <CardHeader>
                   <CardTitle>Quick Actions</CardTitle>
                 </CardHeader>
@@ -177,7 +177,7 @@ export default function ProfilePage() {
 
             {/* Right Column: Symptom Summary */}
             <div className="lg:col-span-2">
-              <Card>
+              <Card className="glassmorphism">
                 <CardHeader>
                   <CardTitle>Symptom Data at a Glance</CardTitle>
                   <CardDescription>A summary of all your logged symptom data.</CardDescription>

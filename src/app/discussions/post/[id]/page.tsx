@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, collection, getDoc, runTransaction, increment } from 'firebase/firestore';
 import { format } from 'date-fns';
-import { Loader2, AlertTriangle, User, Calendar, ArrowLeft, Bookmark, Flag } from 'lucide-react';
+import { Loader2, AlertTriangle, User, Calendar, ArrowLeft, Bookmark, Flag, Tags } from 'lucide-react';
 import { useFirebase, useUser, useDoc, useMemoFirebase, setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
 import { AppHeader } from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -43,6 +44,7 @@ interface DiscussionPost {
   userId: string;
   createdAt: string; 
   category: string;
+  tags?: string[];
 }
 
 // Defines the shape of a bookmark document.
@@ -194,11 +196,11 @@ export default function PostPage({ params }: { params: { id: string } }) {
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back to {post.category.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
               </Button>
-              <Card>
+              <Card className="glassmorphism">
                 <CardHeader>
                   <div className="flex justify-between items-start gap-4">
                     <CardTitle className="text-3xl font-bold">{post.title}</CardTitle>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-shrink-0">
                         <Button variant="outline" size="icon" onClick={handleToggleBookmark} aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark post'}>
                             <Bookmark className={`h-5 w-5 ${isBookmarked ? 'fill-primary text-primary' : ''}`} />
                         </Button>
@@ -255,6 +257,14 @@ export default function PostPage({ params }: { params: { id: string } }) {
                   <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-foreground/90">
                     {post.content}
                   </div>
+                   {post.tags && post.tags.length > 0 && (
+                        <div className="mt-6 flex flex-wrap items-center gap-2">
+                            <Tags className="h-4 w-4 text-muted-foreground"/>
+                            {post.tags.map(tag => (
+                                <Badge key={tag} variant="secondary">{tag}</Badge>
+                            ))}
+                        </div>
+                   )}
                 </CardContent>
               </Card>
             </div>
