@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { format, parseISO } from 'date-fns';
-import { Loader2, Printer, BrainCircuit, AlertTriangle, Upload, File, X } from 'lucide-react';
+import { Loader2, Printer, BrainCircuit, AlertTriangle, Upload, File, X, Image as ImageIcon } from 'lucide-react';
 
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { type SymptomData } from '@/app/symptom-tracker/page';
@@ -25,7 +25,6 @@ import { analyzeSymptoms, type AnalyzeSymptomsInput } from '@/ai/flows/ai-analyz
 import { analyzeSymptomsWithImaging, type AnalyzeSymptomsWithImagingInput } from '@/ai/flows/ai-analyze-symptoms-with-imaging';
 import { analyzeSymptomsWithReport, type AnalyzeSymptomsWithReportInput } from '@/ai/flows/ai-analyze-symptoms-with-report';
 import { Footer } from '@/components/app/footer';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 /**
  * @fileoverview This page generates a professional, printable report of the user's logged symptoms.
@@ -33,8 +32,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
  * It fetches all symptom data for the current user, organizes it into a clean table,
  * and provides a button to print the report or save it as a PDF. The page is designed to be
  * printer-friendly, hiding non-essential UI elements during printing. It also includes an
- * AI-powered analysis of the symptom data, with an option to upload medical imaging for a more
- * comprehensive summary.
+ * AI-powered analysis of the symptom data, with an option to upload medical imaging and reports
+ * for a more comprehensive summary.
  */
 
 /**
@@ -65,9 +64,16 @@ function getReportSummary(symptoms: SymptomData[]) {
   };
 }
 
+// Define types for previewing uploaded files
+interface FilePreview {
+    name: string;
+    type: 'image' | 'document';
+    url: string; // data URI for images, or just a placeholder for documents
+}
+
 /**
  * A component that provides an AI-powered analysis of the user's symptom data.
- * It allows for optional medical imaging uploads to generate a more comprehensive summary.
+ * It allows for optional medical imaging and report uploads to generate a more comprehensive summary.
  * The analysis is generated on-demand by calling a Genkit AI flow.
  *
  * @param {{symptoms: SymptomData[]}} props - The user's symptom data.
@@ -77,9 +83,8 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
     const [isPending, startTransition] = useTransition();
     const [analysis, setAnalysis] = useState('');
     const [error, setError] = useState('');
-    const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-    const [uploadedFilePreview, setUploadedFilePreview] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState('image');
+    const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+    const [previews, setPreviews] = useState<FilePreview[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
 
@@ -97,8 +102,7 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
     });
 
     /**
-     * Handles the change event from the file input, validating the file type
-     * and setting the state for the selected file.
+     * Handles the change event from the file input, validating and adding the selected files.
      * @param {React.ChangeEvent<HTMLInputElement>} event - The file input change event.
      */
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,67 +114,89 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
             const isImage = allowedImageTypes.includes(file.type);
             const isDocument = allowedDocTypes.includes(file.type);
 
-            if ((activeTab === 'image' && isImage) || (activeTab === 'document' && isDocument)) {
-                setUploadedFile(file);
+            if (isImage || isDocument) {
+                setUploadedFiles(prev => [...prev, file]);
                 if (isImage) {
-                    setUploadedFilePreview(URL.createObjectURL(file));
+                     toDataURL(file).then(dataUrl => {
+                        setPreviews(prev => [...prev, { name: file.name, type: 'image', url: dataUrl }]);
+                    });
                 } else {
-                    setUploadedFilePreview(null); // No preview for documents
+                    setPreviews(prev => [...prev, { name: file.name, type: 'document', url: '' }]);
                 }
             } else {
                 toast({
                     variant: 'destructive',
                     title: 'Invalid File Type',
-                    description: `Please upload a valid ${activeTab === 'image' ? 'image' : 'document (PDF, DOCX, TXT)'} file.`,
+                    description: `Please upload a valid image (JPG, PNG) or document (PDF, DOCX, TXT) file.`,
                 });
             }
         }
+        // Reset file input to allow uploading the same file again
+        if(fileInputRef.current) fileInputRef.current.value = '';
     };
     
-    const clearFile = () => {
-        setUploadedFile(null);
-        setUploadedFilePreview(null);
-        if(fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
+    /**
+     * Removes a file from the uploaded list by its index.
+     * @param {number} indexToRemove The index of the file to remove.
+     */
+    const removeFile = (indexToRemove: number) => {
+        setUploadedFiles(prev => prev.filter((_, index) => index !== indexToRemove));
+        setPreviews(prev => prev.filter((_, index) => index !== indexToRemove));
     }
 
 
     /**
-     * Triggers the AI analysis flow. It prepares the input data (symptoms and optional imaging)
+     * Triggers the AI analysis flow. It prepares the input data (symptoms and all uploaded files)
      * and calls the appropriate AI flow, then displays the result or an error message.
      */
     const handleGenerateAnalysis = () => {
         startTransition(async () => {
             setError('');
             setAnalysis('');
+            
+            // This version handles multiple uploads by calling the AI flow for each file.
+            // A more advanced implementation might combine all text into one prompt.
+            let combinedAnalysis = '';
+
             try {
-                // Prepare the base symptom input for the AI flow.
-                const symptomInput = {
-                    symptoms: symptoms.map(s => ({
-                        symptom: s.symptom,
-                        severity: s.severity,
-                        frequency: s.frequency,
-                        date: format(parseISO(s.date), 'yyyy-MM-dd')
-                    }))
-                };
-
-                let result;
-                if (uploadedFile) {
-                    const dataUri = await toDataURL(uploadedFile);
-                    if (activeTab === 'image') {
-                        const imagingInput: AnalyzeSymptomsWithImagingInput = { ...symptomInput, imagingDataUri: dataUri };
-                        result = await analyzeSymptomsWithImaging(imagingInput);
-                    } else { // document tab
-                        const reportInput: AnalyzeSymptomsWithReportInput = { ...symptomInput, reportDataUri: dataUri };
-                        result = await analyzeSymptomsWithReport(reportInput);
-                    }
+                if (uploadedFiles.length === 0) {
+                     // If no files, run symptom-only analysis
+                    const symptomInput: AnalyzeSymptomsInput = {
+                        symptoms: symptoms.map(s => ({
+                            symptom: s.symptom,
+                            severity: s.severity,
+                            frequency: s.frequency,
+                            date: format(parseISO(s.date), 'yyyy-MM-dd')
+                        }))
+                    };
+                    const result = await analyzeSymptoms(symptomInput);
+                    combinedAnalysis = result.analysis;
                 } else {
-                    // Default to symptom-only analysis if no extra data provided
-                    result = await analyzeSymptoms(symptomInput);
-                }
+                    for (const file of uploadedFiles) {
+                         const symptomInput = {
+                            symptoms: symptoms.map(s => ({
+                                symptom: s.symptom,
+                                severity: s.severity,
+                                frequency: s.frequency,
+                                date: format(parseISO(s.date), 'yyyy-MM-dd')
+                            }))
+                        };
+                        
+                        const dataUri = await toDataURL(file);
+                        let result;
 
-                setAnalysis(result.analysis);
+                        if (['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
+                            const imagingInput: AnalyzeSymptomsWithImagingInput = { ...symptomInput, imagingDataUri: dataUri };
+                            result = await analyzeSymptomsWithImaging(imagingInput);
+                        } else {
+                            const reportInput: AnalyzeSymptomsWithReportInput = { ...symptomInput, reportDataUri: dataUri };
+                            result = await analyzeSymptomsWithReport(reportInput);
+                        }
+                        
+                        combinedAnalysis += `Analysis for ${file.name}:\n${result.analysis}\n\n`;
+                    }
+                }
+                setAnalysis(combinedAnalysis);
             } catch (e: any) {
                 console.error("AI analysis failed:", e);
                 setError(e.message || "An error occurred while generating the analysis. Please try again.");
@@ -178,10 +204,6 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
         });
     };
     
-    const onTabChange = (value: string) => {
-      setActiveTab(value);
-      clearFile();
-    }
 
     return (
         <div>
@@ -195,65 +217,37 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
                 </div>
             </div>
             
-             <Tabs defaultValue="image" onValueChange={onTabChange} className="w-full print:hidden">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="image">Upload Imaging (Image)</TabsTrigger>
-                    <TabsTrigger value="document">Upload Report (PDF/Doc/TXT)</TabsTrigger>
-                </TabsList>
-                <TabsContent value="image">
-                    <div className="flex flex-col items-center gap-4 mt-4">
-                         <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                            accept="image/jpeg,image/png,image/gif,image/webp"
-                            className="hidden"
-                        />
-                        <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isPending}>
-                            <Upload className="mr-2 h-4 w-4" />
-                            {uploadedFile && uploadedFile.type.startsWith('image/') ? 'Change Image' : 'Upload Medical Image'}
-                        </Button>
-                         {uploadedFile && uploadedFilePreview && (
-                            <div className="mt-2 relative">
-                                <p className="text-sm font-medium mb-2 text-center">Image Preview:</p>
-                                <img src={uploadedFilePreview} alt="Imaging preview" className="max-w-full rounded-md max-h-48" />
-                                <Button variant="ghost" size="icon" className="absolute top-0 right-0" onClick={clearFile}>
+             <div className="print:hidden">
+                 <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,.doc,.docx,.txt"
+                    className="hidden"
+                    multiple={false} // Handle one file at a time
+                />
+                <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isPending}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Add Image or Document
+                </Button>
+
+                {previews.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                        <p className="text-sm font-medium">Uploaded Files:</p>
+                        {previews.map((preview, index) => (
+                            <div key={index} className="flex items-center gap-3 p-2 rounded-md border bg-muted/50">
+                                {preview.type === 'image' ? <ImageIcon className="h-6 w-6 flex-shrink-0 text-muted-foreground" /> : <File className="h-6 w-6 flex-shrink-0 text-muted-foreground" />}
+                                <div className="flex-grow">
+                                    <p className="text-sm font-medium truncate">{preview.name}</p>
+                                </div>
+                                <Button variant="ghost" size="icon" onClick={() => removeFile(index)}>
                                     <X className="h-4 w-4" />
                                 </Button>
                             </div>
-                        )}
+                        ))}
                     </div>
-                </TabsContent>
-                <TabsContent value="document">
-                     <div className="flex flex-col items-center gap-4 mt-4">
-                         <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                            accept=".pdf,.doc,.docx,.txt"
-                            className="hidden"
-                        />
-                         <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isPending}>
-                            <Upload className="mr-2 h-4 w-4" />
-                            {uploadedFile && !uploadedFile.type.startsWith('image/') ? 'Change Document' : 'Upload Report Document'}
-                        </Button>
-                         {uploadedFile && !uploadedFile.type.startsWith('image/') && (
-                             <div className="mt-2 w-full">
-                                <div className="flex items-center gap-3 p-3 rounded-md border bg-muted/50">
-                                    <File className="h-6 w-6 flex-shrink-0" />
-                                    <div className="flex-grow">
-                                        <p className="text-sm font-medium truncate">{uploadedFile.name}</p>
-                                        <p className="text-xs text-muted-foreground">{Math.round(uploadedFile.size / 1024)} KB</p>
-                                    </div>
-                                     <Button variant="ghost" size="icon" onClick={clearFile}>
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </div>
-                         )}
-                    </div>
-                </TabsContent>
-            </Tabs>
+                )}
+             </div>
              
              <div className="mt-4 bg-muted/50 p-4 rounded-lg min-h-[150px] print:bg-white print:border print:border-gray-200">
                 {isPending && (
@@ -275,7 +269,7 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
                 )}
                 {!isPending && !analysis && !error && (
                     <p className="text-sm text-muted-foreground text-center pt-10">
-                        Upload an image or document, then click "Generate AI Summary" to get an analysis of your symptom data.
+                        Add images or documents and click "Generate AI Summary" to get an analysis of your symptom data.
                     </p>
                 )}
              </div>
