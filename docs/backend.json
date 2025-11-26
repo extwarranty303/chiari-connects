@@ -28,10 +28,6 @@
           "description": "Timestamp indicating when the user account was created.",
           "format": "date-time"
         },
-        "isSeed": {
-            "type": "boolean",
-            "description": "A temporary flag used only for the initial database seeding process."
-        },
         "roles": {
             "type": "object",
             "description": "Firebase custom claims for role-based access control.",
@@ -248,10 +244,6 @@
           "type": "string",
           "format": "date-time",
           "description": "Timestamp indicating when the post was created."
-        },
-        "isSeed": {
-            "type": "boolean",
-            "description": "A temporary flag used only for the initial database seeding process."
         }
       },
       "required": [

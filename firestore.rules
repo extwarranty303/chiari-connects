@@ -71,15 +71,6 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.moderator == true;
     }
 
-    /**
-     * Helper function to check if this is the seed operation.
-     * This is a temporary measure that allows the database to be populated with initial data.
-     * It checks for a specific flag in the written data.
-     */
-    function isSeedOperation() {
-      return request.resource.data.isSeed == true;
-    }
-
     // ------------------------------------------------------------------------
     // User Profile Rules
     // ------------------------------------------------------------------------
@@ -96,13 +87,12 @@ service cloud.firestore {
       allow get: if isAdmin() || isOwner(userId);
       // Only admins can list all users.
       allow list: if isAdmin();
-      // Owners can write to their own profile, admins can modify points/roles.
+      // Owners can create their own profile, ensuring the ID matches.
       allow create: if isOwner(userId) && request.resource.data.id == userId;
       // Admins can update any user's document. Users can only update their own, and cannot change their roles.
       allow update: if isAdmin() || (isOwner(userId) && !('roles' in request.resource.data));
-      // Seed operation is allowed to write.
-      allow write: if isSeedOperation();
-      allow delete: if isExistingOwner(userId);
+      // An owner can delete their own account, or an admin can.
+      allow delete: if isExistingOwner(userId) || isAdmin();
       
       // ----------------------------------------------------------------------
       // Symptom Rules (Nested under User)
@@ -118,7 +108,7 @@ service cloud.firestore {
       match /symptoms/{symptomId} {
         allow get: if isOwner(userId);
         allow list: if isOwner(userId);
-        allow create: if (isOwner(userId) && request.resource.data.userId == userId) || isSeedOperation();
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
         allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
         allow delete: if isExistingOwner(userId);
       }
@@ -201,16 +191,15 @@ service cloud.firestore {
      */
     match /discussions/{discussionId} {
       allow read: if isSignedIn();
-      allow create: if (isSignedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.category is string && request.resource.data.category.size() > 0) || isSeedOperation();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.category is string && request.resource.data.category.size() > 0;
       // Owners can update/delete their own posts. Admins/Moderators can update/delete any post.
       allow update, delete: if isOwner(resource.data.userId) || isAdmin() || isModerator();
-      allow write: if isSeedOperation();
 
       // --------------------------------------------------------------------
       // Post Report Rules (Nested under Discussion)
       // --------------------------------------------------------------------
       match /reports/{reportId} {
-        // Any signed-in user can create a report.
+        // Any signed-in user can create a report, but only for themselves.
         allow create: if isSignedIn() && request.resource.data.reporterId == request.auth.uid;
         // Only Admins and Moderators can read or delete reports.
         allow read, delete: if isAdmin() || isModerator();
