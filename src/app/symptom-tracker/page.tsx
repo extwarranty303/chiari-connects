@@ -15,8 +15,9 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, FileText } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 import { AppHeader } from '@/components/app/header';
 import { Button } from '@/components/ui/button';
@@ -69,7 +70,8 @@ const symptomSchema = z.object({
 });
 
 type SymptomFormValues = z.infer<typeof symptomSchema>;
-type SymptomData = SymptomFormValues & { id: string; userId: string, createdAt: string };
+export type SymptomData = SymptomFormValues & { id: string; userId: string, createdAt: string, date: string };
+
 
 /**
  * The main component for the Symptom Tracker page.
@@ -179,9 +181,18 @@ export default function SymptomTrackerPage() {
       <AppHeader onUploadClick={() => {}} onDownloadClick={() => {}} showActions={false} />
       <main className="flex-1 overflow-y-auto p-4 md:p-8">
         <div className="max-w-7xl mx-auto grid gap-8">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Symptom Tracker
-          </h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              Symptom Tracker
+            </h1>
+            <Button asChild>
+                <Link href="/symptom-tracker/report">
+                    <FileText className="mr-2 h-4 w-4" />
+                    View Report
+                </Link>
+            </Button>
+          </div>
+
 
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
