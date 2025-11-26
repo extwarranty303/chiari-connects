@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { format, parseISO } from 'date-fns';
-import { Loader2, Printer, BrainCircuit, AlertTriangle, Upload } from 'lucide-react';
+import { Loader2, Printer, BrainCircuit, AlertTriangle, Upload, File, X } from 'lucide-react';
 
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { type SymptomData } from '@/app/symptom-tracker/page';
@@ -26,9 +26,6 @@ import { analyzeSymptomsWithImaging, type AnalyzeSymptomsWithImagingInput } from
 import { analyzeSymptomsWithReport, type AnalyzeSymptomsWithReportInput } from '@/ai/flows/ai-analyze-symptoms-with-report';
 import { Footer } from '@/components/app/footer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-
 
 /**
  * @fileoverview This page generates a professional, printable report of the user's logged symptoms.
@@ -80,9 +77,8 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
     const [isPending, startTransition] = useTransition();
     const [analysis, setAnalysis] = useState('');
     const [error, setError] = useState('');
-    const [imagingFile, setImagingFile] = useState<File | null>(null);
-    const [imagingPreview, setImagingPreview] = useState<string | null>(null);
-    const [reportText, setReportText] = useState('');
+    const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+    const [uploadedFilePreview, setUploadedFilePreview] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState('image');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
@@ -102,25 +98,43 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
 
     /**
      * Handles the change event from the file input, validating the file type
-     * and setting the state for the selected image.
+     * and setting the state for the selected file.
      * @param {React.ChangeEvent<HTMLInputElement>} event - The file input change event.
      */
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
-            if (file.type.startsWith('image/')) {
-                setImagingFile(file);
-                setImagingPreview(URL.createObjectURL(file));
-                setReportText(''); // Clear report text when image is selected
+            const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            const allowedDocTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+            
+            const isImage = allowedImageTypes.includes(file.type);
+            const isDocument = allowedDocTypes.includes(file.type);
+
+            if ((activeTab === 'image' && isImage) || (activeTab === 'document' && isDocument)) {
+                setUploadedFile(file);
+                if (isImage) {
+                    setUploadedFilePreview(URL.createObjectURL(file));
+                } else {
+                    setUploadedFilePreview(null); // No preview for documents
+                }
             } else {
                 toast({
                     variant: 'destructive',
                     title: 'Invalid File Type',
-                    description: 'Please upload a valid image file.',
+                    description: `Please upload a valid ${activeTab === 'image' ? 'image' : 'document (PDF, DOCX, TXT)'} file.`,
                 });
             }
         }
     };
+    
+    const clearFile = () => {
+        setUploadedFile(null);
+        setUploadedFilePreview(null);
+        if(fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    }
+
 
     /**
      * Triggers the AI analysis flow. It prepares the input data (symptoms and optional imaging)
@@ -132,7 +146,7 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
             setAnalysis('');
             try {
                 // Prepare the base symptom input for the AI flow.
-                const symptomInput: AnalyzeSymptomsInput = {
+                const symptomInput = {
                     symptoms: symptoms.map(s => ({
                         symptom: s.symptom,
                         severity: s.severity,
@@ -142,35 +156,31 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
                 };
 
                 let result;
-                if (activeTab === 'image' && imagingFile) {
-                    const imagingDataUri = await toDataURL(imagingFile);
-                    const imagingInput: AnalyzeSymptomsWithImagingInput = { ...symptomInput, imagingDataUri };
-                    result = await analyzeSymptomsWithImaging(imagingInput);
-                } else if (activeTab === 'report' && reportText) {
-                    const reportInput: AnalyzeSymptomsWithReportInput = { ...symptomInput, reportText };
-                    result = await analyzeSymptomsWithReport(reportInput);
+                if (uploadedFile) {
+                    const dataUri = await toDataURL(uploadedFile);
+                    if (activeTab === 'image') {
+                        const imagingInput: AnalyzeSymptomsWithImagingInput = { ...symptomInput, imagingDataUri: dataUri };
+                        result = await analyzeSymptomsWithImaging(imagingInput);
+                    } else { // document tab
+                        const reportInput: AnalyzeSymptomsWithReportInput = { ...symptomInput, reportDataUri: dataUri };
+                        result = await analyzeSymptomsWithReport(reportInput);
+                    }
                 } else {
                     // Default to symptom-only analysis if no extra data provided
                     result = await analyzeSymptoms(symptomInput);
                 }
 
                 setAnalysis(result.analysis);
-            } catch (e) {
+            } catch (e: any) {
                 console.error("AI analysis failed:", e);
-                setError("An error occurred while generating the analysis. Please try again.");
+                setError(e.message || "An error occurred while generating the analysis. Please try again.");
             }
         });
     };
     
     const onTabChange = (value: string) => {
       setActiveTab(value);
-      // Clear data from the other tab to avoid confusion
-      if (value === 'image') {
-        setReportText('');
-      } else {
-        setImagingFile(null);
-        setImagingPreview(null);
-      }
+      clearFile();
     }
 
     return (
@@ -187,8 +197,8 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
             
              <Tabs defaultValue="image" onValueChange={onTabChange} className="w-full print:hidden">
                 <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="image">Upload Image</TabsTrigger>
-                    <TabsTrigger value="report">Paste Report Text</TabsTrigger>
+                    <TabsTrigger value="image">Upload Imaging (Image)</TabsTrigger>
+                    <TabsTrigger value="document">Upload Report (PDF/Doc/TXT)</TabsTrigger>
                 </TabsList>
                 <TabsContent value="image">
                     <div className="flex flex-col items-center gap-4 mt-4">
@@ -196,36 +206,51 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
                             type="file"
                             ref={fileInputRef}
                             onChange={handleFileChange}
-                            accept="image/*"
+                            accept="image/jpeg,image/png,image/gif,image/webp"
                             className="hidden"
                         />
                         <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isPending}>
                             <Upload className="mr-2 h-4 w-4" />
-                            {imagingFile ? 'Change Image' : 'Upload Medical Image'}
+                            {uploadedFile && uploadedFile.type.startsWith('image/') ? 'Change Image' : 'Upload Medical Image'}
                         </Button>
-                        {imagingPreview && (
-                            <div className="mt-2">
+                         {uploadedFile && uploadedFilePreview && (
+                            <div className="mt-2 relative">
                                 <p className="text-sm font-medium mb-2 text-center">Image Preview:</p>
-                                <img src={imagingPreview} alt="Imaging preview" className="max-w-full rounded-md max-h-48" />
+                                <img src={uploadedFilePreview} alt="Imaging preview" className="max-w-full rounded-md max-h-48" />
+                                <Button variant="ghost" size="icon" className="absolute top-0 right-0" onClick={clearFile}>
+                                    <X className="h-4 w-4" />
+                                </Button>
                             </div>
                         )}
                     </div>
                 </TabsContent>
-                <TabsContent value="report">
-                     <div className="space-y-2 mt-4">
-                        <Label htmlFor="report-text">Imaging Report Text</Label>
-                        <Textarea
-                            id="report-text"
-                            placeholder="Paste the full text from your diagnostic report here..."
-                            className="min-h-[150px]"
-                            value={reportText}
-                            onChange={(e) => {
-                              setReportText(e.target.value);
-                              setImagingFile(null);
-                              setImagingPreview(null);
-                            }}
-                            disabled={isPending}
+                <TabsContent value="document">
+                     <div className="flex flex-col items-center gap-4 mt-4">
+                         <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            accept=".pdf,.doc,.docx,.txt"
+                            className="hidden"
                         />
+                         <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isPending}>
+                            <Upload className="mr-2 h-4 w-4" />
+                            {uploadedFile && !uploadedFile.type.startsWith('image/') ? 'Change Document' : 'Upload Report Document'}
+                        </Button>
+                         {uploadedFile && !uploadedFile.type.startsWith('image/') && (
+                             <div className="mt-2 w-full">
+                                <div className="flex items-center gap-3 p-3 rounded-md border bg-muted/50">
+                                    <File className="h-6 w-6 flex-shrink-0" />
+                                    <div className="flex-grow">
+                                        <p className="text-sm font-medium truncate">{uploadedFile.name}</p>
+                                        <p className="text-xs text-muted-foreground">{Math.round(uploadedFile.size / 1024)} KB</p>
+                                    </div>
+                                     <Button variant="ghost" size="icon" onClick={clearFile}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                         )}
                     </div>
                 </TabsContent>
             </Tabs>
@@ -250,7 +275,7 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
                 )}
                 {!isPending && !analysis && !error && (
                     <p className="text-sm text-muted-foreground text-center pt-10">
-                        Provide a medical image or report text, then click "Generate AI Summary" to get an analysis of your symptom data.
+                        Upload an image or document, then click "Generate AI Summary" to get an analysis of your symptom data.
                     </p>
                 )}
              </div>
