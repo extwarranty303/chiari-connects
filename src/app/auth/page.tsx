@@ -22,8 +22,6 @@ import { Icons } from '@/components/app/icons';
 import { useFirebase, useUser } from '@/firebase';
 import { initiateEmailSignIn, initiateEmailSignUp, initiateGoogleSignIn } from '@/firebase/non-blocking-login';
 import { Loader2 } from 'lucide-react';
-import Image from 'next/image';
-import { Separator } from '@/components/ui/separator';
 
 const signupSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -127,23 +125,27 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-4">
-      <div className="flex items-center gap-3 mb-6">
+    <div className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden bg-background p-4">
+      <div className="absolute inset-0 z-0">
+          <div className="absolute bottom-0 left-[-20%] right-0 top-[-10%] h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle_farthest-side,rgba(255,0,182,.15),rgba(255,255,255,0))]"></div>
+          <div className="absolute bottom-[-20%] right-[-20%] top-auto h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle_farthest-side,rgba(255,0,182,.15),rgba(255,255,255,0))]"></div>
+      </div>
+      <div className="relative z-10 flex items-center gap-3 mb-6">
         <Icons.logo className="w-16 h-16 text-primary" />
         <h1 className="text-2xl font-semibold font-headline tracking-tight text-foreground">
           Chiari Connects
         </h1>
       </div>
-      <Tabs defaultValue="login" className="w-full max-w-md">
+      <Tabs defaultValue="login" className="w-full max-w-md relative z-10">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="login">Login</TabsTrigger>
           <TabsTrigger value="signup">Sign Up</TabsTrigger>
         </TabsList>
         <TabsContent value="login">
-          <Card>
+          <Card className="bg-card/60 backdrop-blur-xl border-white/20 shadow-lg">
             <CardHeader>
               <CardTitle>Login</CardTitle>
-              <CardDescription>
+              <CardDescription className='text-foreground/80'>
                 Access your account to manage your projects.
               </CardDescription>
             </CardHeader>
@@ -164,7 +166,7 @@ export default function AuthPage() {
                     <span className="w-full border-t" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
+                    <span className="bg-transparent px-2 text-muted-foreground">
                       Or continue with
                     </span>
                   </div>
@@ -207,10 +209,10 @@ export default function AuthPage() {
           </Card>
         </TabsContent>
         <TabsContent value="signup">
-          <Card>
+          <Card className="bg-card/60 backdrop-blur-xl border-white/20 shadow-lg">
             <CardHeader>
               <CardTitle>Sign Up</CardTitle>
-              <CardDescription>
+              <CardDescription className='text-foreground/80'>
                 Create an account to start refining your React code.
               </CardDescription>
             </CardHeader>
@@ -231,7 +233,7 @@ export default function AuthPage() {
                     <span className="w-full border-t" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
+                    <span className="bg-transparent px-2 text-muted-foreground">
                       Or continue with
                     </span>
                   </div>
