@@ -23,7 +23,7 @@ import { useFirebase, useUser } from '@/firebase';
 import { initiateEmailSignUp, initiateGoogleSignIn, initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Loader2 } from 'lucide-react';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, getRedirectResult } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
 
 
@@ -76,7 +76,7 @@ export default function AuthPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
 
-  const [isPending, setIsPending] = useState(false);
+  const [isPending, setIsPending] = useState(true);
 
   const signupForm = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -87,6 +87,31 @@ export default function AuthPage() {
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
   });
+
+  // This effect handles the redirect result from Google Sign-In.
+  useEffect(() => {
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          // User has successfully signed in via redirect.
+          // The onAuthStateChanged listener will handle the rest.
+          toast({
+            title: 'Authentication Successful',
+            description: 'You are now logged in.',
+          });
+        }
+      })
+      .catch((error) => {
+        // Handle errors from the redirect result.
+        console.error("Google sign-in redirect error:", error);
+      })
+      .finally(() => {
+        // We can stop the initial pending state after checking for a redirect.
+         if (isPending) {
+           setIsPending(false);
+         }
+      });
+  }, [auth, toast, isPending]);
 
   // Redirects the user to the home page if they are already logged in.
   useEffect(() => {
@@ -149,11 +174,10 @@ export default function AuthPage() {
         }
         
         setIsPending(false);
-        toast({
-          title: 'Authentication Successful',
-          description: 'You are now logged in.',
-        });
         router.push('/');
+      } else {
+        // No user is signed in. Ensure loading is finished.
+        setIsPending(false);
       }
     });
     
@@ -169,8 +193,8 @@ export default function AuthPage() {
         const errorCodeMatch = args[0].match(/\(auth\/([^)]+)\)/);
         if (errorCodeMatch && errorCodeMatch[1]) {
             const errorCode = errorCodeMatch[1];
-            // Don't show a toast if the user simply closes the Google sign-in popup.
-            if (errorCode === 'popup-closed-by-user' || errorCode === 'cancelled-popup-request') {
+            // Don't show a toast if the user simply closes the Google sign-in popup or cancels the redirect.
+            if (errorCode === 'popup-closed-by-user' || errorCode === 'cancelled-popup-request' || errorCode === 'redirect-cancelled') {
               return;
             }
             // Format the error code for better readability.
@@ -197,7 +221,7 @@ export default function AuthPage() {
   }, [auth, router, toast, firestore, signupForm]);
 
   // Display a full-page loader while checking auth status or if user is already logged in.
-  if (isUserLoading || user) {
+  if (isUserLoading || user || isPending) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
