@@ -8,6 +8,9 @@ import { Icons } from '@/components/app/icons';
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useFirebase } from '@/firebase';
@@ -100,6 +103,12 @@ export function AppHeader({ onUploadClick, onDownloadClick, showActions = true }
                     </Button>
                 </SheetTrigger>
                 <SheetContent>
+                    <SheetHeader className="text-left">
+                        <SheetTitle>Navigation</SheetTitle>
+                        <SheetDescription>
+                            Quickly access other pages in the application.
+                        </SheetDescription>
+                    </SheetHeader>
                     <nav className="flex flex-col gap-4 mt-8">
                          <Button variant="ghost" asChild className="justify-start">
                             <Link href="/discussions">
