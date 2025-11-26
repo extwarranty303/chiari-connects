@@ -228,7 +228,7 @@ export default function SymptomTrackerPage() {
     symptoms?.map(item => ({
       ...item,
       date: format(new Date(item.date), 'MMM d'),
-    })).reverse() ?? []
+    })).reverse() ?? [];
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-body">
