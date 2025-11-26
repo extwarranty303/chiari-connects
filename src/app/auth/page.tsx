@@ -22,7 +22,7 @@ import { Icons } from '@/components/app/icons';
 import { useFirebase, useUser } from '@/firebase';
 import { initiateEmailSignUp, initiateGoogleSignIn } from '@/firebase/non-blocking-login';
 import { Loader2 } from 'lucide-react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 
 const signupSchema = z.object({
@@ -319,5 +319,3 @@ export default function AuthPage() {
     </div>
   );
 }
-
-    
