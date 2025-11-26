@@ -144,6 +144,53 @@
         "suggestedChange",
         "createdAt"
       ]
+    },
+    "Symptom": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Symptom",
+      "type": "object",
+      "description": "Represents a single symptom entry logged by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the symptom entry."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who logged the symptom."
+        },
+        "symptom": {
+          "type": "string",
+          "description": "The name of the symptom."
+        },
+        "severity": {
+          "type": "number",
+          "description": "The severity of the symptom, on a scale (e.g., 1-10)."
+        },
+        "frequency": {
+          "type": "number",
+          "description": "The frequency of the symptom, on a scale (e.g., 1-10)."
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date the symptom was recorded."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp indicating when the entry was created."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "symptom",
+        "severity",
+        "frequency",
+        "date",
+        "createdAt"
+      ]
     }
   },
   "auth": {
@@ -167,6 +214,26 @@
             {
               "name": "userId",
               "description": "The unique identifier of the user.  This is equal to request.auth.uid."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/symptoms/{symptomId}",
+        "definition": {
+          "entityName": "Symptom",
+          "schema": {
+            "$ref": "#/backend/entities/Symptom"
+          },
+          "description": "Stores individual symptom entries for a user. Path-based ownership ensures only the user can access their own symptom data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user (owner)."
+            },
+            {
+              "name": "symptomId",
+              "description": "The unique identifier of the symptom entry."
             }
           ]
         }
@@ -244,6 +311,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to ensure security, scalability, and ease of debugging, in accordance with the defined principles.  Authorization Independence is achieved by leveraging path-based ownership for private user data and avoiding `get()` calls in security rules. Structural Segregation is applied by storing user-specific data under `/users/{userId}`. Access Modeling uses path-based ownership for the `User -> Project -> CodeFile -> AISuggestion` hierarchy.\n\nThe structure supports required QAPs by ensuring that list operations can be securely performed based on path-based ownership. For example, listing projects is done under `/users/{userId}/projects`, allowing a simple rule to check if `request.auth.uid == userId` for listing projects owned by a user. Similarly, listing `codeFiles` and `aiSuggestions` follows the same pattern."
+    "reasoning": "The Firestore data structure is designed to ensure security, scalability, and ease of debugging, in accordance with the defined principles.  Authorization Independence is achieved by leveraging path-based ownership for private user data and avoiding `get()` calls in security rules. Structural Segregation is applied by storing user-specific data under `/users/{userId}`. Access Modeling uses path-based ownership for the `User -> Project -> CodeFile -> AISuggestion` hierarchy and the new `User -> Symptom` hierarchy. This ensures that a user's symptom data is private and only accessible by them.\n\nThe structure supports required QAPs by ensuring that list operations can be securely performed based on path-based ownership. For example, listing projects is done under `/users/{userId}/projects`, and listing symptoms is done under `/users/{userId}/symptoms`, allowing a simple rule to check if `request.auth.uid == userId` for listing data owned by a user."
   }
 }

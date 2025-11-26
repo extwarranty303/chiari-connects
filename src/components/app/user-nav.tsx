@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useFirebase, useUser, useDoc, useMemoFirebase } from '@/firebase';
-import { LogOut, User as UserIcon, Loader2, LogIn, UserPlus } from 'lucide-react';
+import { LogOut, User as UserIcon, Loader2, LogIn, UserPlus, Activity } from 'lucide-react';
 import Link from 'next/link';
 import { doc } from 'firebase/firestore';
 
@@ -97,6 +97,12 @@ export function UserNav() {
           <DropdownMenuItem disabled>
             <UserIcon className="mr-2 h-4 w-4" />
             <span>Profile</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+             <Link href="/symptom-tracker">
+                <Activity className="mr-2 h-4 w-4" />
+                <span>Symptom Tracker</span>
+             </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

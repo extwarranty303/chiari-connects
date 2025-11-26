@@ -11,7 +11,7 @@
  * Data Structure:
  * All application data follows a strict hierarchical path starting with the user's
  * unique ID: `/users/{userId}`. All other data, including projects, code files,
- * and AI suggestions, is nested within this user-specific data tree. This
+ * AI suggestions, and symptoms, is nested within this user-specific data tree. This
  * path-based ownership is the cornerstone of the security model.
  *
  * Key Security Decisions:
@@ -20,7 +20,7 @@
  * - No Public Data: There are no top-level public collections. All read and list
  *   operations require user authentication and ownership verification.
  * - Listing Restricted to Owner: Users are permitted to list documents within their
- *   own subcollections (e.g., list their own projects), but cannot list documents
+ *   own subcollections (e.g., list their own projects or symptoms), but cannot list documents
  *   belonging to other users.
  * - Relational Integrity: On document creation, rules ensure that internal ID
  *   fields (e.g., `userId`, `projectId`) match the IDs in the document path,
@@ -79,6 +79,26 @@ service cloud.firestore {
                       && request.resource.data.id == resource.data.id
                       && request.resource.data.username == resource.data.username; // Username is immutable
       allow delete: if isExistingOwner(userId);
+      
+      // ----------------------------------------------------------------------
+      // Symptom Rules (Nested under User)
+      // ----------------------------------------------------------------------
+      
+      /**
+       * @description Controls access to symptom entries, which are private to a user.
+       * @path /users/{userId}/symptoms/{symptomId}
+       * @allow (create) User 'abc' creating a new symptom entry in their own space.
+       * @deny (get) User 'xyz' trying to read a symptom entry owned by user 'abc'.
+       * @principle Enforces strict ownership for all symptom data.
+       */
+      match /symptoms/{symptomId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+      }
+
 
       // ----------------------------------------------------------------------
       // Project Rules (Nested under User)
@@ -139,5 +159,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
