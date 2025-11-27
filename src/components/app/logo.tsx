@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -21,7 +22,7 @@ export function Logo({ width, height, className }: LogoProps) {
   return (
     <div className={cn('relative', className)} style={{ width, height }}>
         <Image
-            src="/ChiariConnectsLogo.svg"
+            src="/ChiariConnectsLogo-blk.png"
             alt="Chiari Connects Logo"
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
