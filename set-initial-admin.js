@@ -13,8 +13,7 @@
  *    - Click "Generate new private key" to download a JSON file with your credentials.
  *    - Copy the contents of that downloaded file and paste it to replace the `serviceAccount` object below.
  * 
- * 3. Replace the `uid` placeholder with the UID of the user you want to make an admin.
- *    - You can find a user's UID in the Firebase Console under Authentication > Users.
+ * 3. The UID for 'derek.l.crosby@gmail.com' has been pre-filled for you.
  * 
  * 4. Run the script from your terminal: `node set-initial-admin.js`
  */
@@ -42,7 +41,7 @@ const serviceAccount = {
 
 
 // =======================================================================================
-// === 2. REPLACE THE PLACEHOLDER UID BELOW WITH THE USER'S AUTHENTICATION UID         ===
+// === 2. THE UID FOR 'derek.l.crosby@gmail.com' IS PRE-FILLED BELOW.                  ===
 // =======================================================================================
 const uid = 'pV9ikRWytLfQd6rQ4gNeHMAOAMP2';
 // =======================================================================================
