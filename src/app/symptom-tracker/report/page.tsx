@@ -271,14 +271,14 @@ function AiAnalysis({ symptoms, user, userProfile }: { symptoms: SymptomData[], 
     
     return (
         <div className="page-break-inside-avoid">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
                  <div className="flex-grow">
                     <h3 className="text-xl font-semibold border-b pb-2 mb-2">AI-Generated Summary</h3>
                     <p className="text-sm text-muted-foreground">
                         This summary focuses on key findings from your symptom log and any uploaded documents to help prepare for your next medical appointment.
                     </p>
                 </div>
-                <div className="flex gap-2 print:hidden flex-shrink-0">
+                <div className="flex gap-2 flex-shrink-0">
                     <Button onClick={handleGenerateAnalysis} disabled={isAnalysisPending}>
                         <BrainCircuit className="mr-2 h-4 w-4" />
                         {isAnalysisPending ? 'Analyzing...' : 'Generate AI Summary'}
@@ -333,14 +333,14 @@ function AiAnalysis({ symptoms, user, userProfile }: { symptoms: SymptomData[], 
                     </Card>
                 )}
                 {error && (
-                    <Alert variant="destructive">
+                    <Alert variant="destructive" className="print:hidden">
                         <AlertTriangle className="h-4 w-4" />
                         <AlertTitle>Analysis Error</AlertTitle>
                         <AlertDescription>{error}</AlertDescription>
                     </Alert>
                 )}
                 {analysisSections.length > 0 && analysisSections.map((section, index) => (
-                    <Card key={index} className="glassmorphism page-break-inside-avoid">
+                    <Card key={index} className="glassmorphism page-break-inside-avoid print:shadow-none print:border-none print:bg-transparent">
                         <CardHeader><CardTitle>{section.title}</CardTitle></CardHeader>
                         <CardContent>
                             <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -350,7 +350,7 @@ function AiAnalysis({ symptoms, user, userProfile }: { symptoms: SymptomData[], 
                     </Card>
                 ))}
                  {!isAnalysisPending && !analysis && !error && (
-                    <div className="text-sm text-muted-foreground text-center py-10 border-2 border-dashed rounded-lg">
+                    <div className="text-sm text-muted-foreground text-center py-10 border-2 border-dashed rounded-lg print:hidden">
                         <p>Click "Generate AI Summary" to get an analysis of your symptom data.</p>
                         <p>You can optionally add images or documents first.</p>
                     </div>
@@ -371,7 +371,7 @@ function AiAnalysis({ symptoms, user, userProfile }: { symptoms: SymptomData[], 
 
 
             {(isAnalysisPending || doctorQuestions.length > 0) && (
-                 <Card className="glassmorphism mt-6 page-break-before page-break-inside-avoid">
+                 <Card className="glassmorphism mt-6 page-break-before page-break-inside-avoid print:shadow-none print:border-none print:bg-transparent">
                     <CardHeader><CardTitle>Questions for Your Doctor</CardTitle></CardHeader>
                     <CardContent>
                          {isAnalysisPending && doctorQuestions.length === 0 ? (
@@ -454,159 +454,164 @@ export default function SymptomReportPage() {
   const displayName = capitalize(userProfile?.username || user.displayName || user.email || '');
 
   return (
-    <div className="bg-background text-foreground min-h-screen flex flex-col">
-      <header className="p-4 sm:p-8 flex justify-between items-center print:hidden border-b sticky top-0 bg-background/80 backdrop-blur-sm z-10">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">
-          Symptom History Report
-        </h1>
-        <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={() => router.back()}>
-            Back to Tracker
-          </Button>
-          <Button onClick={handlePrint} disabled={isLoading || !symptoms || symptoms.length === 0}>
-            <Printer className="mr-2 h-4 w-4" />
-            Print / Save as PDF
-          </Button>
-        </div>
-      </header>
-
-      <main className="p-4 sm:p-8 flex-1">
-        <div className="max-w-4xl mx-auto bg-card p-6 sm:p-10 rounded-lg shadow-md border print:shadow-none print:border-none print:p-0">
-          
-          <div className="mb-12 flex flex-col items-center">
-             <Logo width={1182} height={237} />
-             <div className="text-center mt-4">
-                <h2 className="text-xl font-bold text-foreground">Symptom History Report</h2>
-                <p className="text-muted-foreground">
-                    Analysis for: {displayName}
-                </p>
-             </div>
-          </div>
-
-          {isLoading && (
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    <>
+      <div id="app-container" className="bg-background text-foreground min-h-screen flex flex-col">
+        <header className="p-4 sm:p-8 flex justify-between items-center print:hidden border-b sticky top-0 bg-background/80 backdrop-blur-sm z-10">
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+            Symptom History Report
+            </h1>
+            <div className="flex items-center gap-4">
+            <Button variant="outline" onClick={() => router.back()}>
+                Back to Tracker
+            </Button>
+            <Button onClick={handlePrint} disabled={isLoading || !symptoms || symptoms.length === 0}>
+                <Printer className="mr-2 h-4 w-4" />
+                Print / Save as PDF
+            </Button>
             </div>
-          )}
+        </header>
 
-          {symptomsError && (
-             <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>Could not load symptom data. Please try again later.</AlertDescription>
-            </Alert>
-          )}
+        <main className="p-4 sm:p-8 flex-1">
+            <div id="printable-area" className="max-w-4xl mx-auto bg-card p-6 sm:p-10 rounded-lg shadow-md border print:shadow-none print:border-none print:p-0 print:bg-transparent">
+            
+            <div className="mb-12 flex flex-col items-center">
+                <Logo width={1182} height={237} />
+                <div className="text-center mt-4">
+                    <h2 className="text-xl font-bold text-foreground">Symptom History Report</h2>
+                    <p className="text-muted-foreground">
+                        Analysis for: {displayName}
+                    </p>
+                </div>
+            </div>
 
-          {!isLoading && symptoms && (
-            <>
-              {(symptoms.length > 0) ? (
-                <div className="space-y-12">
-                   <AiAnalysis symptoms={symptoms} user={user} userProfile={userProfile} />
-                  
-                  {symptoms.length > 0 && (
+            {isLoading && (
+                <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            )}
+
+            {symptomsError && (
+                <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>Could not load symptom data. Please try again later.</AlertDescription>
+                </Alert>
+            )}
+
+            {!isLoading && symptoms && (
+                <>
+                {(symptoms.length > 0) ? (
                     <div className="space-y-12">
-                      <Card className="glassmorphism page-break-before page-break-inside-avoid">
-                        <CardHeader>
-                            <CardTitle>Symptom Progression</CardTitle>
-                            <CardDescription>Severity and frequency of symptoms over time.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <ResponsiveContainer width="100%" height={400}>
-                                <BarChart data={chartData}>
-                                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
-                                  <YAxis stroke="hsl(var(--muted-foreground))" domain={[0, 10]} />
-                                  <Tooltip
-                                        contentStyle={{
-                                            background: 'hsl(var(--card))',
-                                            border: '1px solid hsl(var(--border))',
-                                            borderRadius: 'var(--radius)',
-                                        }}
-                                    />
-                                  <Legend />
-                                  <Bar dataKey="severity" fill={CHART_COLORS.severity} name="Severity (1-10)" />
-                                  <Bar dataKey="frequency" fill={CHART_COLORS.frequency} name="Frequency (1-10)" />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </CardContent>
-                      </Card>
+                    <AiAnalysis symptoms={symptoms} user={user} userProfile={userProfile} />
+                    
+                    {symptoms.length > 0 && (
+                        <div className="space-y-12">
+                        <Card className="glassmorphism page-break-before page-break-inside-avoid print:shadow-none print:border-none print:bg-transparent">
+                            <CardHeader>
+                                <CardTitle>Symptom Progression</CardTitle>
+                                <CardDescription>Severity and frequency of symptoms over time.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <ResponsiveContainer width="100%" height={400}>
+                                    <BarChart data={chartData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                    <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
+                                    <YAxis stroke="hsl(var(--muted-foreground))" domain={[0, 10]} />
+                                    <Tooltip
+                                            contentStyle={{
+                                                background: 'hsl(var(--card))',
+                                                border: '1px solid hsl(var(--border))',
+                                                borderRadius: 'var(--radius)',
+                                            }}
+                                        />
+                                    <Legend />
+                                    <Bar dataKey="severity" fill={CHART_COLORS.severity} name="Severity (1-10)" />
+                                    <Bar dataKey="frequency" fill={CHART_COLORS.frequency} name="Frequency (1-10)" />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </CardContent>
+                        </Card>
 
-                      <Card className="glassmorphism page-break-inside-avoid">
-                        <CardHeader>
-                            <CardTitle>Symptom Summary</CardTitle>
-                             <CardDescription>An overview of all logged symptoms.</CardDescription>
-                        </CardHeader>
-                         <CardContent>
-                            <div className="border rounded-lg overflow-hidden">
-                                <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                    <TableHead>Symptom</TableHead>
-                                    <TableHead className="text-center">Times Logged</TableHead>
-                                    <TableHead className="text-center">Avg. Severity (1-10)</TableHead>
-                                    <TableHead className="text-center">Avg. Frequency (1-10)</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {summaryData.map(symptom => (
-                                    <TableRow key={symptom.symptom}>
-                                        <TableCell className="font-medium">{symptom.symptom}</TableCell>
-                                        <TableCell className="text-center">{symptom.count}</TableCell>
-                                        <TableCell className="text-center">{symptom.avgSeverity}</TableCell>
-                                        <TableCell className="text-center">{symptom.avgFrequency}</TableCell>
-                                    </TableRow>
-                                    ))}
-                                </TableBody>
-                                </Table>
-                            </div>
-                        </CardContent>
-                      </Card>
+                        <Card className="glassmorphism page-break-inside-avoid print:shadow-none print:border-none print:bg-transparent">
+                            <CardHeader>
+                                <CardTitle>Symptom Summary</CardTitle>
+                                <CardDescription>An overview of all logged symptoms.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="border rounded-lg overflow-hidden">
+                                    <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                        <TableHead>Symptom</TableHead>
+                                        <TableHead className="text-center">Times Logged</TableHead>
+                                        <TableHead className="text-center">Avg. Severity (1-10)</TableHead>
+                                        <TableHead className="text-center">Avg. Frequency (1-10)</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {summaryData.map(symptom => (
+                                        <TableRow key={symptom.symptom}>
+                                            <TableCell className="font-medium">{symptom.symptom}</TableCell>
+                                            <TableCell className="text-center">{symptom.count}</TableCell>
+                                            <TableCell className="text-center">{symptom.avgSeverity}</TableCell>
+                                            <TableCell className="text-center">{symptom.avgFrequency}</TableCell>
+                                        </TableRow>
+                                        ))}
+                                    </TableBody>
+                                    </Table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        </div>
+                    )}
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-10 border-2 border-dashed rounded-lg">
-                  <h3 className="text-lg font-medium">No Data to Report</h3>
-                  <p className="text-muted-foreground mt-2">
-                    Once you start logging symptoms, you can generate a report here.
-                  </p>
-                   <Button variant="outline" className="mt-4" onClick={() => router.push('/symptom-tracker')}>
-                      Go to Symptom Tracker
-                   </Button>
-                </div>
-              )}
-            </>
-          )}
+                ) : (
+                    <div className="text-center py-10 border-2 border-dashed rounded-lg">
+                    <h3 className="text-lg font-medium">No Data to Report</h3>
+                    <p className="text-muted-foreground mt-2">
+                        Once you start logging symptoms, you can generate a report here.
+                    </p>
+                    <Button variant="outline" className="mt-4" onClick={() => router.push('/symptom-tracker')}>
+                        Go to Symptom Tracker
+                    </Button>
+                    </div>
+                )}
+                </>
+            )}
 
-          <div className="mt-12 pt-6 border-t text-xs text-muted-foreground text-center">
-             <p className="mt-2">© 2024 Chiari Connects. All rights reserved.</p>
-          </div>
-        </div>
-      </main>
+            <div className="mt-12 pt-6 border-t text-xs text-muted-foreground text-center">
+                <p className="mt-2">© 2024 Chiari Connects. All rights reserved.</p>
+            </div>
+            </div>
+        </main>
+      </div>
 
       <style jsx global>{`
         @media print {
-          body {
-            background-color: #fff;
-            color: #000;
-          }
-          .print\\:hidden {
-            display: none;
-          }
-          main {
-            padding: 0;
-          }
-          .prose {
-            color: #000;
-          }
-          .page-break-before {
-            break-before: page;
-          }
-          .page-break-inside-avoid {
-            break-inside: avoid;
-          }
+            body {
+                background-color: #fff !important;
+                color: #000 !important;
+            }
+            #app-container > *:not(#printable-area) {
+                display: none;
+            }
+            main, #printable-area {
+                padding: 0 !important;
+                margin: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+            .prose, .prose * {
+                color: #000 !important;
+            }
+            .page-break-before {
+                break-before: page;
+            }
+            .page-break-inside-avoid {
+                break-inside: avoid;
+            }
         }
       `}</style>
-    </div>
+    </>
   );
 }
