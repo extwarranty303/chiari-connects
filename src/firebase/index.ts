@@ -52,16 +52,16 @@ export function getSdks(firebaseApp: FirebaseApp) {
             // This case handles new user creation.
             const providerId = user.providerData?.[0]?.providerId;
             let newUserDoc;
+            const tempUsername = `user${Math.random().toString().substring(2, 10)}`;
 
             if (providerId === 'google.com') {
                  // User signed up with Google.
-                 const username = user.displayName?.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '') || `user${Math.random().toString().substring(2, 8)}`;
                  const [firstName, lastName] = user.displayName?.split(' ') || ['', ''];
 
                  newUserDoc = {
                     id: user.uid,
                     email: user.email,
-                    username: username,
+                    username: tempUsername, // Use a temporary username
                     firstName: firstName || '',
                     lastName: lastName || '',
                     city: '', // Google does not provide these
@@ -78,7 +78,7 @@ export function getSdks(firebaseApp: FirebaseApp) {
                  newUserDoc = {
                     id: user.uid,
                     email: user.email,
-                    username: user.email?.split('@')[0] || `user${Math.random().toString().substring(2, 8)}`,
+                    username: tempUsername, // Use a temporary username
                     firstName: '',
                     lastName: '',
                     city: '',
