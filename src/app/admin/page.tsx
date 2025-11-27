@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { Loader2, User, MessageSquare, Activity, Download, ShieldAlert, FileText, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
-import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { AppHeader } from '@/components/app/header';
 import AdminRouteGuard from '@/components/app/admin-route-guard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -94,7 +94,7 @@ function exportToCsv(filename: string, rows: any[]) {
     ),
   ].join('\n');
 
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf--8;' });
   const link = document.createElement('a');
   if (link.download !== undefined) {
     const url = URL.createObjectURL(blob);
@@ -117,12 +117,13 @@ function exportToCsv(filename: string, rows: any[]) {
 export default function AdminDashboardPage() {
   const { firestore } = useFirebase();
   const { toast } = useToast();
+  const { isAdmin } = useUser();
 
-  // Memoized query to fetch all users.
+  // Memoized query to fetch all users. Only runs if the user is an admin.
   const allUsersQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !isAdmin) return null;
     return query(collection(firestore, 'users'), orderBy('createdAt', 'desc'));
-  }, [firestore]);
+  }, [firestore, isAdmin]);
 
   // Memoized query to fetch all discussion posts.
   const allDiscussionsQuery = useMemoFirebase(() => {
@@ -215,7 +216,7 @@ export default function AdminDashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : users?.length ?? 0}
+                    {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : users?.length ?? (isAdmin ? 0 : 'N/A')}
                   </div>
                 </CardContent>
               </Card>
@@ -306,81 +307,83 @@ export default function AdminDashboardPage() {
 
 
             <div className="grid gap-8 md:grid-cols-1">
-                {/* User Management Table */}
-                <Card className="glassmorphism">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <div>
-                            <CardTitle>User Management</CardTitle>
-                            <CardDescription>View and manage all registered users.</CardDescription>
-                        </div>
-                        <Button variant="outline" size="sm" onClick={handleExportUsers} disabled={isLoadingUsers || !users || users.length === 0}>
-                           <Download className="mr-2 h-4 w-4" />
-                           Export Users
-                        </Button>
-                    </CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Username</TableHead>
-                                    <TableHead>Email</TableHead>
-                                    <TableHead>Role</TableHead>
-                                    <TableHead>Date Joined</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {isLoadingUsers ? (
-                                    <TableRow>
-                                        <TableCell colSpan={5} className="text-center">
-                                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
-                                        </TableCell>
-                                    </TableRow>
-                                ) : users && users.length > 0 ? (
-                                    users.map(user => (
-                                        <TableRow key={user.id}>
-                                            <TableCell className="font-medium">{user.username}</TableCell>
-                                            <TableCell>{user.email}</TableCell>
-                                            <TableCell>
-                                                {user.roles?.admin ? (
-                                                    <Badge variant="destructive">Admin</Badge>
-                                                ) : user.roles?.moderator ? (
-                                                    <Badge variant="secondary">Moderator</Badge>
-                                                ) : (
-                                                    <Badge variant="outline">User</Badge>
-                                                )}
-                                            </TableCell>
-                                            <TableCell>{format(new Date(user.createdAt), 'MMM d, yyyy')}</TableCell>
-                                            <TableCell className="text-right">
-                                                <Button 
-                                                    variant="outline" 
-                                                    size="sm"
-                                                    disabled={!!user.roles?.moderator || !!user.roles?.admin}
-                                                    onClick={() => handleMakeModerator(user.id)}
-                                                >
-                                                  {user.roles?.moderator ? (
-                                                    <>
-                                                      <CheckCircle className="mr-2 h-4 w-4" />
-                                                      Moderator
-                                                    </>
-                                                  ) : user.roles?.admin ? (
-                                                      'Admin'
+                {/* User Management Table - Only visible to Admins */}
+                {isAdmin && (
+                  <Card className="glassmorphism">
+                      <CardHeader className="flex flex-row items-center justify-between">
+                          <div>
+                              <CardTitle>User Management</CardTitle>
+                              <CardDescription>View and manage all registered users.</CardDescription>
+                          </div>
+                          <Button variant="outline" size="sm" onClick={handleExportUsers} disabled={isLoadingUsers || !users || users.length === 0}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Export Users
+                          </Button>
+                      </CardHeader>
+                      <CardContent>
+                          <Table>
+                              <TableHeader>
+                                  <TableRow>
+                                      <TableHead>Username</TableHead>
+                                      <TableHead>Email</TableHead>
+                                      <TableHead>Role</TableHead>
+                                      <TableHead>Date Joined</TableHead>
+                                      <TableHead className="text-right">Actions</TableHead>
+                                  </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                  {isLoadingUsers ? (
+                                      <TableRow>
+                                          <TableCell colSpan={5} className="text-center">
+                                              <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
+                                          </TableCell>
+                                      </TableRow>
+                                  ) : users && users.length > 0 ? (
+                                      users.map(user => (
+                                          <TableRow key={user.id}>
+                                              <TableCell className="font-medium">{user.username}</TableCell>
+                                              <TableCell>{user.email}</TableCell>
+                                              <TableCell>
+                                                  {user.roles?.admin ? (
+                                                      <Badge variant="destructive">Admin</Badge>
+                                                  ) : user.roles?.moderator ? (
+                                                      <Badge variant="secondary">Moderator</Badge>
                                                   ) : (
-                                                     'Make Moderator'
+                                                      <Badge variant="outline">User</Badge>
                                                   )}
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={5} className="text-center">No users found.</TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
+                                              </TableCell>
+                                              <TableCell>{format(new Date(user.createdAt), 'MMM d, yyyy')}</TableCell>
+                                              <TableCell className="text-right">
+                                                  <Button 
+                                                      variant="outline" 
+                                                      size="sm"
+                                                      disabled={!!user.roles?.moderator || !!user.roles?.admin}
+                                                      onClick={() => handleMakeModerator(user.id)}
+                                                  >
+                                                    {user.roles?.moderator ? (
+                                                      <>
+                                                        <CheckCircle className="mr-2 h-4 w-4" />
+                                                        Moderator
+                                                      </>
+                                                    ) : user.roles?.admin ? (
+                                                        'Admin'
+                                                    ) : (
+                                                      'Make Moderator'
+                                                    )}
+                                                  </Button>
+                                              </TableCell>
+                                          </TableRow>
+                                      ))
+                                  ) : (
+                                      <TableRow>
+                                          <TableCell colSpan={5} className="text-center">No users found.</TableCell>
+                                      </TableRow>
+                                  )}
+                              </TableBody>
+                          </Table>
+                      </CardContent>
+                  </Card>
+                )}
 
                 {/* Content Moderation Table */}
                 <Card className="glassmorphism">
