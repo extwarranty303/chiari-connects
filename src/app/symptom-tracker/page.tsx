@@ -339,7 +339,7 @@ export default function SymptomTrackerPage() {
             </div>
 
             <div>
-              <Card className="glassmorphism">
+              <Card>
                 <CardHeader>
                   <CardTitle>Log a New Symptom</CardTitle>
                   <CardDescription>
