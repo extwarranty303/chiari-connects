@@ -250,7 +250,7 @@ export default function SymptomTrackerPage() {
                         Delete All Data
                     </Button>
                   </AlertDialogTrigger>
-                  <AlertDialogContent>
+                  <AlertDialogContent className="glassmorphism">
                     <AlertDialogHeader>
                       <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                       <AlertDialogDescription>
@@ -443,7 +443,7 @@ export default function SymptomTrackerPage() {
                                 )}
                               </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
+                            <PopoverContent className="w-auto p-0 glassmorphism">
                               <Calendar
                                 mode="single"
                                 selected={field.value}
