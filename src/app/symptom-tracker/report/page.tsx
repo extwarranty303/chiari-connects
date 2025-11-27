@@ -199,12 +199,13 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
             try {
                 const result = await generateDoctorQuestions({ analysis });
                 setDoctorQuestions(result);
-            } catch (e: any)                 console.error("AI question generation failed:", e);
+            } catch (e: any) {
+                 console.error("AI question generation failed:", e);
                  toast({
                     variant: 'destructive',
                     title: 'Error Generating Questions',
                     description: 'Could not generate questions. Please try again.'
-                 })
+                 });
             }
         });
     }
