@@ -38,7 +38,7 @@ import { analyzeSymptoms } from '@/ai/flows/ai-analyze-symptoms';
 import { analyzeSymptomsWithImaging } from '@/ai/flows/ai-analyze-symptoms-with-imaging';
 import { analyzeSymptomsWithReport } from '@/ai/flows/ai-analyze-symptoms-with-report';
 import { consolidateAnalyses } from '@/ai/flows/ai-consolidate-analyses';
-import { generateDoctorQuestions, GenerateDoctorQuestionsOutput } from '@/ai/flows/ai-generate-doctor-questions';
+import { generateDoctorQuestions } from '@/ai/flows/ai-generate-doctor-questions';
 
 /**
  * @fileoverview This page generates a professional, printable report of the user's logged symptoms.
@@ -176,7 +176,7 @@ function splitMarkdownIntoSections(markdownText: string): Array<{ title: string,
 function AiAnalysis({ symptoms, user, userProfile }: { symptoms: SymptomData[], user: any, userProfile: any }) {
     const [isAnalysisPending, startAnalysisTransition] = useTransition();
     const [analysis, setAnalysis] = useState('');
-    const [doctorQuestions, setDoctorQuestions] = useState<GenerateDoctorQuestionsOutput | null>(null);
+    const [doctorQuestions, setDoctorQuestions] = useState<string[]>([]);
     const [error, setError] = useState('');
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
     const [previews, setPreviews] = useState<FilePreview[]>([]);
@@ -184,7 +184,6 @@ function AiAnalysis({ symptoms, user, userProfile }: { symptoms: SymptomData[], 
     const { toast } = useToast();
 
     const analysisSections = useMemo(() => splitMarkdownIntoSections(analysis), [analysis]);
-    const questionsList = doctorQuestions?.questions || [];
 
     const toDataURL = (file: File): Promise<string> =>
         new Promise((resolve, reject) => {
@@ -235,7 +234,7 @@ function AiAnalysis({ symptoms, user, userProfile }: { symptoms: SymptomData[], 
         startAnalysisTransition(async () => {
             setError('');
             setAnalysis('');
-            setDoctorQuestions(null);
+            setDoctorQuestions([]);
             
             try {
                 const symptomInput = {
@@ -282,7 +281,7 @@ function AiAnalysis({ symptoms, user, userProfile }: { symptoms: SymptomData[], 
                 // Now, automatically generate questions
                 if (finalReport) {
                     const questionsResult = await generateDoctorQuestions({ analysis: finalReport });
-                    setDoctorQuestions(questionsResult);
+                    setDoctorQuestions(questionsResult.questions);
                 }
 
             } catch (e: any) {
@@ -393,11 +392,11 @@ function AiAnalysis({ symptoms, user, userProfile }: { symptoms: SymptomData[], 
             )}
 
 
-            {(isAnalysisPending || questionsList.length > 0) && (
+            {(isAnalysisPending || doctorQuestions.length > 0) && (
                  <Card className="glassmorphism mt-6 page-break-before page-break-inside-avoid">
                     <CardHeader><CardTitle>Questions for Your Doctor</CardTitle></CardHeader>
                     <CardContent>
-                         {isAnalysisPending && !doctorQuestions ? (
+                         {isAnalysisPending && doctorQuestions.length === 0 ? (
                             <div className="space-y-3">
                                 <Skeleton className="h-4 w-3/4" />
                                 <Skeleton className="h-4 w-4/5" />
@@ -406,7 +405,7 @@ function AiAnalysis({ symptoms, user, userProfile }: { symptoms: SymptomData[], 
                         ) : (
                             <div className="prose prose-sm dark:prose-invert max-w-none">
                                 <ul className="list-disc pl-5 space-y-2">
-                                    {questionsList.map((q, i) => <li key={i}>{q}</li>)}
+                                    {doctorQuestions.map((q, i) => <li key={i}>{q}</li>)}
                                 </ul>
                             </div>
                         )}
@@ -414,7 +413,7 @@ function AiAnalysis({ symptoms, user, userProfile }: { symptoms: SymptomData[], 
                 </Card>
             )}
 
-            {(analysis || doctorQuestions) && (
+            {(analysis || doctorQuestions.length > 0) && (
                 <div className="mt-8 pt-4 border-t text-xs text-muted-foreground space-y-2">
                     <p><strong>Disclaimer:</strong> This application and its AI-powered analyses are for informational purposes only and are not a substitute for professional medical advice, diagnosis, or treatment. This summary includes mostly the items that were found to be wrong with the patient, based on the provided imaging, imaging reports, and symptom tracker information from the tool. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition. <strong>This application is not HIPAA compliant.</strong> Please do not store sensitive personal health information.</p>
                 </div>
