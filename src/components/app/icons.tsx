@@ -8,21 +8,6 @@ import type { SVGProps } from 'react';
 
 export const Icons = {
   /**
-   * The main logo for the Chiari Connects application.
-   * It features a stylized representation of a brain or neural network,
-   * symbolizing connectivity and analysis.
-   */
-  logo: (props: SVGProps<SVGSVGElement>) => (
-     <svg 
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 200 40"
-      {...props}>
-      <title>Chiari Connects Logo</title>
-      <text x="0" y="28" fontFamily="Inter, sans-serif" fontSize="24" fontWeight="bold" fill="hsl(var(--primary))">Chiari</text>
-      <text x="95" y="28" fontFamily="Inter, sans-serif" fontSize="24" fontWeight="bold" fill="hsl(var(--foreground))">Connects</text>
-    </svg>
-  ),
-  /**
    * The Google 'G' logo, used for the Google Sign-In button.
    */
   google: (props: SVGProps<SVGSVGElement>) => (

@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { FileUp, FileDown, Activity, MessageSquare, Menu, LogOut } from 'lucide-react';
 import { UserNav } from '@/components/app/user-nav';
-import { Icons } from '@/components/app/icons';
 import {
   Sheet,
   SheetContent,
@@ -15,6 +14,7 @@ import {
 } from "@/components/ui/sheet";
 import { useFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
+import { Logo } from './logo';
 
 /**
  * @fileoverview AppHeader component serves as the main navigation bar for the application.
@@ -54,7 +54,7 @@ export function AppHeader({ onUploadClick, onDownloadClick, showActions = true }
     <header className="flex items-center justify-between p-4 border-b bg-card/60 backdrop-blur-xl sticky top-0 z-50 shadow-sm">
       <div className="flex items-center gap-3">
         <Link href="/" className="flex items-center gap-3">
-          <Icons.logo className="w-56 h-auto text-primary" />
+           <Logo width={175} height={35} />
         </Link>
       </div>
 

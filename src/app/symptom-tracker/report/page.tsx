@@ -21,7 +21,6 @@ import {
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { type SymptomData } from '@/app/symptom-tracker/page';
 import { Button } from '@/components/ui/button';
-import { Icons } from '@/components/app/icons';
 import {
   Table,
   TableBody,
@@ -39,6 +38,7 @@ import { analyzeSymptomsWithImaging } from '@/ai/flows/ai-analyze-symptoms-with-
 import { analyzeSymptomsWithReport } from '@/ai/flows/ai-analyze-symptoms-with-report';
 import { consolidateAnalyses } from '@/ai/flows/ai-consolidate-analyses';
 import { generateDoctorQuestions } from '@/ai/flows/ai-generate-doctor-questions';
+import { Logo } from '@/components/app/logo';
 
 /**
  * @fileoverview This page generates a professional, printable report of the user's logged symptoms.
@@ -473,9 +473,9 @@ export default function SymptomReportPage() {
       <main className="p-4 sm:p-8 flex-1">
         <div className="max-w-4xl mx-auto bg-card p-6 sm:p-10 rounded-lg shadow-md border print:shadow-none print:border-none print:p-0">
           
-          <div className="mb-12 text-center">
-             <Icons.logo className="w-96 h-auto text-primary mx-auto mb-4" />
-             <h2 className="text-xl font-bold text-foreground">Symptom History Report</h2>
+          <div className="mb-12 text-center flex flex-col items-center">
+             <Logo width={350} height={70} />
+             <h2 className="text-2xl font-bold text-foreground mt-4">Symptom History Report</h2>
              <p className="text-muted-foreground">
                  Analysis for: {displayName}
              </p>
