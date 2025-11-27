@@ -2,7 +2,6 @@ import type {Metadata} from 'next';
 import { Toaster } from "@/components/ui/toaster"
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
-import { Footer } from '@/components/app/footer';
 
 export const metadata: Metadata = {
   title: {
@@ -23,7 +22,6 @@ export const metadata: Metadata = {
  * - Loading custom fonts from Google Fonts.
  * - Wrapping the application with `FirebaseClientProvider` to ensure Firebase is initialized on the client-side.
  * - Including the `Toaster` component for displaying notifications.
- * - Adding a consistent `Footer` to all pages.
  */
 export default function RootLayout({
   children,
