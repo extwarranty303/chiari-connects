@@ -4,27 +4,28 @@
 
 @layer base {
   :root {
-    --background: 224 71% 4%;
-    --foreground: 210 40% 98%;
-    --card: 224 71% 10%;
-    --card-foreground: 210 40% 98%;
-    --popover: 224 71% 4%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 340 85% 60%;
+    /* A light, calming theme based on soft blues and gentle grays. */
+    --background: 210 40% 98%; /* Very light, almost white gray */
+    --foreground: 215 28% 17%; /* Dark slate blue for high contrast text */
+    --card: 210 40% 100%; /* White */
+    --card-foreground: 215 28% 17%;
+    --popover: 210 40% 100%;
+    --popover-foreground: 215 28% 17%;
+    --primary: 205 90% 50%; /* A calm, reassuring blue */
     --primary-foreground: 210 40% 98%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 340 85% 70%;
+    --secondary: 210 40% 96.1%; /* Light gray */
+    --secondary-foreground: 215.4 16.3% 46.9%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 180 55% 45%; /* Muted teal for accents */
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 340 85% 60%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 205 90% 50%;
+    --chart-1: 205 90% 50%;
+    --chart-2: 180 55% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
@@ -32,27 +33,28 @@
   }
 
   .dark {
-    --background: 224 71% 4%;
+    /* A calming dark theme as an alternative, maintaining the blue and teal palette. */
+    --background: 222 47% 11%;
     --foreground: 210 40% 98%;
-    --card: 224 71% 10%;
+    --card: 222 47% 14%;
     --card-foreground: 210 40% 98%;
-    --popover: 224 71% 4%;
+    --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
-    --primary: 340 85% 60%;
+    --primary: 205 90% 55%; /* Slightly brighter blue for dark mode */
     --primary-foreground: 210 40% 98%;
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 217 32% 27%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 340 85% 70%;
+    --muted: 217 32% 27%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 180 55% 50%; /* Slightly brighter teal */
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 340 85% 60%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
+    --border: 217 32% 27%;
+    --input: 217 32% 27%;
+    --ring: 205 90% 55%;
+    --chart-1: 205 90% 55%;
+    --chart-2: 180 55% 50%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
