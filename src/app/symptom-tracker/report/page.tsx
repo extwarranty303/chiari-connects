@@ -448,7 +448,7 @@ export default function SymptomReportPage() {
   
   const capitalize = (s: string) => {
     if (!s) return "";
-    return s.charAt(0).toUpperCase() + s.slice(1);
+    return s.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
   
   const displayName = capitalize(userProfile?.username || user.displayName || user.email || '');
@@ -473,13 +473,14 @@ export default function SymptomReportPage() {
       <main className="p-4 sm:p-8 flex-1">
         <div className="max-w-4xl mx-auto bg-card p-6 sm:p-10 rounded-lg shadow-md border print:shadow-none print:border-none print:p-0">
           
-          <div className="mb-12 text-center flex flex-col items-center">
-             <Logo width={350} height={70} />
-             <h2 className="text-2xl font-bold text-foreground mt-4">Symptom History Report</h2>
-             <p className="text-muted-foreground">
-                 Analysis for: {displayName}
-             </p>
-             <p className="text-sm text-gray-500 mt-1 print:hidden">Report Generated on {format(new Date(), 'MMMM d, yyyy')}</p>
+          <div className="mb-12 flex flex-col items-center">
+             <Logo width={788} height={158} />
+             <div className="text-center mt-4">
+                <h2 className="text-xl font-bold text-foreground">Symptom History Report</h2>
+                <p className="text-muted-foreground">
+                    Analysis for: {displayName}
+                </p>
+             </div>
           </div>
 
           {isLoading && (
