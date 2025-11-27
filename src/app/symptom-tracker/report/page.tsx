@@ -488,14 +488,14 @@ export default function SymptomReportPage() {
              <p className="text-sm text-gray-600">Report Generated on {format(new Date(), 'MMMM d, yyyy')}</p>
           </div>
 
-          <div className="flex justify-between items-start mb-8 print:hidden">
+          <div className="flex flex-col items-center text-center gap-4 mb-8 print:hidden">
+            <Icons.logo className="w-48 h-auto text-primary" />
             <div>
-              <h2 className="text-3xl font-bold text-foreground">Symptom History Report</h2>
-              <p className="text-muted-foreground">
-                Generated on {format(new Date(), 'MMMM d, yyyy')} for {user.displayName || user.email}
-              </p>
+                <h2 className="text-2xl font-bold text-foreground">Symptom History Report</h2>
+                <p className="text-muted-foreground">
+                    Generated on {format(new Date(), 'MMMM d, yyyy')} for {userProfile?.username || user.displayName || user.email}
+                </p>
             </div>
-            <Icons.logo className="w-48 h-auto text-primary -mt-4" />
           </div>
 
           {isLoading && (
