@@ -10,12 +10,12 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const GenerateDoctorQuestionsInputSchema = z.object({
+const GenerateDoctorQuestionsInputSchema = z.object({
   analysis: z.string().describe("The AI-generated analysis of the user's symptoms and/or medical reports."),
 });
 export type GenerateDoctorQuestionsInput = z.infer<typeof GenerateDoctorQuestionsInputSchema>;
 
-export const GenerateDoctorQuestionsOutputSchema = z.object({
+const GenerateDoctorQuestionsOutputSchema = z.object({
   questions: z.array(z.string()).describe('A list of questions for the user to ask their doctor.'),
 });
 export type GenerateDoctorQuestionsOutput = z.infer<typeof GenerateDoctorQuestionsOutputSchema>;
