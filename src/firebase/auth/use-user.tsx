@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Auth, User, onIdTokenChanged } from 'firebase/auth';
 import { Firestore, doc, onSnapshot } from 'firebase/firestore';
 import { getDecodedIdToken, DecodedIdToken } from './user-claims';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 export interface UserProfile {
   id: string;
@@ -51,6 +51,7 @@ export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthStat
   });
 
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     let profileUnsubscribe: (() => void) | null = null;
@@ -77,7 +78,7 @@ export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthStat
                 const userProfile = profileSnap.exists() ? profileSnap.data() as UserProfile : null;
                 
                 // --- Onboarding Redirection Logic ---
-                if (profileSnap.exists() && userProfile?.hasCompletedOnboarding === false) {
+                if (profileSnap.exists() && userProfile?.hasCompletedOnboarding === false && pathname !== '/onboarding') {
                     router.replace('/onboarding');
                     // Keep loading true while we redirect
                     setState({ user, isUserLoading: true, userError: null, isAdmin, isModerator, userProfile });
@@ -112,7 +113,7 @@ export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthStat
         profileUnsubscribe();
       }
     };
-  }, [auth, firestore, router]);
+  }, [auth, firestore, router, pathname]);
 
   return state;
 }
