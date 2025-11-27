@@ -82,11 +82,13 @@ export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthStat
                 if (profileSnap.exists() && !isProfileComplete && !isOnboardingPage) {
                     // User exists, onboarding is incomplete, and they are NOT on the onboarding page -> redirect them there.
                     router.replace('/onboarding');
-                    setState({ user, isUserLoading: true, userError: null, isAdmin, isModerator, userProfile });
+                    // Keep loading until redirect completes
+                    setState(s => ({ ...s, user, isAdmin, isModerator, userProfile, isUserLoading: true }));
                 } else if (isProfileComplete && isOnboardingPage) {
                     // User has completed onboarding but is still on the onboarding page -> redirect them away.
                     router.replace('/');
-                    setState({ user, isUserLoading: true, userError: null, isAdmin, isModerator, userProfile });
+                    // Keep loading until redirect completes
+                    setState(s => ({ ...s, user, isAdmin, isModerator, userProfile, isUserLoading: true }));
                 } else {
                     // All other cases are fine, just update the state and stop loading.
                     setState({ user, isUserLoading: false, userError: null, isAdmin, isModerator, userProfile });

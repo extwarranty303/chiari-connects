@@ -19,7 +19,7 @@ import {FirestorePermissionError} from '@/firebase/errors';
  * Does NOT await the write operation internally.
  */
 export function setDocumentNonBlocking(docRef: DocumentReference, data: any, options: SetOptions) {
-  setDoc(docRef, data, options).catch(error => {
+  setDoc(docRef, data, options).catch(async (error) => {
     errorEmitter.emit(
       'permission-error',
       new FirestorePermissionError({
@@ -40,7 +40,7 @@ export function setDocumentNonBlocking(docRef: DocumentReference, data: any, opt
  */
 export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
   const promise = addDoc(colRef, data)
-    .catch(error => {
+    .catch(async (error) => {
       errorEmitter.emit(
         'permission-error',
         new FirestorePermissionError({
@@ -60,7 +60,7 @@ export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
  */
 export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) {
   updateDoc(docRef, data)
-    .catch(error => {
+    .catch(async (error) => {
       errorEmitter.emit(
         'permission-error',
         new FirestorePermissionError({
@@ -79,7 +79,7 @@ export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) 
  */
 export function deleteDocumentNonBlocking(docRef: DocumentReference) {
   deleteDoc(docRef)
-    .catch(error => {
+    .catch(async (error) => {
       errorEmitter.emit(
         'permission-error',
         new FirestorePermissionError({
@@ -107,7 +107,7 @@ export function deleteCollectionNonBlocking(collectionRef: CollectionReference) 
             // Return the promise from batch.commit()
             return batch.commit();
         })
-        .catch(error => {
+        .catch(async (error) => {
             // Differentiate between read error (getDocs) and write error (commit)
             const isReadError = !('docs' in error); // Simple check, might need refinement
             errorEmitter.emit(
