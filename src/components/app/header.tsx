@@ -53,9 +53,9 @@ export function AppHeader({ onUploadClick, onDownloadClick, showActions = true }
   
   return (
     <header className="flex items-center justify-between p-4 border-b bg-card/60 backdrop-blur-xl sticky top-0 z-50 shadow-sm">
-      <div className="flex items-center gap-x-8">
+      <div className="flex items-center gap-x-4">
         <Link href="/" className="flex items-center">
-           <Logo width={623.3203125} height={124.98046875} />
+           <Logo width={221.625} height={44.4375} />
         </Link>
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-2">
