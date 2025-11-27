@@ -22,7 +22,6 @@ import { Icons } from '@/components/app/icons';
 import { useFirebase, useUser } from '@/firebase';
 import { initiateEmailSignUp, initiateGoogleSignIn, initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { Loader2 } from 'lucide-react';
-import { onAuthStateChanged } from 'firebase/auth';
 import { Logo } from '@/components/app/logo';
 
 
@@ -85,12 +84,23 @@ export default function AuthPage() {
   // Redirects the user if they are already logged in and have completed onboarding.
   // The useUser hook handles redirection to the onboarding page.
   useEffect(() => {
-    if (!isUserLoading && user) {
+    // If the user hook is still loading, we wait.
+    if (isUserLoading) {
+      setIsPending(true);
+      return;
+    }
+
+    // If loading is done and a user exists...
+    if (user) {
+      // If the profile exists and onboarding is complete, redirect to home.
       if (userProfile?.hasCompletedOnboarding) {
         router.push('/');
       }
-      // If onboarding is not complete, useUser hook will redirect to /onboarding
-    } else if (!isUserLoading && !user) {
+      // If onboarding is not complete, the useUser hook will handle the redirect to /onboarding.
+      // We keep the loader active during this brief period.
+      setIsPending(true);
+    } else {
+      // If loading is done and there's no user, stop pending and show the auth form.
       setIsPending(false);
     }
   }, [user, userProfile, isUserLoading, router]);
@@ -101,7 +111,23 @@ export default function AuthPage() {
    */
   const handleSignup = (values: SignupFormValues) => {
     setIsPending(true);
-    initiateEmailSignUp(auth, values.email, values.password);
+    initiateEmailSignUp(auth, values.email, values.password)
+    .catch((error) => {
+        // Handle specific auth errors here to provide better user feedback
+        const errorCode = error.code;
+        let errorMessage = 'An unknown error occurred.';
+        if (errorCode === 'auth/email-already-in-use') {
+            errorMessage = 'This email is already in use. Please log in instead.';
+        } else if (errorCode === 'auth/weak-password') {
+            errorMessage = 'The password is too weak.';
+        }
+        toast({
+            variant: 'destructive',
+            title: 'Sign-up Failed',
+            description: errorMessage,
+        });
+        setIsPending(false);
+    });
   };
 
   /**
@@ -110,7 +136,20 @@ export default function AuthPage() {
    */
   const handleLogin = (values: LoginFormValues) => {
     setIsPending(true);
-    initiateEmailSignIn(auth, values.email, values.password);
+    initiateEmailSignIn(auth, values.email, values.password)
+     .catch((error) => {
+        const errorCode = error.code;
+        let errorMessage = 'Invalid email or password.';
+        if (errorCode === 'auth/user-not-found' || errorCode === 'auth/wrong-password' || errorCode === 'auth/invalid-credential') {
+            errorMessage = 'Invalid email or password. Please try again.';
+        }
+         toast({
+            variant: 'destructive',
+            title: 'Login Failed',
+            description: errorMessage,
+        });
+        setIsPending(false);
+    });
   };
   
   /**
@@ -118,57 +157,25 @@ export default function AuthPage() {
    */
   const handleGoogleSignIn = () => {
     setIsPending(true);
-    initiateGoogleSignIn(auth);
-  };
-
-  /**
-   * This effect sets up listeners for auth state changes and errors.
-   */
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        // A user is now signed in. Let the main redirect logic in the other useEffect handle it.
-        // We no longer need to create the user document here; it is handled centrally.
-        setIsPending(false);
-      } else {
-        // No user is signed in.
-        setIsPending(false);
-      }
-    });
-    
-    // Centralized error handling for auth operations.
-    const originalConsoleError = console.error;
-    const newConsoleError = (...args: any[]) => {
-      if (typeof args[0] === 'string' && args[0].includes('Firebase: Error (auth/')) {
-        setIsPending(false);
-        let errorMessage = 'An unknown authentication error occurred.';
-        const errorCodeMatch = args[0].match(/\(auth\/([^)]+)\)/);
-        if (errorCodeMatch && errorCodeMatch[1]) {
-            const errorCode = errorCodeMatch[1];
-            if (errorCode === 'popup-closed-by-user' || errorCode === 'cancelled-popup-request') {
-              return;
-            }
-            errorMessage = errorCode.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    initiateGoogleSignIn(auth)
+    .catch((error) => {
+        const errorCode = error.code;
+        // Don't show toast if user closes popup
+        if (errorCode === 'auth/popup-closed-by-user') {
+            setIsPending(false);
+            return;
         }
         toast({
-          variant: 'destructive',
-          title: 'Authentication Failed',
-          description: errorMessage,
+            variant: 'destructive',
+            title: 'Google Sign-In Failed',
+            description: 'Could not sign in with Google. Please try again.',
         });
-      }
-      originalConsoleError.apply(console, args);
-    };
+        setIsPending(false);
+    });
+  };
 
-    console.error = newConsoleError;
-    
-    return () => {
-      unsubscribe();
-      console.error = originalConsoleError;
-    };
-  }, [auth, toast]);
-
-  // Display a full-page loader while checking auth status or if user is being redirected.
-  if (isUserLoading || (user && !isPending) || isPending) {
+  // Display a full-page loader while checking auth status or if a redirect is imminent.
+  if (isPending) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -262,7 +269,7 @@ export default function AuthPage() {
             <CardHeader>
               <CardTitle>Sign Up</CardTitle>
               <CardDescription className='text-foreground/80'>
-                Create your account to get started. You'll set up your profile on the next step.
+                Create an account to join the community. You'll set up your profile on the next step.
               </CardDescription>
             </CardHeader>
             <form onSubmit={signupForm.handleSubmit(handleSignup)}>
