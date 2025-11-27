@@ -28,7 +28,7 @@ export interface UseDocResult<T> {
  * React hook to subscribe to a single Firestore document in real-time.
  * Handles nullable references.
  * 
- * IMPORTANT! YOU MUST MEMOIZE the inputted memoizedTargetRefOrQuery or BAD THINGS WILL HAPPEN
+ * IMPORTANT! YOU MUST MEMOIZE the inputted memoizedDocRef or BAD THINGS WILL HAPPEN
  * use useMemoFirebase to memoize it per React guidence.  Also make sure that it's dependencies are stable
  * references
  *
@@ -44,15 +44,25 @@ export function useDoc<T = any>(
   type StateDataType = WithId<T> | null;
 
   const [data, setData] = useState<StateDataType>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Start as true
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
-    // If the doc ref is not ready, do nothing and set loading to false.
+    // If the doc ref is not ready (e.g., waiting for firestore or user ID), do nothing and set loading to false.
     if (!memoizedDocRef) {
       setIsLoading(false);
       setData(null);
       setError(null);
+      return;
+    }
+
+    // Add safety check for undefined paths before attempting to fetch
+    if (memoizedDocRef.path && memoizedDocRef.path.includes('undefined')) {
+      console.error('Document reference contains undefined path segment:', memoizedDocRef.path);
+      const pathError = new Error(`Invalid document reference: path contains undefined segment (${memoizedDocRef.path})`);
+      setError(pathError);
+      setData(null);
+      setIsLoading(false);
       return;
     }
 
@@ -70,7 +80,7 @@ export function useDoc<T = any>(
         setError(null);
         setIsLoading(false);
       },
-      async (error: FirestoreError) => {
+      (error: FirestoreError) => {
         const contextualError = new FirestorePermissionError({
           operation: 'get',
           path: memoizedDocRef.path,
@@ -80,6 +90,7 @@ export function useDoc<T = any>(
         setData(null)
         setIsLoading(false)
 
+        // trigger global error propagation
         errorEmitter.emit('permission-error', contextualError);
       }
     );

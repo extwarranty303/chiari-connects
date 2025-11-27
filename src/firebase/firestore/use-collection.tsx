@@ -46,16 +46,27 @@ export function useCollection<T = any>(
   type StateDataType = ResultItemType[] | null;
 
   const [data, setData] = useState<StateDataType>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Start as true
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
-    // If the query is not ready (e.g., waiting for user ID), do not attempt to fetch.
+    // If the query is not ready (e.g., waiting for user ID or firestore), do not attempt to fetch.
     // Set loading to false as we are not actively fetching.
     if (!memoizedTargetRefOrQuery) {
       setData(null);
       setIsLoading(false);
       setError(null);
+      return;
+    }
+
+    // Add safety check for undefined paths before attempting to fetch
+    const path = (memoizedTargetRefOrQuery as any).path;
+    if (path && path.includes('undefined')) {
+      console.error('Query contains undefined path segment:', path);
+      const pathError = new Error(`Invalid query: path contains undefined segment (${path})`);
+      setError(pathError);
+      setData(null);
+      setIsLoading(false);
       return;
     }
 
@@ -73,7 +84,9 @@ export function useCollection<T = any>(
         setError(null);
         setIsLoading(false);
       },
-      async (error: FirestoreError) => {
+      (error: FirestoreError) => {
+        // A collection group query is a special case, it does not have a path property.
+        // It has a _query object with a collectionId property.
         const isCollectionGroupQuery = (memoizedTargetRefOrQuery as any)._query?.collectionId;
         const path = isCollectionGroupQuery
           ? `Collection Group: ${(memoizedTargetRefOrQuery as any)._query.collectionId}`
@@ -88,17 +101,19 @@ export function useCollection<T = any>(
         setData(null)
         setIsLoading(false)
 
+        // trigger global error propagation
         errorEmitter.emit('permission-error', contextualError);
       }
     );
 
     return () => unsubscribe();
-  }, [memoizedTargetRefOrQuery]);
+  }, [memoizedTargetRefOrQuery]); // Re-run if the target query/reference changes.
   
   if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
+    // This check is a safeguard that is not foolproof, especially for collectionGroup queries
+    // which lack a .path property. We will log a warning instead of throwing an error for those.
     const isStandardQuery = !!(memoizedTargetRefOrQuery as any).path;
     if (isStandardQuery) {
-      // This is a critical error that causes infinite loops.
       throw new Error(`The query for path "${(memoizedTargetRefOrQuery as any).path}" was not wrapped in useMemoFirebase. This is required to prevent infinite re-renders.`);
     } else {
       // It might be a collection group or other complex query. Warn the developer.

@@ -1,8 +1,9 @@
+
 'use client';
 
 import { collection, query, orderBy, collectionGroup } from 'firebase/firestore';
 import { format } from 'date-fns';
-import { Loader2, User, MessageSquare, Activity, Download, ShieldAlert, FileText, CheckCircle } from 'lucide-react';
+import { Loader2, User, MessageSquare, Activity, Download, ShieldAlert, FileText, CheckCircle, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
@@ -21,6 +22,17 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Footer } from '@/components/app/footer';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 /**
  * @fileoverview This is the main page for the Admin Dashboard.
@@ -29,7 +41,7 @@ import { Footer } from '@/components/app/footer';
  * Key functionalities include:
  * - **Security**: Wrapped in an `AdminRouteGuard` to ensure only admins can access it.
  * - **Statistics**: Displays high-level site statistics like total users, posts, and symptom entries.
- * - **User Management**: Shows a table of all registered users with their details and roles.
+ * - **User Management**: Shows a table of all registered users with their details and roles. Admins can manage users (e.g., assign roles, delete users).
  * - **Content Moderation**: Displays tables for all discussion posts and user-submitted reports.
  * - **Data Export**: Allows admins to export user and post data as CSV files.
  * - **Data Fetching**: Uses admin-specific queries to fetch all user, content, and report data.
@@ -117,7 +129,7 @@ function exportToCsv(filename: string, rows: any[]) {
 export default function AdminDashboardPage() {
   const { firestore } = useFirebase();
   const { toast } = useToast();
-  const { isAdmin } = useUser();
+  const { user: currentUser, isAdmin } = useUser();
 
   // Memoized query to fetch all users. Only runs if the user is an admin.
   const allUsersQuery = useMemoFirebase(() => {
@@ -185,9 +197,28 @@ export default function AdminDashboardPage() {
     // For example:
     // const makeModerator = httpsCallable(functions, 'makeModerator');
     // makeModerator({ userId: userId }).then(...).catch(...);
+    console.log(`Attempting to make user ${userId} a moderator.`);
     toast({
         title: 'Feature In Development',
         description: `Would assign moderator role to user: ${userId}. This requires a server-side function to set custom claims securely.`,
+    });
+  };
+
+  /**
+   * Placeholder function for deleting a user.
+   * This would typically call a Firebase Cloud Function to delete the user from Auth and Firestore.
+   * @param {string} userId - The ID of the user to delete.
+   */
+  const handleDeleteUser = (userId: string) => {
+    // In a production app, this would trigger a Firebase Cloud Function.
+    // For example:
+    // const deleteUser = httpsCallable(functions, 'deleteUser');
+    // deleteUser({ userId: userId }).then(...).catch(...);
+    console.log(`Attempting to delete user ${userId}.`);
+    toast({
+      variant: 'destructive',
+      title: 'Feature In Development',
+      description: `Would delete user: ${userId}. This requires a server-side function to properly delete the user from Authentication and clean up all their data.`,
     });
   };
 
@@ -353,7 +384,7 @@ export default function AdminDashboardPage() {
                                                   )}
                                               </TableCell>
                                               <TableCell>{format(new Date(user.createdAt), 'MMM d, yyyy')}</TableCell>
-                                              <TableCell className="text-right">
+                                              <TableCell className="text-right space-x-2">
                                                   <Button 
                                                       variant="outline" 
                                                       size="sm"
@@ -371,6 +402,32 @@ export default function AdminDashboardPage() {
                                                       'Make Moderator'
                                                     )}
                                                   </Button>
+                                                  <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                      <Button
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        disabled={user.id === currentUser?.uid || !!user.roles?.admin}
+                                                      >
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        Delete
+                                                      </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                      <AlertDialogHeader>
+                                                        <AlertDialogTitle>Delete User: {user.username}?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                          This action cannot be undone. This will permanently delete the user's account and all associated data from Firebase Authentication and Firestore.
+                                                        </AlertDialogDescription>
+                                                      </AlertDialogHeader>
+                                                      <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDeleteUser(user.id)}>
+                                                          Yes, Delete User
+                                                        </AlertDialogAction>
+                                                      </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                  </AlertDialog>
                                               </TableCell>
                                           </TableRow>
                                       ))
@@ -440,3 +497,6 @@ export default function AdminDashboardPage() {
     </AdminRouteGuard>
   );
 }
+
+
+    
