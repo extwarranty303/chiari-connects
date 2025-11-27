@@ -132,6 +132,7 @@ function processSymptomData(symptoms: SymptomData[] | null) {
 function splitMarkdownIntoSections(markdownText: string): Array<{ title: string, content: string }> {
     if (!markdownText) return [];
     
+    // Split by lines that start with '### '
     const sections = markdownText.split(/(?=^###\s)/m);
     const finalSections: Array<{ title: string, content: string }> = [];
 
@@ -140,28 +141,27 @@ function splitMarkdownIntoSections(markdownText: string): Array<{ title: string,
         if (!trimmedSection) continue;
         
         const firstLineEnd = trimmedSection.indexOf('\n');
-        // If there's no newline, it's a single-line section (or the whole thing).
-        if (firstLineEnd === -1) {
-            // Check if it starts like a heading
-            if (trimmedSection.startsWith('###')) {
-                finalSections.push({ title: trimmedSection.replace('###', '').trim(), content: '' });
-            } else {
-                 finalSections.push({ title: 'AI-Generated Summary', content: trimmedSection });
-            }
+        
+        // Handle content that doesn't start with a heading (should be the first chunk)
+        if (!trimmedSection.startsWith('###')) {
+            finalSections.push({ title: 'AI-Generated Summary', content: trimmedSection });
             continue;
         }
 
-        const titleLine = trimmedSection.substring(0, firstLineEnd).replace('###', '').trim();
+        // If there's no newline, the whole section is the title.
+        if (firstLineEnd === -1) {
+            finalSections.push({ title: trimmedSection.replace(/^###\s*/, '').trim(), content: '' });
+            continue;
+        }
+
+        const titleLine = trimmedSection.substring(0, firstLineEnd).replace(/^###\s*/, '').trim();
         const content = trimmedSection.substring(firstLineEnd + 1).trim();
 
         if (titleLine) {
             finalSections.push({ title: titleLine, content });
-        } else if (content) {
-            // Handle content that doesn't start with a heading
-            finalSections.push({ title: 'AI-Generated Summary', content: content });
         }
     }
-
+    
     if (finalSections.length === 0 && markdownText.trim()) {
         return [{ title: 'AI-Generated Summary', content: markdownText.trim() }];
     }
@@ -249,19 +249,26 @@ function AiAnalysis({ symptoms, user, userProfile }: { symptoms: SymptomData[], 
 
                 let individualAnalyses: string[] = [];
 
+                if (symptoms.length > 0) {
+                     const symptomAnalysisResult = await analyzeSymptoms(symptomInput);
+                     individualAnalyses.push(symptomAnalysisResult.analysis);
+                }
+
                 if (previews.length > 0) {
-                     const analysisPromises = previews.map(preview => {
+                     const fileAnalysisPromises = previews.map(preview => {
                         if (preview.type === 'image') {
                             return analyzeSymptomsWithImaging({ ...symptomInput, imagingDataUri: preview.url });
                         } else {
                             return analyzeSymptomsWithReport({ ...symptomInput, reportDataUri: preview.url });
                         }
                     });
-                    const results = await Promise.all(analysisPromises);
-                    individualAnalyses = results.map(res => res.analysis);
-                } else {
-                    const result = await analyzeSymptoms(symptomInput);
-                    individualAnalyses.push(result.analysis);
+                    const fileAnalysisResults = await Promise.all(fileAnalysisPromises);
+                    individualAnalyses.push(...fileAnalysisResults.map(res => res.analysis));
+                }
+
+                if (individualAnalyses.length === 0) {
+                    setError("Please log symptoms or upload a document to generate an analysis.");
+                    return;
                 }
 
                 // Consolidate the analyses into a single report
@@ -295,7 +302,7 @@ function AiAnalysis({ symptoms, user, userProfile }: { symptoms: SymptomData[], 
                     </p>
                 </div>
                 <div className="flex gap-2 print:hidden flex-shrink-0">
-                    <Button onClick={handleGenerateAnalysis} disabled={isAnalysisPending || symptoms.length === 0}>
+                    <Button onClick={handleGenerateAnalysis} disabled={isAnalysisPending}>
                         <BrainCircuit className="mr-2 h-4 w-4" />
                         {isAnalysisPending ? 'Analyzing...' : 'Generate AI Summary'}
                     </Button>
@@ -398,11 +405,9 @@ function AiAnalysis({ symptoms, user, userProfile }: { symptoms: SymptomData[], 
                             </div>
                         ) : (
                             <div className="prose prose-sm dark:prose-invert max-w-none">
-                                <ul className="list-disc list-outside space-y-2 pl-5">
-                                    {questionsList.map((q, i) => (
-                                        <li key={i}>{q}</li>
-                                    ))}
-                                </ul>
+                                <ReactMarkdown>
+                                    {questionsList.map(q => `- ${q}`).join('\n')}
+                                </ReactMarkdown>
                             </div>
                         )}
                     </CardContent>
@@ -488,12 +493,12 @@ export default function SymptomReportPage() {
              <p className="text-sm text-gray-600">Report Generated on {format(new Date(), 'MMMM d, yyyy')}</p>
           </div>
 
-          <div className="flex flex-col items-center text-center gap-4 mb-8 print:hidden">
-            <Icons.logo className="w-48 h-auto text-primary" />
+          <div className="flex flex-col items-center text-center gap-2 mb-8 print:hidden">
+            <Icons.logo className="w-64 h-auto text-primary" />
             <div>
-                <h2 className="text-2xl font-bold text-foreground">Symptom History Report</h2>
+                <h2 className="text-3xl font-bold text-foreground">Symptom History Report</h2>
                 <p className="text-muted-foreground">
-                    Generated on {format(new Date(), 'MMMM d, yyyy')} for {userProfile?.username || user.displayName || user.email}
+                    Analysis for: {userProfile?.username || user.displayName || user.email}
                 </p>
             </div>
           </div>
@@ -514,69 +519,73 @@ export default function SymptomReportPage() {
 
           {!isLoading && symptoms && (
             <>
-              {symptoms.length > 0 ? (
+              {(symptoms.length > 0 || previews.length > 0) ? (
                 <div className="space-y-12">
                    <AiAnalysis symptoms={symptoms} user={user} userProfile={userProfile} />
                   
-                  <div className="page-break-before page-break-inside-avoid">
-                     <h3 className="text-xl font-semibold border-b pb-2 mb-4">Symptom Severity Over Time</h3>
-                     <ResponsiveContainer width="100%" height={400}>
-                        <LineChart data={chartData}>
-                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                           <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
-                           <YAxis stroke="hsl(var(--muted-foreground))" domain={[0, 10]} />
-                           <Tooltip
-                                contentStyle={{
-                                    background: 'hsl(var(--card))',
-                                    border: '1px solid hsl(var(--border))',
-                                    borderRadius: 'var(--radius)',
-                                }}
-                            />
-                           <Legend />
-                           {Object.keys(symptomColorMap).map(symptom => (
-                                <Line 
-                                    key={symptom}
-                                    type="monotone" 
-                                    dataKey={symptom} 
-                                    stroke={symptomColorMap[symptom]} 
-                                    strokeWidth={2}
-                                    connectNulls
-                                    dot={{ r: 4 }}
-                                    activeDot={{ r: 6 }}
+                  {symptoms.length > 0 && (
+                    <>
+                      <div className="page-break-before page-break-inside-avoid">
+                        <h3 className="text-xl font-semibold border-b pb-2 mb-4">Symptom Severity Over Time</h3>
+                        <ResponsiveContainer width="100%" height={400}>
+                            <LineChart data={chartData}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                              <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
+                              <YAxis stroke="hsl(var(--muted-foreground))" domain={[0, 10]} />
+                              <Tooltip
+                                    contentStyle={{
+                                        background: 'hsl(var(--card))',
+                                        border: '1px solid hsl(var(--border))',
+                                        borderRadius: 'var(--radius)',
+                                    }}
                                 />
-                           ))}
-                        </LineChart>
-                     </ResponsiveContainer>
-                  </div>
+                              <Legend />
+                              {Object.keys(symptomColorMap).map(symptom => (
+                                    <Line 
+                                        key={symptom}
+                                        type="monotone" 
+                                        dataKey={symptom} 
+                                        stroke={symptomColorMap[symptom]} 
+                                        strokeWidth={2}
+                                        connectNulls
+                                        dot={{ r: 4 }}
+                                        activeDot={{ r: 6 }}
+                                    />
+                              ))}
+                            </LineChart>
+                        </ResponsiveContainer>
+                      </div>
 
-                  <div className="page-break-inside-avoid">
-                    <h3 className="text-xl font-semibold border-b pb-2 mb-4">Symptom Summary</h3>
-                    <div className="border rounded-lg overflow-hidden">
-                        <Table>
-                        <TableHeader>
-                            <TableRow>
-                            <TableHead>Symptom</TableHead>
-                            <TableHead className="text-center">Times Logged</TableHead>
-                            <TableHead className="text-center">Avg. Severity (1-10)</TableHead>
-                            <TableHead className="text-center">Avg. Frequency (1-10)</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {summaryData.map(symptom => (
-                            <TableRow key={symptom.symptom}>
-                                <TableCell className="font-medium flex items-center gap-2">
-                                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: symptomColorMap[symptom.symptom] }}/>
-                                   {symptom.symptom}
-                                </TableCell>
-                                <TableCell className="text-center">{symptom.count}</TableCell>
-                                <TableCell className="text-center">{symptom.avgSeverity}</TableCell>
-                                <TableCell className="text-center">{symptom.avgFrequency}</TableCell>
-                            </TableRow>
-                            ))}
-                        </TableBody>
-                        </Table>
-                    </div>
-                  </div>
+                      <div className="page-break-inside-avoid">
+                        <h3 className="text-xl font-semibold border-b pb-2 mb-4">Symptom Summary</h3>
+                        <div className="border rounded-lg overflow-hidden">
+                            <Table>
+                            <TableHeader>
+                                <TableRow>
+                                <TableHead>Symptom</TableHead>
+                                <TableHead className="text-center">Times Logged</TableHead>
+                                <TableHead className="text-center">Avg. Severity (1-10)</TableHead>
+                                <TableHead className="text-center">Avg. Frequency (1-10)</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {summaryData.map(symptom => (
+                                <TableRow key={symptom.symptom}>
+                                    <TableCell className="font-medium flex items-center gap-2">
+                                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: symptomColorMap[symptom.symptom] }}/>
+                                      {symptom.symptom}
+                                    </TableCell>
+                                    <TableCell className="text-center">{symptom.count}</TableCell>
+                                    <TableCell className="text-center">{symptom.avgSeverity}</TableCell>
+                                    <TableCell className="text-center">{symptom.avgFrequency}</TableCell>
+                                </TableRow>
+                                ))}
+                            </TableBody>
+                            </Table>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-10 border-2 border-dashed rounded-lg">
