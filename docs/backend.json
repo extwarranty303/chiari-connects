@@ -52,6 +52,10 @@
           "description": "Timestamp indicating when the user account was created.",
           "format": "date-time"
         },
+        "hasCompletedOnboarding": {
+            "type": "boolean",
+            "description": "Flag indicating if the user has completed the initial profile setup."
+        },
         "roles": {
             "type": "object",
             "description": "Firebase custom claims for role-based access control.",
@@ -76,7 +80,8 @@
         "city",
         "state",
         "phoneNumber",
-        "createdAt"
+        "createdAt",
+        "hasCompletedOnboarding"
       ]
     },
     "Project": {

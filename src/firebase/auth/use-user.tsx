@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Auth, User, onIdTokenChanged } from 'firebase/auth';
 import { Firestore, doc, onSnapshot } from 'firebase/firestore';
 import { getDecodedIdToken, DecodedIdToken } from './user-claims';
+import { useRouter } from 'next/navigation';
 
 export interface UserProfile {
   id: string;
@@ -11,6 +12,13 @@ export interface UserProfile {
   email: string;
   createdAt: string;
   points?: number;
+  hasCompletedOnboarding?: boolean;
+  firstName?: string;
+  lastName?: string;
+  city?: string;
+  state?: string;
+  phoneNumber?: string;
+  photoURL?: string;
   roles?: {
     admin?: boolean;
     moderator?: boolean;
@@ -42,6 +50,8 @@ export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthStat
     userProfile: null,
   });
 
+  const router = useRouter();
+
   useEffect(() => {
     setState(prevState => ({ ...prevState, isUserLoading: true }));
 
@@ -71,14 +81,19 @@ export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthStat
             }
 
             // Set up a real-time listener for the user's profile document.
-            // This also contains the roles field which may not be in sync with custom claims.
-            // The custom claims from the token are the source of truth for permissions.
             const profileRef = doc(firestore, 'users', user.uid);
             profileUnsubscribe = onSnapshot(profileRef, 
               (profileSnap) => {
                 const userProfile = profileSnap.exists() ? profileSnap.data() as UserProfile : null;
-                // We use roles from the token for security, but roles in the document are useful for UI.
-                setState({ user, isUserLoading: false, userError: null, isAdmin, isModerator, userProfile });
+                
+                // --- Onboarding Redirection Logic ---
+                // If the user profile exists but onboarding is not complete, redirect.
+                if (profileSnap.exists() && userProfile?.hasCompletedOnboarding === false) {
+                    router.replace('/onboarding');
+                } else {
+                     // We use roles from the token for security, but roles in the document are useful for UI.
+                    setState({ user, isUserLoading: false, userError: null, isAdmin, isModerator, userProfile });
+                }
               },
               (profileError) => {
                 console.error("Error fetching user profile:", profileError);
@@ -107,7 +122,7 @@ export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthStat
         profileUnsubscribe();
       }
     };
-  }, [auth, firestore]);
+  }, [auth, firestore, router]);
 
   return state;
 }

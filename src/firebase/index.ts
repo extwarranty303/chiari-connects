@@ -68,11 +68,11 @@ export function getSdks(firebaseApp: FirebaseApp) {
                     photoURL: user.photoURL || '',
                     createdAt: new Date().toISOString(),
                     points: 0,
+                    hasCompletedOnboarding: false, // <-- Set onboarding flag
                 };
             } else {
-                // For email/password, we assume the data is captured elsewhere and won't have it here.
-                // The signup form logic in `auth/page.tsx` is now the primary source for creating the user doc.
-                // This block is a fallback in case that flow is interrupted.
+                // For email/password, the data is captured in the signup form.
+                // This block now serves as a robust fallback.
                  newUserDoc = {
                     id: user.uid,
                     email: user.email,
@@ -85,6 +85,7 @@ export function getSdks(firebaseApp: FirebaseApp) {
                     photoURL: '',
                     createdAt: new Date().toISOString(),
                     points: 0,
+                    hasCompletedOnboarding: false, // <-- Set onboarding flag
                 };
             }
             
