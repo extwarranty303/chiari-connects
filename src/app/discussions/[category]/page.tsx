@@ -27,6 +27,7 @@ interface DiscussionPost {
   id: string;
   title: string;
   content: string;
+
   username: string;
   userId: string;
   createdAt: string; 
@@ -181,5 +182,3 @@ export default function CategoryPage() {
     </div>
   );
 }
-
-    

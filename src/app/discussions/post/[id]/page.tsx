@@ -124,11 +124,11 @@ export default function PostPage() {
    * If bookmarking, it awards points to the post's author.
    */
   const handleToggleBookmark = async () => {
-    if (!user || !post) return;
+    if (!user || !post || !bookmarkRef) return;
 
     if (isBookmarked) {
         // Delete the bookmark
-        deleteDocumentNonBlocking(bookmarkRef!);
+        deleteDocumentNonBlocking(bookmarkRef);
         toast({ title: 'Bookmark removed.' });
     } else {
         // Create the bookmark
@@ -137,7 +137,7 @@ export default function PostPage() {
             userId: user.uid,
             createdAt: new Date().toISOString(),
         };
-        setDocumentNonBlocking(bookmarkRef!, newBookmark, { merge: false });
+        setDocumentNonBlocking(bookmarkRef, newBookmark, { merge: false });
 
         // Award points to the post author
         const authorRef = doc(firestore, 'users', post.userId);
@@ -305,5 +305,3 @@ export default function PostPage() {
     </div>
   );
 }
-
-    
