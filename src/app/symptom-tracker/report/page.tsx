@@ -463,7 +463,7 @@ export default function SymptomReportPage() {
           <Button variant="outline" onClick={() => router.back()}>
             Back to Tracker
           </Button>
-          <Button onClick={handlePrint} disabled={!symptoms || symptoms.length === 0}>
+          <Button onClick={handlePrint} disabled={isLoading || !symptoms || symptoms.length === 0}>
             <Printer className="mr-2 h-4 w-4" />
             Print / Save as PDF
           </Button>
@@ -593,43 +593,17 @@ export default function SymptomReportPage() {
           .print\\:hidden {
             display: none;
           }
-          .print\\:block {
-            display: block;
-          }
-          .print\\:shadow-none {
-            box-shadow: none;
-          }
-           .print\\:border-none {
-            border: none;
-          }
-          .print\\:p-0 {
+          main {
             padding: 0;
-          }
-           .print\\:bg-white {
-            background-color: #fff;
           }
           .prose {
             color: #000;
-          }
-          .prose-headings\\:my-4 {
-            margin-top: 1rem;
-            margin-bottom: 1rem;
-          }
-          .prose-p\\:my-2 {
-            margin-top: 0.5rem;
-            margin-bottom: 0.5rem;
           }
           .page-break-before {
             break-before: page;
           }
           .page-break-inside-avoid {
             break-inside: avoid;
-          }
-          .recharts-legend-wrapper {
-             display: none; /* Hide legend on print for cleaner look */
-          }
-          .recharts-wrapper {
-             font-size: 10px;
           }
         }
       `}</style>
