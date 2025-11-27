@@ -4,36 +4,7 @@
 
 @layer base {
   :root {
-    /* A darker, calming theme based on soft blues and grays for better visual comfort. */
-    --background: 220 20% 94%; /* Soft, slightly darker blue-gray */
-    --foreground: 215 28% 17%; /* Dark slate blue for high contrast text */
-    --card: 220 25% 98%; /* Slightly lighter than background for cards */
-    --card-foreground: 215 28% 17%;
-    --popover: 220 25% 98%;
-    --popover-foreground: 215 28% 17%;
-    --primary: 205 80% 50%; /* A calm, reassuring blue */
-    --primary-foreground: 210 40% 98%;
-    --secondary: 215 20% 88%; /* A slightly darker gray */
-    --secondary-foreground: 215.4 16.3% 30%;
-    --muted: 215 20% 88%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 180 60% 40%; /* Muted teal for accents */
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 215 25% 85%;
-    --input: 215 25% 85%;
-    --ring: 205 80% 50%;
-    --chart-1: 205 80% 50%;
-    --chart-2: 180 60% 40%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --radius: 0.5rem;
-  }
-
-  .dark {
-    /* A calming dark theme as an alternative, maintaining the blue and teal palette. */
+    /* A calming dark theme as the default, to reduce eye strain. */
     --background: 222 47% 11%;
     --foreground: 210 40% 98%;
     --card: 222 47% 14%;
@@ -55,6 +26,35 @@
     --ring: 205 90% 55%;
     --chart-1: 205 90% 55%;
     --chart-2: 180 55% 50%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* The previous light theme is now available under the .dark class, if ever needed. */
+    --background: 220 20% 94%; /* Soft, slightly darker blue-gray */
+    --foreground: 215 28% 17%; /* Dark slate blue for high contrast text */
+    --card: 220 25% 98%; /* Slightly lighter than background for cards */
+    --card-foreground: 215 28% 17%;
+    --popover: 220 25% 98%;
+    --popover-foreground: 215 28% 17%;
+    --primary: 205 80% 50%; /* A calm, reassuring blue */
+    --primary-foreground: 210 40% 98%;
+    --secondary: 215 20% 88%; /* A slightly darker gray */
+    --secondary-foreground: 215.4 16.3% 30%;
+    --muted: 215 20% 88%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 180 60% 40%; /* Muted teal for accents */
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 215 25% 85%;
+    --input: 215 25% 85%;
+    --ring: 205 80% 50%;
+    --chart-1: 205 80% 50%;
+    --chart-2: 180 60% 40%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
