@@ -409,23 +409,12 @@ export default function SymptomReportPage() {
   const { firestore } = useFirebase();
   const { user, userProfile, isUserLoading } = useUser();
   const router = useRouter();
-  const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/auth');
     }
   }, [user, isUserLoading, router]);
-
-  useEffect(() => {
-    if (isPrinting) {
-      window.print();
-      // Reset printing state after the print dialog is handled
-      // This timeout allows the browser to process the print command
-      const timer = setTimeout(() => setIsPrinting(false), 100);
-      return () => clearTimeout(timer);
-    }
-  }, [isPrinting]);
 
   const symptomsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -437,10 +426,6 @@ export default function SymptomReportPage() {
     isLoading: isLoadingSymptoms,
     error: symptomsError,
   } = useCollection<SymptomData>(symptomsQuery);
-
-  const handlePrint = () => {
-    setIsPrinting(true);
-  };
 
   const { chartData, summaryData } = useMemo(
     () => processSymptomData(symptoms),
@@ -475,7 +460,7 @@ export default function SymptomReportPage() {
             <Button variant="outline" onClick={() => router.back()}>
                 Back to Tracker
             </Button>
-            <Button onClick={handlePrint} disabled={isLoading || !symptoms || symptoms.length === 0}>
+            <Button onClick={() => window.print()} disabled={isLoading || !symptoms || symptoms.length === 0}>
                 <Printer className="mr-2 h-4 w-4" />
                 Print / Save as PDF
             </Button>
