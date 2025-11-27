@@ -194,7 +194,7 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
                             result = await analyzeSymptomsWithReport(reportInput);
                         }
                         
-                        combinedAnalysis += `Analysis for ${file.name}:\n${result.analysis}\n\n`;
+                        combinedAnalysis += `Analysis for ${file.name}:\n\n${result.analysis}\n\n`;
                     }
                 }
                 setAnalysis(combinedAnalysis);
@@ -275,6 +275,11 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
                     </p>
                 )}
              </div>
+            {analysis && (
+                <div className="mt-4 pt-4 border-t text-xs text-muted-foreground">
+                    <p><strong>Disclaimer:</strong> This application and its AI-powered analyses are for informational purposes only and are not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition. <strong>This application is not HIPAA compliant.</strong> Please do not store sensitive personal health information.</p>
+                </div>
+            )}
         </div>
     );
 }
@@ -354,7 +359,7 @@ export default function SymptomReportPage() {
                 Generated on {format(new Date(), 'MMMM d, yyyy')} for {user.displayName || user.email}
               </p>
             </div>
-            <Icons.logo className="w-24 h-24 text-primary hidden sm:block print:hidden" />
+            <Icons.logo className="w-32 h-32 text-primary hidden sm:block print:hidden" />
           </div>
 
           {isLoadingSymptoms && (
@@ -442,10 +447,11 @@ export default function SymptomReportPage() {
             </>
           )}
 
-          <div className="mt-12 pt-6 border-t text-xs text-muted-foreground text-center print:hidden">
-            <p>
+          <div className="mt-12 pt-6 border-t text-xs text-muted-foreground text-center">
+            <p className="print:hidden">
               <strong>Disclaimer:</strong> This report is a log of self-reported data and is intended for informational purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment.
             </p>
+             <p className="mt-2">© 2024 The Chiari Voices Foundation. All rights reserved.</p>
           </div>
         </div>
       </main>
