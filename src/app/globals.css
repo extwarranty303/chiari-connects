@@ -4,28 +4,28 @@
 
 @layer base {
   :root {
-    /* A light, calming theme based on soft blues and gentle grays. */
-    --background: 210 40% 98%; /* Very light, almost white gray */
+    /* A darker, calming theme based on soft blues and grays for better visual comfort. */
+    --background: 220 20% 94%; /* Soft, slightly darker blue-gray */
     --foreground: 215 28% 17%; /* Dark slate blue for high contrast text */
-    --card: 210 40% 100%; /* White */
+    --card: 220 25% 98%; /* Slightly lighter than background for cards */
     --card-foreground: 215 28% 17%;
-    --popover: 210 40% 100%;
+    --popover: 220 25% 98%;
     --popover-foreground: 215 28% 17%;
-    --primary: 205 90% 50%; /* A calm, reassuring blue */
+    --primary: 205 80% 50%; /* A calm, reassuring blue */
     --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%; /* Light gray */
-    --secondary-foreground: 215.4 16.3% 46.9%;
-    --muted: 210 40% 96.1%;
+    --secondary: 215 20% 88%; /* A slightly darker gray */
+    --secondary-foreground: 215.4 16.3% 30%;
+    --muted: 215 20% 88%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 180 55% 45%; /* Muted teal for accents */
+    --accent: 180 60% 40%; /* Muted teal for accents */
     --accent-foreground: 210 40% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 205 90% 50%;
-    --chart-1: 205 90% 50%;
-    --chart-2: 180 55% 45%;
+    --border: 215 25% 85%;
+    --input: 215 25% 85%;
+    --ring: 205 80% 50%;
+    --chart-1: 205 80% 50%;
+    --chart-2: 180 60% 40%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
