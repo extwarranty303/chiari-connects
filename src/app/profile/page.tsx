@@ -147,7 +147,7 @@ function UserProfileForm({ userProfile, userId }: { userProfile: UserProfile, us
 function RecentPosts({ userId }: { userId: string }) {
     const { firestore } = useFirebase();
     const postsQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        if (!firestore || !userId) return null;
         return query(collection(firestore, 'discussions'), where('userId', '==', userId), orderBy('createdAt', 'desc'), limit(5));
     }, [firestore, userId]);
     const { data: posts, isLoading } = useCollection<DiscussionPost>(postsQuery);
@@ -188,7 +188,7 @@ function BookmarkedPosts({ userId }: { userId: string }) {
 
     // Query for bookmark document IDs
     const bookmarksQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        if (!firestore || !userId) return null;
         return query(collection(firestore, 'users', userId, 'bookmarks'), orderBy('createdAt', 'desc'), limit(5));
     }, [firestore, userId]);
     
