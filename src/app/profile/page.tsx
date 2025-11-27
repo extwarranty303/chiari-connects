@@ -2,16 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { collection, query, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { Loader2, User as UserIcon, Activity, FileText, LogOut, Award } from 'lucide-react';
 import Link from 'next/link';
 
-import { useFirebase, useUser, useCollection, useMemoFirebase, useDoc, updateDocumentNonBlocking } from '@/firebase';
-import { type SymptomData } from '@/app/symptom-tracker/page';
+import { useFirebase, useUser, updateDocumentNonBlocking } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { AppHeader } from '@/components/app/header';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -39,19 +38,6 @@ const profileSchema = z.object({
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
-
-// Defines the shape of the user profile data stored in Firestore.
-interface UserProfile {
-  username: string;
-  email: string;
-  createdAt: string;
-  firstName?: string;
-  lastName?: string;
-  city?: string;
-  state?: string;
-  phoneNumber?: string;
-  points?: number;
-}
 
 /**
  * A dedicated component for the user profile form.
