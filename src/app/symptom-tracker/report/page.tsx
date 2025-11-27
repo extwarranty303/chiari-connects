@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { format, parseISO } from 'date-fns';
-import { Loader2, Printer, BrainCircuit, AlertTriangle, Upload, File, X, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Printer, BrainCircuit, AlertTriangle, Upload, File, X, Image as ImageIcon, MessageCircleQuestion } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
@@ -22,9 +22,10 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { analyzeSymptoms, type AnalyzeSymptomsInput } from '@/ai/flows/ai-analyze-symptoms';
-import { analyzeSymptomsWithImaging, type AnalyzeSymptomsWithImagingInput } from '@/ai/flows/ai-analyze-symptoms-with-imaging';
-import { analyzeSymptomsWithReport, type AnalyzeSymptomsWithReportInput } from '@/ai/flows/ai-analyze-symptoms-with-report';
+import { analyzeSymptoms } from '@/ai/flows/ai-analyze-symptoms';
+import { analyzeSymptomsWithImaging } from '@/ai/flows/ai-analyze-symptoms-with-imaging';
+import { analyzeSymptomsWithReport } from '@/ai/flows/ai-analyze-symptoms-with-report';
+import { generateDoctorQuestions, GenerateDoctorQuestionsOutput } from '@/ai/flows/ai-generate-doctor-questions';
 import { Footer } from '@/components/app/footer';
 
 /**
@@ -81,8 +82,10 @@ interface FilePreview {
  * @returns {React.ReactElement} The AI analysis section component.
  */
 function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
-    const [isPending, startTransition] = useTransition();
+    const [isAnalysisPending, startAnalysisTransition] = useTransition();
+    const [isQuestionPending, startQuestionTransition] = useTransition();
     const [analysis, setAnalysis] = useState('');
+    const [doctorQuestions, setDoctorQuestions] = useState<GenerateDoctorQuestionsOutput | null>(null);
     const [error, setError] = useState('');
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
     const [previews, setPreviews] = useState<FilePreview[]>([]);
@@ -151,50 +154,38 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
      * and calls the appropriate AI flow, then displays the result or an error message.
      */
     const handleGenerateAnalysis = () => {
-        startTransition(async () => {
+        startAnalysisTransition(async () => {
             setError('');
             setAnalysis('');
+            setDoctorQuestions(null);
             
-            // This version handles multiple uploads by calling the AI flow for each file.
-            // A more advanced implementation might combine all text into one prompt.
             let combinedAnalysis = '';
 
             try {
+                const symptomInput = {
+                    symptoms: symptoms.map(s => ({
+                        symptom: s.symptom,
+                        severity: s.severity,
+                        frequency: s.frequency,
+                        date: format(parseISO(s.date), 'yyyy-MM-dd')
+                    }))
+                };
+
                 if (uploadedFiles.length === 0) {
-                     // If no files, run symptom-only analysis
-                    const symptomInput: AnalyzeSymptomsInput = {
-                        symptoms: symptoms.map(s => ({
-                            symptom: s.symptom,
-                            severity: s.severity,
-                            frequency: s.frequency,
-                            date: format(parseISO(s.date), 'yyyy-MM-dd')
-                        }))
-                    };
                     const result = await analyzeSymptoms(symptomInput);
                     combinedAnalysis = result.analysis;
                 } else {
                     for (const file of uploadedFiles) {
-                         const symptomInput = {
-                            symptoms: symptoms.map(s => ({
-                                symptom: s.symptom,
-                                severity: s.severity,
-                                frequency: s.frequency,
-                                date: format(parseISO(s.date), 'yyyy-MM-dd')
-                            }))
-                        };
-                        
                         const dataUri = await toDataURL(file);
                         let result;
 
                         if (['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
-                            const imagingInput: AnalyzeSymptomsWithImagingInput = { ...symptomInput, imagingDataUri: dataUri };
-                            result = await analyzeSymptomsWithImaging(imagingInput);
+                            result = await analyzeSymptomsWithImaging({ ...symptomInput, imagingDataUri: dataUri });
                         } else {
-                            const reportInput: AnalyzeSymptomsWithReportInput = { ...symptomInput, reportDataUri: dataUri };
-                            result = await analyzeSymptomsWithReport(reportInput);
+                            result = await analyzeSymptomsWithReport({ ...symptomInput, reportDataUri: dataUri });
                         }
                         
-                        combinedAnalysis += `Analysis for ${file.name}:\n\n${result.analysis}\n\n`;
+                        combinedAnalysis += `### Analysis for: ${file.name}\n\n${result.analysis}\n\n---\n\n`;
                     }
                 }
                 setAnalysis(combinedAnalysis);
@@ -204,6 +195,27 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
             }
         });
     };
+
+    /**
+     * Triggers the AI flow to generate questions for a doctor based on the existing analysis.
+     */
+    const handleGenerateQuestions = () => {
+        if (!analysis) return;
+
+        startQuestionTransition(async () => {
+            try {
+                const result = await generateDoctorQuestions({ analysis });
+                setDoctorQuestions(result);
+            } catch (e: any) {
+                 console.error("AI question generation failed:", e);
+                 toast({
+                    variant: 'destructive',
+                    title: 'Error Generating Questions',
+                    description: 'Could not generate questions. Please try again.'
+                 })
+            }
+        });
+    }
     
 
     return (
@@ -211,9 +223,9 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <h3 className="text-xl font-semibold border-b pb-2 mb-4 flex-grow">AI-Generated Summary</h3>
                 <div className="flex gap-2 print:hidden -mt-4 sm:mt-0">
-                    <Button onClick={handleGenerateAnalysis} disabled={isPending || symptoms.length === 0}>
+                    <Button onClick={handleGenerateAnalysis} disabled={isAnalysisPending || symptoms.length === 0}>
                         <BrainCircuit className="mr-2 h-4 w-4" />
-                        {isPending ? 'Analyzing...' : 'Generate AI Summary'}
+                        {isAnalysisPending ? 'Analyzing...' : 'Generate AI Summary'}
                     </Button>
                 </div>
             </div>
@@ -226,7 +238,7 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
                     accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,.doc,.docx,.txt"
                     className="hidden"
                 />
-                <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isPending}>
+                <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isAnalysisPending}>
                     <Upload className="mr-2 h-4 w-4" />
                     Add Image or Document
                 </Button>
@@ -250,7 +262,7 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
              </div>
              
              <div className="mt-4 bg-muted/50 p-4 rounded-lg min-h-[150px] print:bg-white print:border print:border-gray-200">
-                {isPending && (
+                {isAnalysisPending && (
                      <div className="space-y-3">
                         <Skeleton className="h-4 w-full" />
                         <Skeleton className="h-4 w-full" />
@@ -269,12 +281,42 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
                         <ReactMarkdown>{analysis}</ReactMarkdown>
                     </div>
                 )}
-                {!isPending && !analysis && !error && (
+                {!isAnalysisPending && !analysis && !error && (
                     <p className="text-sm text-muted-foreground text-center pt-10">
                         Add images or documents and click "Generate AI Summary" to get an analysis of your symptom data.
                     </p>
                 )}
              </div>
+
+            {analysis && !isAnalysisPending && (
+                <div className="mt-6 print:hidden">
+                    <Button variant="outline" onClick={handleGenerateQuestions} disabled={isQuestionPending}>
+                        <MessageCircleQuestion className="mr-2 h-4 w-4" />
+                        {isQuestionPending ? 'Generating Questions...' : 'Generate Doctor Questions'}
+                    </Button>
+
+                    {isQuestionPending && (
+                        <div className="mt-4 space-y-2">
+                            <Skeleton className="h-4 w-3/4" />
+                            <Skeleton className="h-4 w-4/5" />
+                            <Skeleton className="h-4 w-2/3" />
+                        </div>
+                    )}
+                    
+                    {doctorQuestions && doctorQuestions.questions.length > 0 && (
+                        <div className="mt-4 bg-muted/50 p-4 rounded-lg">
+                            <h4 className="font-semibold mb-2">Questions for Your Doctor:</h4>
+                            <ul className="list-disc list-inside space-y-2 text-sm">
+                                {doctorQuestions.questions.map((q, i) => (
+                                    <li key={i}>{q}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </div>
+            )}
+
+
             {analysis && (
                 <div className="mt-4 pt-4 border-t text-xs text-muted-foreground">
                     <p><strong>Disclaimer:</strong> This application and its AI-powered analyses are for informational purposes only and are not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition. <strong>This application is not HIPAA compliant.</strong> Please do not store sensitive personal health information.</p>
