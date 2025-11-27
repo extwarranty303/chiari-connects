@@ -30,6 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -123,6 +124,49 @@ function processSymptomData(symptoms: SymptomData[] | null) {
   return { chartData, summaryData, symptomColorMap };
 }
 
+/**
+ * Splits a markdown string into sections based on top-level headings (###).
+ * @param {string} markdownText - The markdown text to split.
+ * @returns {Array<{title: string, content: string}>} An array of section objects.
+ */
+function splitMarkdownIntoSections(markdownText: string): Array<{ title: string, content: string }> {
+    if (!markdownText) return [];
+    
+    // Split by '---' first for multi-file reports, then by headings.
+    const fileSections = markdownText.split(/\n---\n/);
+    const finalSections: Array<{ title: string, content: string }> = [];
+
+    fileSections.forEach(fileSection => {
+        const sections = fileSection.split(/(?=^###\s)/m);
+        
+        for (const section of sections) {
+            const trimmedSection = section.trim();
+            if (!trimmedSection) continue;
+            
+            const firstLineEnd = trimmedSection.indexOf('\n');
+            if (firstLineEnd === -1) {
+                finalSections.push({ title: 'Summary', content: trimmedSection });
+                continue;
+            }
+
+            const titleLine = trimmedSection.substring(0, firstLineEnd).replace('###', '').trim();
+            const content = trimmedSection.substring(firstLineEnd + 1).trim();
+
+            if (titleLine) {
+                 finalSections.push({ title: titleLine, content });
+            }
+        }
+    });
+
+    // If splitting results in nothing, return the whole text as one section.
+    if (finalSections.length === 0 && markdownText.trim()) {
+        return [{ title: 'AI-Generated Summary', content: markdownText.trim() }];
+    }
+
+    return finalSections;
+}
+
+
 
 /**
  * A component that provides an AI-powered analysis of the user's symptom data.
@@ -138,6 +182,8 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
 
+    const analysisSections = useMemo(() => splitMarkdownIntoSections(analysis), [analysis]);
+
     const toDataURL = (file: File): Promise<string> =>
         new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -149,8 +195,8 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
     const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files) {
             const newFiles = Array.from(event.target.files);
-            const currentFiles = [...uploadedFiles];
-            const currentPreviews = [...previews];
+            let currentFiles = [...uploadedFiles];
+            let currentPreviews = [...previews];
 
             for (const file of newFiles) {
                 const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -281,38 +327,50 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
                 )}
              </div>
              
-             <div className="mt-4 bg-muted/50 p-4 rounded-lg min-h-[150px] print:bg-white print:p-0 print:border-none print:shadow-none">
+             <div className="mt-4 grid grid-cols-1 gap-6">
                 {isAnalysisPending && (
-                     <div className="space-y-4 p-4">
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-4/5" />
-                        <Skeleton className="h-4 w-1/2" />
-                    </div>
+                    <Card className="glassmorphism">
+                        <CardHeader><CardTitle>Analyzing...</CardTitle></CardHeader>
+                        <CardContent>
+                             <div className="space-y-4 p-4">
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-4/5" />
+                                <Skeleton className="h-4 w-1/2" />
+                            </div>
+                        </CardContent>
+                    </Card>
                 )}
                 {error && (
-                    <div className="text-destructive flex items-center gap-2">
+                    <Alert variant="destructive">
                         <AlertTriangle className="h-4 w-4" />
-                        <p>{error}</p>
-                    </div>
+                        <AlertTitle>Analysis Error</AlertTitle>
+                        <AlertDescription>{error}</AlertDescription>
+                    </Alert>
                 )}
-                {analysis && (
-                    <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:my-4 prose-p:my-2">
-                        <ReactMarkdown>{analysis}</ReactMarkdown>
+                {analysisSections.length > 0 && analysisSections.map((section, index) => (
+                    <Card key={index} className="glassmorphism page-break-inside-avoid">
+                        <CardHeader><CardTitle>{section.title}</CardTitle></CardHeader>
+                        <CardContent>
+                            <div className="prose prose-sm dark:prose-invert max-w-none">
+                                <ReactMarkdown>{section.content}</ReactMarkdown>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+                 {!isAnalysisPending && !analysis && !error && (
+                    <div className="text-sm text-muted-foreground text-center py-10 border-2 border-dashed rounded-lg">
+                        <p>Click "Generate AI Summary" to get an analysis of your symptom data.</p>
+                        <p>You can optionally add images or documents first.</p>
                     </div>
-                )}
-                {!isAnalysisPending && !analysis && !error && (
-                    <p className="text-sm text-muted-foreground text-center pt-10">
-                        Click "Generate AI Summary" to get an analysis of your symptom data. You can optionally add images or documents first.
-                    </p>
                 )}
              </div>
 
             {previews.filter(p => p.type === 'image').length > 0 && (
-                <div className="mt-6 hidden print:block space-y-4 page-break-inside-avoid">
-                     <h4 className="font-semibold text-lg">Uploaded Imaging</h4>
+                <div className="mt-6 hidden print:block space-y-4 page-break-before page-break-inside-avoid">
+                     <h3 className="font-semibold text-xl border-b pb-2 mb-4">Uploaded Imaging</h3>
                      {previews.filter(p => p.type === 'image').map((preview, index) => (
-                        <div key={index}>
+                        <div key={index} className="page-break-inside-avoid">
                             <p className="text-sm font-medium mb-2">{preview.name}</p>
                             <img src={preview.url} alt={`Uploaded image ${preview.name}`} className="max-w-full rounded-md border" style={{ maxHeight: '400px' }} />
                         </div>
@@ -323,26 +381,28 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
 
             
             {(isAnalysisPending || (doctorQuestions && doctorQuestions.questions.length > 0)) && (
-                <div className="mt-6 page-break-before page-break-inside-avoid">
-                    <h3 className="text-xl font-semibold border-b pb-2 mb-4">Questions for Your Doctor</h3>
-                    {isAnalysisPending && !doctorQuestions ? (
-                        <div className="space-y-3 p-4">
-                            <Skeleton className="h-4 w-3/4" />
-                            <Skeleton className="h-4 w-4/5" />
-                            <Skeleton className="h-4 w-2/3" />
-                        </div>
-                    ) : (
-                        doctorQuestions && (
-                             <div className="prose prose-sm dark:prose-invert max-w-none">
-                                <ul className="list-disc list-outside space-y-2 pl-5">
-                                    {doctorQuestions.questions.map((q, i) => (
-                                        <li key={i}>{q}</li>
-                                    ))}
-                                </ul>
+                 <Card className="glassmorphism mt-6 page-break-before page-break-inside-avoid">
+                    <CardHeader><CardTitle>Questions for Your Doctor</CardTitle></CardHeader>
+                    <CardContent>
+                         {isAnalysisPending && !doctorQuestions ? (
+                            <div className="space-y-3">
+                                <Skeleton className="h-4 w-3/4" />
+                                <Skeleton className="h-4 w-4/5" />
+                                <Skeleton className="h-4 w-2/3" />
                             </div>
-                        )
-                    )}
-                </div>
+                        ) : (
+                            doctorQuestions && (
+                                <div className="prose prose-sm dark:prose-invert max-w-none">
+                                    <ul className="list-disc list-outside space-y-2 pl-5">
+                                        {doctorQuestions.questions.map((q, i) => (
+                                            <li key={i}>{q}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )
+                        )}
+                    </CardContent>
+                </Card>
             )}
 
             {(analysis || doctorQuestions) && (
