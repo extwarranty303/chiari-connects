@@ -46,10 +46,10 @@ const prompt = ai.definePrompt({
 
   **CRITICAL INSTRUCTIONS**:
   1.  **Synthesize, Do Not Repeat**: Do not just concatenate the reports. Read all of them, understand the findings, and create a unified summary. Combine related points from different reports.
-  2.  **Prioritize Correlations**: Create a top-level section called '### Key Correlations'. This section is the most important. It must summarize all potential links between symptoms and findings mentioned across ALL the provided reports.
-  3.  **Merge Other Sections**: Combine information for other common sections like 'Imaging Findings' and 'Symptom Patterns'. If multiple reports mention imaging, synthesize them into a single 'Imaging Findings' section.
+  2.  **Prioritize Correlations**: Create a top-level section called '### Key Correlations'. This section is the most important. It must summarize all potential links between symptoms and findings mentioned across ALL the provided reports. Use bullet points to list each distinct correlation.
+  3.  **Merge Other Sections**: Combine information for other common sections like 'Imaging Findings' and 'Symptom Patterns'. If multiple reports mention imaging, synthesize them into a single 'Imaging Findings' section. Use bullet points to list items in these sections.
   4.  **Maintain Neutral, Objective Tone**: The output must be professional, data-driven, and suitable for a healthcare provider. Do not provide a diagnosis or medical advice.
-  5.  **Use Markdown for Readability**: Use headings (e.g., '### Key Correlations'), bullet points, and bold text. Ensure ample vertical space between sections.
+  5.  **Use Bullet Points and Markdown**: Use headings (e.g., '### Key Correlations'), bullet points for lists, and bold text for emphasis. Ensure ample vertical space between sections.
 
   **Individual Analysis Reports to Consolidate:**
   {{#each analyses}}
@@ -59,7 +59,7 @@ const prompt = ai.definePrompt({
   {{/each}}
 
   **Consolidation Task:**
-  Generate a single, unified Markdown report for {{userName}}. It must begin with a "### Key Correlations" section that summarizes the most important connections identified across all reports. Following that, include other synthesized sections as appropriate.
+  Generate a single, unified Markdown report for {{userName}}. It must begin with a "### Key Correlations" section that summarizes the most important connections identified across all reports. Following that, include other synthesized sections as appropriate, using bullet points extensively for clarity.
   
   Consolidated Report:`,
 });

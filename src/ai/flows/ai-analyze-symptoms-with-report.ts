@@ -102,7 +102,7 @@ const prompt = ai.definePrompt({
   2.  **Synthesize and Summarize Key Findings**: Do not simply copy the report. Extract and summarize only the most important findings, particularly abnormalities, from the radiologist's report.
   3.  **Correlate, Do Not Conclude**: Relate the key findings from the report to the symptom data observationally. For example, "The report's finding of 'mild cerebellar tonsillar ectopia' may be relevant to the user's reports of headaches and dizziness." Do NOT say "The ectopia is causing the headaches."
   4.  **Maintain Neutral, Objective Tone**: The output must be professional and data-driven.
-  5.  **Use Markdown for Readability**: Structure the output with ample spacing. Use headings (e.g., '### Key Report Findings'), bullet points, and bold text.
+  5.  **Use Bullet Points and Markdown**: Structure the output with ample spacing. Use headings (e.g., '### Key Report Findings'), bullet points for lists, and bold text for emphasis.
 
   **Symptom Data:**
   {{#each symptoms}}
@@ -118,9 +118,9 @@ const prompt = ai.definePrompt({
 
   **Analysis Task:**
   Generate a Markdown-formatted summary focusing on items that appear to be abnormal or are key findings. Include:
-  1.  **Key Report Findings**: Under a '### Key Report Findings' heading, summarize only the most significant observations and conclusions from the medical report.
-  2.  **Symptom Patterns**: Under a '### Symptom Patterns' heading, highlight the most severe/frequent symptoms.
-  3.  **Potential Correlations**: Under a '### Potential Correlations' heading, objectively note potential links between the report's findings and the reported symptoms without claiming causality.
+  1.  **Key Report Findings**: Under a '### Key Report Findings' heading, summarize only the most significant observations and conclusions from the medical report. Use bullet points to list each distinct finding.
+  2.  **Symptom Patterns**: Under a '### Symptom Patterns' heading, highlight the most severe/frequent symptoms. Use bullet points.
+  3.  **Potential Correlations**: Under a '### Potential Correlations' heading, objectively note potential links between the report's findings and the reported symptoms without claiming causality. Use bullet points to list each correlation.
 
   Start with a neutral introductory sentence. Ensure there is clear separation between sections.
   

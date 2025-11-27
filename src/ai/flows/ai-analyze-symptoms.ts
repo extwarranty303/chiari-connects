@@ -47,7 +47,7 @@ const prompt = ai.definePrompt({
 
   **CRITICAL INSTRUCTIONS**:
   1.  **DO NOT PROVIDE ANY DIAGNOSIS, MEDICAL ADVICE, OR TREATMENT RECOMMENDATIONS.** Your analysis must be strictly observational and based ONLY on the data provided.
-  2.  **Use Markdown Formatting**: Structure the output using Markdown. Use headings (e.g., '### Key Observations'), bullet points (e.g., '- Symptom: ...'), and bold text to improve readability.
+  2.  **Use Bullet Points and Markdown**: Structure the output using Markdown. Use headings (e.g., '### Key Observations'), bullet points for lists, and bold text to improve readability. Ensure ample vertical spacing between sections.
 
   **Symptom Data to Analyze:**
   {{#each symptoms}}
@@ -56,9 +56,9 @@ const prompt = ai.definePrompt({
 
   **Analysis Task:**
   Based on this data, provide a Markdown-formatted summary that includes:
-  1.  **Key Observations**: Under a '### Key Observations' heading, mention the most frequently reported symptoms and the symptoms with the highest average severity. Use bullet points.
-  2.  **Potential Trends**: Under a '### Potential Trends' heading, note if any symptoms appear to be increasing or decreasing in severity or frequency over time. Use bullet points.
-  3.  **Co-occurrences**: Under a '### Co-occurrences' heading, point out if certain symptoms are often logged on the same or consecutive days. Use bullet points.
+  1.  **Key Observations**: Under a '### Key Observations' heading, use bullet points to mention the most frequently reported symptoms and the symptoms with the highest average severity.
+  2.  **Potential Trends**: Under a '### Potential Trends' heading, use bullet points to note if any symptoms appear to be increasing or decreasing in severity or frequency over time.
+  3.  **Co-occurrences**: Under a '### Co-occurrences' heading, use bullet points to point out if certain symptoms are often logged on the same or consecutive days.
 
   Structure the output as a professional, easy-to-read summary. Start with a neutral introductory sentence. Maintain an objective and data-driven tone throughout.
   
