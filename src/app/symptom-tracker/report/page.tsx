@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { format, parseISO } from 'date-fns';
-import { Loader2, Printer, BrainCircuit, AlertTriangle, Upload, File, X, Image as ImageIcon, MessageCircleQuestion } from 'lucide-react';
+import { Loader2, Printer, BrainCircuit, AlertTriangle, Upload, File, X, Image as ImageIcon } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import {
   LineChart,
@@ -130,7 +130,6 @@ function processSymptomData(symptoms: SymptomData[] | null) {
  */
 function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) {
     const [isAnalysisPending, startAnalysisTransition] = useTransition();
-    const [isQuestionPending, startQuestionTransition] = useTransition();
     const [analysis, setAnalysis] = useState('');
     const [doctorQuestions, setDoctorQuestions] = useState<GenerateDoctorQuestionsOutput | null>(null);
     const [error, setError] = useState('');
@@ -150,6 +149,9 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
     const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files) {
             const newFiles = Array.from(event.target.files);
+            const currentFiles = [...uploadedFiles];
+            const currentPreviews = [...previews];
+
             for (const file of newFiles) {
                 const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
                 const allowedDocTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
@@ -159,8 +161,8 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
 
                 if (isImage || isDocument) {
                     const dataUrl = await toDataURL(file);
-                    setUploadedFiles(prev => [...prev, file]);
-                    setPreviews(prev => [...prev, { name: file.name, type: isImage ? 'image' : 'document', url: dataUrl }]);
+                    currentFiles.push(file);
+                    currentPreviews.push({ name: file.name, type: isImage ? 'image' : 'document', url: dataUrl });
                 } else {
                     toast({
                         variant: 'destructive',
@@ -169,6 +171,8 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
                     });
                 }
             }
+            setUploadedFiles(currentFiles);
+            setPreviews(currentPreviews);
         }
         if(fileInputRef.current) fileInputRef.current.value = '';
     };
@@ -201,42 +205,32 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
                     const result = await analyzeSymptoms(symptomInput);
                     combinedAnalysis = result.analysis;
                 } else {
-                    for (const preview of previews) {
-                        let result;
+                    const analysisPromises = previews.map(preview => {
                         if (preview.type === 'image') {
-                            result = await analyzeSymptomsWithImaging({ ...symptomInput, imagingDataUri: preview.url });
+                            return analyzeSymptomsWithImaging({ ...symptomInput, imagingDataUri: preview.url });
                         } else {
-                            result = await analyzeSymptomsWithReport({ ...symptomInput, reportDataUri: preview.url });
+                            return analyzeSymptomsWithReport({ ...symptomInput, reportDataUri: preview.url });
                         }
-                        
-                        combinedAnalysis += `### Analysis for: ${preview.name}\n\n${result.analysis}\n\n---\n\n`;
-                    }
+                    });
+                    const results = await Promise.all(analysisPromises);
+                    combinedAnalysis = results.map((result, index) => 
+                        `### Analysis for: ${previews[index].name}\n\n${result.analysis}`
+                    ).join('\n\n---\n\n');
                 }
                 setAnalysis(combinedAnalysis);
+
+                // Now, automatically generate questions
+                if (combinedAnalysis) {
+                    const questionsResult = await generateDoctorQuestions({ analysis: combinedAnalysis });
+                    setDoctorQuestions(questionsResult);
+                }
+
             } catch (e: any) {
-                console.error("AI analysis failed:", e);
+                console.error("AI analysis or question generation failed:", e);
                 setError(e.message || "An error occurred while generating the analysis. Please try again.");
             }
         });
     };
-
-    const handleGenerateQuestions = () => {
-        if (!analysis) return;
-
-        startQuestionTransition(async () => {
-            try {
-                const result = await generateDoctorQuestions({ analysis });
-                setDoctorQuestions(result);
-            } catch (e: any) {
-                 console.error("AI question generation failed:", e);
-                 toast({
-                    variant: 'destructive',
-                    title: 'Error Generating Questions',
-                    description: 'Could not generate questions. Please try again.'
-                 });
-            }
-        });
-    }
     
     return (
         <div className="page-break-inside-avoid">
@@ -327,19 +321,11 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
             )}
 
 
-            {analysis && !isAnalysisPending && (
-                <div className="mt-6 print:hidden">
-                    <Button variant="outline" onClick={handleGenerateQuestions} disabled={isQuestionPending}>
-                        <MessageCircleQuestion className="mr-2 h-4 w-4" />
-                        {isQuestionPending ? 'Generating Questions...' : 'Generate Doctor Questions'}
-                    </Button>
-                </div>
-            )}
             
-            {(isQuestionPending || (doctorQuestions && doctorQuestions.questions.length > 0)) && (
-                <div className="mt-6 page-break-inside-avoid">
+            {(isAnalysisPending || (doctorQuestions && doctorQuestions.questions.length > 0)) && (
+                <div className="mt-6 page-break-before page-break-inside-avoid">
                     <h3 className="text-xl font-semibold border-b pb-2 mb-4">Questions for Your Doctor</h3>
-                    {isQuestionPending ? (
+                    {isAnalysisPending && !doctorQuestions ? (
                         <div className="space-y-3 p-4">
                             <Skeleton className="h-4 w-3/4" />
                             <Skeleton className="h-4 w-4/5" />
