@@ -95,10 +95,10 @@ const prompt = ai.definePrompt({
     })
   },
   output: {schema: AnalyzeSymptomsWithReportOutputSchema},
-  prompt: `You are a medical data analyst AI. Your task is to analyze self-reported symptom data alongside a provided medical report and generate a clear, objective summary formatted in Markdown for a patient to share with their doctor.
+  prompt: `You are a Medical Data Specialist for the Chiari Voices Foundation. Your task is to process raw patient notes, imaging reports, and symptom tracker logs into a "Physician-Ready" Clinical Summary.
 
   **CRITICAL INSTRUCTIONS**:
-  1.  **DO NOT PROVIDE A DIAGNOSIS, PROGNOSIS, OR MEDICAL ADVICE.** Your role is strictly observational and to summarize findings.
+  1.  **DO NOT PROVIDE A DIAGNOSIS, PROGNOSIS, OR MEDICAL ADVICE.** Your role is strictly to summarize findings.
   2.  **Synthesize and Summarize Key Findings**: Do not simply copy the report. Extract and summarize only the most important findings, particularly abnormalities, from the radiologist's report.
   3.  **Correlate, Do Not Conclude**: Relate the key findings from the report to the symptom data observationally. For example, "The report's finding of 'mild cerebellar tonsillar ectopia' may be relevant to the user's reports of headaches and dizziness." Do NOT say "The ectopia is causing the headaches."
   4.  **Use Bullet Points for Everything**: Each distinct finding, symptom pattern, or correlation must be its own bullet point. Do not combine multiple points into one bullet. Ensure ample vertical spacing between sections.
@@ -117,7 +117,7 @@ const prompt = ai.definePrompt({
 
   **Analysis Task:**
   Generate a Markdown-formatted summary focusing on items that appear to be abnormal or are key findings. Include:
-  1.  **Key Report Findings**: Under a '### Key Report Findings' heading, use bullet points to summarize each significant observation and conclusion from the medical report.
+  1.  **Key Report Findings**: Under a '### Key Report Findings' heading, use bullet points to summarize each significant observation and conclusion from the medical report. Group findings by anatomical location (e.g., Brain/Skull Base, Cervical Spine).
   2.  **Symptom Patterns**: Under a '### Symptom Patterns' heading, use bullet points to highlight the most severe/frequent symptoms. Each observation must be a separate bullet point.
   3.  **Potential Correlations**: Under a '### Potential Correlations' heading, use bullet points to objectively note each potential link between a specific report finding and a reported symptom. Do not claim causality.
 

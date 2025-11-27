@@ -7,8 +7,8 @@ import { format, parseISO } from 'date-fns';
 import { Loader2, Printer, BrainCircuit, AlertTriangle, Upload, File, X, Image as ImageIcon } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import {
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -57,18 +57,10 @@ interface FilePreview {
 }
 
 // Pre-defined color palette for the chart
-const CHART_COLORS = [
-  'hsl(var(--chart-1))',
-  'hsl(var(--chart-2))',
-  'hsl(var(--chart-3))',
-  'hsl(var(--chart-4))',
-  'hsl(var(--chart-5))',
-  '#82ca9d',
-  '#ffc658',
-  '#ff8042',
-  '#00C49F',
-  '#FFBB28',
-];
+const CHART_COLORS = {
+  severity: 'hsl(var(--primary))',
+  frequency: 'hsl(var(--accent))',
+};
 
 
 /**
@@ -78,7 +70,7 @@ const CHART_COLORS = [
  */
 function processSymptomData(symptoms: SymptomData[] | null) {
   if (!symptoms || symptoms.length === 0) {
-    return { chartData: [], summaryData: [], symptomColorMap: {} };
+    return { chartData: [], summaryData: [] };
   }
 
   const summaryMap = new Map<string, { severities: number[], frequencies: number[], count: number }>();
@@ -92,10 +84,7 @@ function processSymptomData(symptoms: SymptomData[] | null) {
     summaryMap.set(s.symptom, entry);
   });
   
-  // Create summary data and assign colors
-  const symptomColorMap: { [key: string]: string } = {};
-  const summaryData = Array.from(summaryMap.entries()).map(([symptom, data], index) => {
-    symptomColorMap[symptom] = CHART_COLORS[index % CHART_COLORS.length];
+  const summaryData = Array.from(summaryMap.entries()).map(([symptom, data]) => {
     return {
       symptom,
       count: data.count,
@@ -104,24 +93,13 @@ function processSymptomData(symptoms: SymptomData[] | null) {
     };
   });
 
-  // Create data structured for the line chart
-  const chartDataMap = new Map<string, any[]>();
-  symptoms.forEach(s => {
-    const dateStr = format(parseISO(s.date), 'yyyy-MM-dd');
-    if (!chartDataMap.has(dateStr)) {
-      chartDataMap.set(dateStr, { date: dateStr });
-    }
-    const dayData = chartDataMap.get(dateStr)!;
-    dayData[s.symptom] = s.severity;
-  });
-  
   // Sort by date and convert map to array
-  const chartData = Array.from(chartDataMap.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(d => ({
+  const chartData = [...symptoms].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(d => ({
       ...d,
       date: format(new Date(d.date), 'MMM d')
   }));
 
-  return { chartData, summaryData, symptomColorMap };
+  return { chartData, summaryData };
 }
 
 /**
@@ -129,7 +107,7 @@ function processSymptomData(symptoms: SymptomData[] | null) {
  * @param {string} markdownText - The markdown text to split.
  * @returns {Array<{title: string, content: string}>} An array of section objects.
  */
-function splitMarkdownIntoSections(markdownText: string): Array<{ title: string, content: string }> {
+function splitMarkdownIntoSections(markdownText: string): Array<{ title: string; content: string }> {
     if (!markdownText) return [];
     
     // Split by lines that start with '### '
@@ -415,7 +393,7 @@ function AiAnalysis({ symptoms, user, userProfile }: { symptoms: SymptomData[], 
 
             {(analysis || doctorQuestions.length > 0) && (
                 <div className="mt-8 pt-4 border-t text-xs text-muted-foreground space-y-2">
-                    <p><strong>Disclaimer:</strong> This application and its AI-powered analyses are for informational purposes only and are not a substitute for professional medical advice, diagnosis, or treatment. This summary includes mostly the items that were found to be wrong with the patient, based on the provided imaging, imaging reports, and symptom tracker information from the tool. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition. <strong>This application is not HIPAA compliant.</strong> Please do not store sensitive personal health information.</p>
+                    <p><strong>Disclaimer:</strong> This summary includes mostly the items that were found to be wrong with the patient, based on the provided imaging, imaging reports, and symptom tracker information from the tool. This application and its AI-powered analyses are for informational purposes only and are not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition. <strong>This application is not HIPAA compliant.</strong> Please do not store sensitive personal health information.</p>
                 </div>
             )}
         </div>
@@ -453,7 +431,7 @@ export default function SymptomReportPage() {
     window.print();
   };
 
-  const { chartData, summaryData, symptomColorMap } = useMemo(
+  const { chartData, summaryData } = useMemo(
     () => processSymptomData(symptoms),
     [symptoms]
   );
@@ -529,67 +507,64 @@ export default function SymptomReportPage() {
                    <AiAnalysis symptoms={symptoms} user={user} userProfile={userProfile} />
                   
                   {symptoms.length > 0 && (
-                    <>
-                      <div className="page-break-before page-break-inside-avoid">
-                        <h3 className="text-xl font-semibold border-b pb-2 mb-4">Symptom Severity Over Time</h3>
-                        <ResponsiveContainer width="100%" height={400}>
-                            <LineChart data={chartData}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                              <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
-                              <YAxis stroke="hsl(var(--muted-foreground))" domain={[0, 10]} />
-                              <Tooltip
-                                    contentStyle={{
-                                        background: 'hsl(var(--card))',
-                                        border: '1px solid hsl(var(--border))',
-                                        borderRadius: 'var(--radius)',
-                                    }}
-                                />
-                              <Legend />
-                              {Object.keys(symptomColorMap).map(symptom => (
-                                    <Line 
-                                        key={symptom}
-                                        type="monotone" 
-                                        dataKey={symptom} 
-                                        stroke={symptomColorMap[symptom]} 
-                                        strokeWidth={2}
-                                        connectNulls
-                                        dot={{ r: 4 }}
-                                        activeDot={{ r: 6 }}
+                    <div className="space-y-12">
+                      <Card className="glassmorphism page-break-before page-break-inside-avoid">
+                        <CardHeader>
+                            <CardTitle>Symptom Progression</CardTitle>
+                            <CardDescription>Severity and frequency of symptoms over time.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <ResponsiveContainer width="100%" height={400}>
+                                <BarChart data={chartData}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
+                                  <YAxis stroke="hsl(var(--muted-foreground))" domain={[0, 10]} />
+                                  <Tooltip
+                                        contentStyle={{
+                                            background: 'hsl(var(--card))',
+                                            border: '1px solid hsl(var(--border))',
+                                            borderRadius: 'var(--radius)',
+                                        }}
                                     />
-                              ))}
-                            </LineChart>
-                        </ResponsiveContainer>
-                      </div>
+                                  <Legend />
+                                  <Bar dataKey="severity" fill={CHART_COLORS.severity} name="Severity (1-10)" />
+                                  <Bar dataKey="frequency" fill={CHART_COLORS.frequency} name="Frequency (1-10)" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </CardContent>
+                      </Card>
 
-                      <div className="page-break-inside-avoid">
-                        <h3 className="text-xl font-semibold border-b pb-2 mb-4">Symptom Summary</h3>
-                        <div className="border rounded-lg overflow-hidden">
-                            <Table>
-                            <TableHeader>
-                                <TableRow>
-                                <TableHead>Symptom</TableHead>
-                                <TableHead className="text-center">Times Logged</TableHead>
-                                <TableHead className="text-center">Avg. Severity (1-10)</TableHead>
-                                <TableHead className="text-center">Avg. Frequency (1-10)</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {summaryData.map(symptom => (
-                                <TableRow key={symptom.symptom}>
-                                    <TableCell className="font-medium flex items-center gap-2">
-                                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: symptomColorMap[symptom.symptom] }}/>
-                                      {symptom.symptom}
-                                    </TableCell>
-                                    <TableCell className="text-center">{symptom.count}</TableCell>
-                                    <TableCell className="text-center">{symptom.avgSeverity}</TableCell>
-                                    <TableCell className="text-center">{symptom.avgFrequency}</TableCell>
-                                </TableRow>
-                                ))}
-                            </TableBody>
-                            </Table>
-                        </div>
-                      </div>
-                    </>
+                      <Card className="glassmorphism page-break-inside-avoid">
+                        <CardHeader>
+                            <CardTitle>Symptom Summary</CardTitle>
+                             <CardDescription>An overview of all logged symptoms.</CardDescription>
+                        </CardHeader>
+                         <CardContent>
+                            <div className="border rounded-lg overflow-hidden">
+                                <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                    <TableHead>Symptom</TableHead>
+                                    <TableHead className="text-center">Times Logged</TableHead>
+                                    <TableHead className="text-center">Avg. Severity (1-10)</TableHead>
+                                    <TableHead className="text-center">Avg. Frequency (1-10)</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {summaryData.map(symptom => (
+                                    <TableRow key={symptom.symptom}>
+                                        <TableCell className="font-medium">{symptom.symptom}</TableCell>
+                                        <TableCell className="text-center">{symptom.count}</TableCell>
+                                        <TableCell className="text-center">{symptom.avgSeverity}</TableCell>
+                                        <TableCell className="text-center">{symptom.avgFrequency}</TableCell>
+                                    </TableRow>
+                                    ))}
+                                </TableBody>
+                                </Table>
+                            </div>
+                        </CardContent>
+                      </Card>
+                    </div>
                   )}
                 </div>
               ) : (

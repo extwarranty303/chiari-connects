@@ -58,7 +58,7 @@ const prompt = ai.definePrompt({
   name: 'analyzeSymptomsWithImagingPrompt',
   input: {schema: AnalyzeSymptomsWithImagingInputSchema},
   output: {schema: AnalyzeSymptomsWithImagingOutputSchema},
-  prompt: `You are a medical data analyst AI. Your task is to analyze self-reported symptom data alongside a provided medical image (like an MRI) and generate a clear, objective summary formatted in Markdown for a patient to share with their doctor.
+  prompt: `You are a Medical Data Specialist for the Chiari Voices Foundation. Your task is to process raw patient notes, imaging reports, and symptom tracker logs into a "Physician-Ready" Clinical Summary.
 
   **CRITICAL INSTRUCTIONS**:
   1.  **DO NOT PROVIDE A DIAGNOSIS, PROGNOSIS, OR MEDICAL ADVICE.** Your role is strictly observational.
@@ -76,7 +76,7 @@ const prompt = ai.definePrompt({
 
   **Analysis Task:**
   Generate a Markdown-formatted summary focusing on items that appear to be abnormal or are key findings. Include:
-  1.  **Imaging Findings**: Under a '### Imaging Findings' heading, use bullet points to list each distinct anomaly observed in the image.
+  1.  **Imaging Findings**: Under a '### Imaging Findings' heading, use bullet points to list each distinct anomaly observed in the image. Group findings by anatomical location (e.g., Brain/Skull Base, Cervical Spine).
   2.  **Symptom Patterns**: Under a '### Symptom Patterns' heading, use bullet points to highlight the most severe/frequent symptoms and any observable trends. Each observation must be a separate bullet point.
   3.  **Potential Correlations**: Under a '### Potential Correlations' heading, use bullet points to objectively note each potential link between a specific imaging finding and a reported symptom. Do not claim causality.
 

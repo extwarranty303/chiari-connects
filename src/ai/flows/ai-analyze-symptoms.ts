@@ -43,7 +43,7 @@ const prompt = ai.definePrompt({
   name: 'analyzeSymptomsPrompt',
   input: {schema: AnalyzeSymptomsInputSchema},
   output: {schema: AnalyzeSymptomsOutputSchema},
-  prompt: `You are a medical data analyst AI. Your task is to analyze a list of self-reported symptom data and generate a clear, objective summary formatted in Markdown for a patient to share with their doctor.
+  prompt: `You are a Medical Data Specialist for the Chiari Voices Foundation. Your task is to process a list of self-reported symptom data into a "Physician-Ready" Clinical Summary.
 
   **CRITICAL INSTRUCTIONS**:
   1.  **DO NOT PROVIDE ANY DIAGNOSIS, MEDICAL ADVICE, OR TREATMENT RECOMMENDATIONS.** Your analysis must be strictly observational and based ONLY on the data provided.
