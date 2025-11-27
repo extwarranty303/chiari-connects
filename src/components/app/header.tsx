@@ -52,27 +52,26 @@ export function AppHeader({ onUploadClick, onDownloadClick, showActions = true }
   
   return (
     <header className="flex items-center justify-between p-4 border-b bg-card/60 backdrop-blur-xl sticky top-0 z-50 shadow-sm">
-      <div className="flex items-center gap-3">
-        <Link href="/" className="flex items-center gap-3">
-           <Logo width={394} height={79} />
+      <div className="flex items-center gap-x-8">
+        <Link href="/" className="flex items-center" style={{ marginLeft: '5px' }}>
+           <Logo width={886.5} height={177.75} />
         </Link>
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center gap-2">
+            <Button variant="ghost" asChild>
+                <Link href="/discussions">
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Discussions
+                </Link>
+            </Button>
+            <Button variant="ghost" asChild>
+                <Link href="/symptom-tracker">
+                    <Activity className="mr-2 h-4 w-4" />
+                    Symptom Tracker
+                </Link>
+            </Button>
+        </nav>
       </div>
-
-      {/* Desktop Navigation */}
-      <nav className="hidden md:flex items-center gap-2">
-          <Button variant="ghost" asChild>
-              <Link href="/discussions">
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  Discussions
-              </Link>
-          </Button>
-          <Button variant="ghost" asChild>
-              <Link href="/symptom-tracker">
-                  <Activity className="mr-2 h-4 w-4" />
-                  Symptom Tracker
-              </Link>
-          </Button>
-      </nav>
       
       <div className="flex items-center gap-4">
         {showActions && (
