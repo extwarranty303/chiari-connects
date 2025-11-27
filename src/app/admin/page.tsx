@@ -413,11 +413,11 @@ export default function AdminDashboardPage() {
                                                         Delete
                                                       </Button>
                                                     </AlertDialogTrigger>
-                                                    <AlertDialogContent>
+                                                    <AlertDialogContent className="glassmorphism">
                                                       <AlertDialogHeader>
                                                         <AlertDialogTitle>Delete User: {user.username}?</AlertDialogTitle>
                                                         <AlertDialogDescription>
-                                                          This action cannot be undone. This will permanently delete the user's account and all associated data from Firebase Authentication and Firestore.
+                                                          This action cannot be undone. This will permanently delete the user's account and all associated data from Firebase Authentication and Firestore. This requires a backend Cloud Function to execute securely.
                                                         </AlertDialogDescription>
                                                       </AlertDialogHeader>
                                                       <AlertDialogFooter>
@@ -497,7 +497,5 @@ export default function AdminDashboardPage() {
     </AdminRouteGuard>
   );
 }
-
-    
 
     
