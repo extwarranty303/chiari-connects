@@ -85,7 +85,7 @@ function UserProfileForm({ userProfile, userId }: { userProfile: UserProfile, us
         setIsSubmitting(false);
     };
     
-    const userRole = isAdmin ? 'Admin' : isModerator ? 'Moderator' : 'User';
+    const userRole = isAdmin ? 'Full Admin' : isModerator ? 'Moderator' : 'Standard User';
 
     return (
         <Card className="glassmorphism">
