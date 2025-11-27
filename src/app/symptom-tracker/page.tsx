@@ -107,6 +107,7 @@ export default function SymptomTrackerPage() {
   const { firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
 
@@ -115,7 +116,7 @@ export default function SymptomTrackerPage() {
     handleSubmit,
     control,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<SymptomFormValues>({
     resolver: zodResolver(symptomSchema),
     defaultValues: {
@@ -159,6 +160,8 @@ export default function SymptomTrackerPage() {
       });
       return;
     }
+
+    setIsSubmitting(true);
     
     const newSymptom = {
       ...values,
@@ -178,6 +181,9 @@ export default function SymptomTrackerPage() {
                 });
                 reset();
             }
+        })
+        .finally(() => {
+            setIsSubmitting(false);
         });
   };
 
