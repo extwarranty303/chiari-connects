@@ -64,9 +64,8 @@ const prompt = ai.definePrompt({
   1.  **DO NOT PROVIDE A DIAGNOSIS, PROGNOSIS, OR MEDICAL ADVICE.** Your role is strictly observational.
   2.  **Focus on Key Findings and Abnormalities**: Do not describe normal anatomy. Describe only the clinically significant or abnormal findings in the image. For example, "The image shows the cerebellar tonsils extending 7mm below the foramen magnum." Do NOT say "The image shows a brain."
   3.  **Correlate, Do Not Conclude**: Relate the imaging findings to the symptom data observationally. For example, "The observed tonsillar ectopia may be relevant to the user's reports of headaches and dizziness." Do NOT say "The tonsillar ectopia is causing the headaches."
-  4.  **Maintain Neutral, Objective Tone**: The output must be professional and data-driven, suitable for a healthcare provider.
-  5.  **Use Bullet Points and Markdown**: Structure the output with ample spacing. Use headings (e.g., '### Imaging Findings'), bullet points for lists, and bold text for emphasis.
-
+  4.  **Use Bullet Points for Everything**: Each distinct finding, symptom pattern, or correlation must be its own bullet point. Do not combine multiple points into one bullet. Ensure ample vertical spacing between sections.
+  
   **Symptom Data:**
   {{#each symptoms}}
   - Date: {{date}}, Symptom: {{symptom}}, Severity: {{severity}}/10, Frequency: {{frequency}}/10
@@ -77,11 +76,11 @@ const prompt = ai.definePrompt({
 
   **Analysis Task:**
   Generate a Markdown-formatted summary focusing on items that appear to be abnormal or are key findings. Include:
-  1.  **Imaging Findings**: Under a '### Imaging Findings' heading, describe only the notable anomalies in the image using precise, objective language. Use bullet points to list each distinct finding.
-  2.  **Symptom Patterns**: Under a '### Symptom Patterns' heading, highlight the most severe/frequent symptoms and any observable trends. Use bullet points.
-  3.  **Potential Correlations**: Under a '### Potential Correlations' heading, objectively note potential links between the imaging findings and reported symptoms without claiming causality. Use bullet points to list each correlation.
+  1.  **Imaging Findings**: Under a '### Imaging Findings' heading, use bullet points to list each distinct anomaly observed in the image.
+  2.  **Symptom Patterns**: Under a '### Symptom Patterns' heading, use bullet points to highlight the most severe/frequent symptoms and any observable trends. Each observation must be a separate bullet point.
+  3.  **Potential Correlations**: Under a '### Potential Correlations' heading, use bullet points to objectively note each potential link between a specific imaging finding and a reported symptom. Do not claim causality.
 
-  Start with a neutral introductory sentence. Ensure there is clear separation between sections.
+  Start with a neutral introductory sentence.
   
   Analysis:`,
 });

@@ -101,9 +101,8 @@ const prompt = ai.definePrompt({
   1.  **DO NOT PROVIDE A DIAGNOSIS, PROGNOSIS, OR MEDICAL ADVICE.** Your role is strictly observational and to summarize findings.
   2.  **Synthesize and Summarize Key Findings**: Do not simply copy the report. Extract and summarize only the most important findings, particularly abnormalities, from the radiologist's report.
   3.  **Correlate, Do Not Conclude**: Relate the key findings from the report to the symptom data observationally. For example, "The report's finding of 'mild cerebellar tonsillar ectopia' may be relevant to the user's reports of headaches and dizziness." Do NOT say "The ectopia is causing the headaches."
-  4.  **Maintain Neutral, Objective Tone**: The output must be professional and data-driven.
-  5.  **Use Bullet Points and Markdown**: Structure the output with ample spacing. Use headings (e.g., '### Key Report Findings'), bullet points for lists, and bold text for emphasis.
-
+  4.  **Use Bullet Points for Everything**: Each distinct finding, symptom pattern, or correlation must be its own bullet point. Do not combine multiple points into one bullet. Ensure ample vertical spacing between sections.
+  
   **Symptom Data:**
   {{#each symptoms}}
   - Date: {{date}}, Symptom: {{symptom}}, Severity: {{severity}}/10, Frequency: {{frequency}}/10
@@ -118,11 +117,11 @@ const prompt = ai.definePrompt({
 
   **Analysis Task:**
   Generate a Markdown-formatted summary focusing on items that appear to be abnormal or are key findings. Include:
-  1.  **Key Report Findings**: Under a '### Key Report Findings' heading, summarize only the most significant observations and conclusions from the medical report. Use bullet points to list each distinct finding.
-  2.  **Symptom Patterns**: Under a '### Symptom Patterns' heading, highlight the most severe/frequent symptoms. Use bullet points.
-  3.  **Potential Correlations**: Under a '### Potential Correlations' heading, objectively note potential links between the report's findings and the reported symptoms without claiming causality. Use bullet points to list each correlation.
+  1.  **Key Report Findings**: Under a '### Key Report Findings' heading, use bullet points to summarize each significant observation and conclusion from the medical report.
+  2.  **Symptom Patterns**: Under a '### Symptom Patterns' heading, use bullet points to highlight the most severe/frequent symptoms. Each observation must be a separate bullet point.
+  3.  **Potential Correlations**: Under a '### Potential Correlations' heading, use bullet points to objectively note each potential link between a specific report finding and a reported symptom. Do not claim causality.
 
-  Start with a neutral introductory sentence. Ensure there is clear separation between sections.
+  Start with a neutral introductory sentence.
   
   Analysis:`,
 });
