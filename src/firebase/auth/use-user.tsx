@@ -59,7 +59,6 @@ export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthStat
     const idTokenUnsubscribe = onIdTokenChanged(
       auth,
       async (user: User | null) => {
-        // First, cancel any existing profile listener
         if (profileUnsubscribe) {
           profileUnsubscribe();
           profileUnsubscribe = null;
@@ -71,18 +70,25 @@ export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthStat
             const isAdmin = decodedToken?.claims?.admin === true;
             const isModerator = decodedToken?.claims?.moderator === true;
             
-            // Set up a real-time listener for the user's profile document.
             const profileRef = doc(firestore, 'users', user.uid);
             profileUnsubscribe = onSnapshot(profileRef, 
               (profileSnap) => {
                 const userProfile = profileSnap.exists() ? profileSnap.data() as UserProfile : null;
-                
-                // --- Onboarding Redirection Logic ---
-                if (profileSnap.exists() && userProfile?.hasCompletedOnboarding === false && pathname !== '/onboarding') {
+
+                // --- Onboarding and Redirection Logic ---
+                const isProfileComplete = userProfile?.hasCompletedOnboarding === true;
+                const isOnboardingPage = pathname === '/onboarding';
+
+                if (profileSnap.exists() && !isProfileComplete && !isOnboardingPage) {
+                    // User exists, onboarding is incomplete, and they are NOT on the onboarding page -> redirect them there.
                     router.replace('/onboarding');
-                    // Keep loading true while we redirect
+                    setState({ user, isUserLoading: true, userError: null, isAdmin, isModerator, userProfile });
+                } else if (isProfileComplete && isOnboardingPage) {
+                    // User has completed onboarding but is still on the onboarding page -> redirect them away.
+                    router.replace('/');
                     setState({ user, isUserLoading: true, userError: null, isAdmin, isModerator, userProfile });
                 } else {
+                    // All other cases are fine, just update the state and stop loading.
                     setState({ user, isUserLoading: false, userError: null, isAdmin, isModerator, userProfile });
                 }
               },
@@ -97,7 +103,7 @@ export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthStat
             setState({ user, isUserLoading: false, userError: error, isAdmin: false, isModerator: false, userProfile: null });
           }
         } else {
-          // No user, clear all state
+          // No user is signed in. Clear all state and stop loading.
           setState({ user: null, isUserLoading: false, userError: null, isAdmin: false, isModerator: false, userProfile: null });
         }
       },
@@ -107,6 +113,7 @@ export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthStat
       }
     );
 
+    // Cleanup function
     return () => {
       idTokenUnsubscribe();
       if (profileUnsubscribe) {

@@ -29,7 +29,7 @@ export interface UseDocResult<T> {
  * Handles nullable references.
  * 
  * IMPORTANT! YOU MUST MEMOIZE the inputted memoizedTargetRefOrQuery or BAD THINGS WILL HAPPEN
- * use useMemo to memoize it per React guidence.  Also make sure that it's dependencies are stable
+ * use useMemoFirebase to memoize it per React guidence.  Also make sure that it's dependencies are stable
  * references
  *
  *
@@ -39,13 +39,12 @@ export interface UseDocResult<T> {
  * @returns {UseDocResult<T>} Object with data, isLoading, error.
  */
 export function useDoc<T = any>(
-  memoizedDocRef: DocumentReference<DocumentData> | null | undefined,
+  memoizedDocRef: (DocumentReference<DocumentData> & {__memo?: boolean}) | null | undefined,
 ): UseDocResult<T> {
   type StateDataType = WithId<T> | null;
 
   const [data, setData] = useState<StateDataType>(null);
-  // The loading state should be true ONLY if we have a reference to act on.
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Start as true
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
@@ -66,10 +65,9 @@ export function useDoc<T = any>(
         if (snapshot.exists()) {
           setData({ ...(snapshot.data() as T), id: snapshot.id });
         } else {
-          // Document does not exist
           setData(null);
         }
-        setError(null); // Clear any previous error on successful snapshot (even if doc doesn't exist)
+        setError(null);
         setIsLoading(false);
       },
       (error: FirestoreError) => {
@@ -82,13 +80,16 @@ export function useDoc<T = any>(
         setData(null)
         setIsLoading(false)
 
-        // trigger global error propagation
         errorEmitter.emit('permission-error', contextualError);
       }
     );
 
     return () => unsubscribe();
-  }, [memoizedDocRef]); // Re-run if the memoizedDocRef changes.
+  }, [memoizedDocRef]);
+
+  if (memoizedDocRef && !memoizedDocRef.__memo) {
+    throw new Error(`The document reference for path "${memoizedDocRef.path}" was not wrapped in useMemoFirebase. This is required to prevent infinite re-renders.`);
+  }
 
   return { data, isLoading, error };
 }
