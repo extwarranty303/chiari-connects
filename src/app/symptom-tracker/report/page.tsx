@@ -70,7 +70,7 @@ function getReportSummary(symptoms: SymptomData[]) {
 interface FilePreview {
     name: string;
     type: 'image' | 'document';
-    url: string; // data URI for images, or just a placeholder for documents
+    url: string; // data URI
 }
 
 /**
@@ -78,10 +78,10 @@ interface FilePreview {
  * It allows for optional medical imaging and report uploads to generate a more comprehensive summary.
  * The analysis is generated on-demand by calling a Genkit AI flow.
  *
- * @param {{symptoms: SymptomData[]}} props - The user's symptom data.
+ * @param {{symptoms: SymptomData[], user: any}} props - The user's symptom data and user object.
  * @returns {React.ReactElement} The AI analysis section component.
  */
-function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
+function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) {
     const [isAnalysisPending, startAnalysisTransition] = useTransition();
     const [isQuestionPending, startQuestionTransition] = useTransition();
     const [analysis, setAnalysis] = useState('');
@@ -109,7 +109,7 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
      * Handles the change event from the file input, validating and adding the selected files.
      * @param {React.ChangeEvent<HTMLInputElement>} event - The file input change event.
      */
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
             const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -119,14 +119,9 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
             const isDocument = allowedDocTypes.includes(file.type);
 
             if (isImage || isDocument) {
+                const dataUrl = await toDataURL(file);
                 setUploadedFiles(prev => [...prev, file]);
-                if (isImage) {
-                     toDataURL(file).then(dataUrl => {
-                        setPreviews(prev => [...prev, { name: file.name, type: 'image', url: dataUrl }]);
-                    });
-                } else {
-                    setPreviews(prev => [...prev, { name: file.name, type: 'document', url: '' }]);
-                }
+                setPreviews(prev => [...prev, { name: file.name, type: isImage ? 'image' : 'document', url: dataUrl }]);
             } else {
                 toast({
                     variant: 'destructive',
@@ -171,21 +166,19 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
                     }))
                 };
 
-                if (uploadedFiles.length === 0) {
+                if (previews.length === 0) {
                     const result = await analyzeSymptoms(symptomInput);
                     combinedAnalysis = result.analysis;
                 } else {
-                    for (const file of uploadedFiles) {
-                        const dataUri = await toDataURL(file);
+                    for (const preview of previews) {
                         let result;
-
-                        if (['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
-                            result = await analyzeSymptomsWithImaging({ ...symptomInput, imagingDataUri: dataUri });
+                        if (preview.type === 'image') {
+                            result = await analyzeSymptomsWithImaging({ ...symptomInput, imagingDataUri: preview.url });
                         } else {
-                            result = await analyzeSymptomsWithReport({ ...symptomInput, reportDataUri: dataUri });
+                            result = await analyzeSymptomsWithReport({ ...symptomInput, reportDataUri: preview.url });
                         }
                         
-                        combinedAnalysis += `### Analysis for: ${file.name}\n\n${result.analysis}\n\n---\n\n`;
+                        combinedAnalysis += `### Analysis for: ${preview.name}\n\n${result.analysis}\n\n---\n\n`;
                     }
                 }
                 setAnalysis(combinedAnalysis);
@@ -206,8 +199,7 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
             try {
                 const result = await generateDoctorQuestions({ analysis });
                 setDoctorQuestions(result);
-            } catch (e: any) {
-                 console.error("AI question generation failed:", e);
+            } catch (e: any)                 console.error("AI question generation failed:", e);
                  toast({
                     variant: 'destructive',
                     title: 'Error Generating Questions',
@@ -217,12 +209,16 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
         });
     }
     
-
     return (
         <div>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <h3 className="text-xl font-semibold border-b pb-2 mb-4 flex-grow">AI-Generated Summary</h3>
-                <div className="flex gap-2 print:hidden -mt-4 sm:mt-0">
+                 <div className="flex-grow">
+                    <h3 className="text-xl font-semibold border-b pb-2 mb-2">AI-Generated Summary</h3>
+                    <p className="text-sm text-muted-foreground">
+                        This summary focuses on key findings from your symptom log and any uploaded documents to help prepare for your next medical appointment.
+                    </p>
+                </div>
+                <div className="flex gap-2 print:hidden flex-shrink-0">
                     <Button onClick={handleGenerateAnalysis} disabled={isAnalysisPending || symptoms.length === 0}>
                         <BrainCircuit className="mr-2 h-4 w-4" />
                         {isAnalysisPending ? 'Analyzing...' : 'Generate AI Summary'}
@@ -230,7 +226,7 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
                 </div>
             </div>
             
-             <div className="print:hidden">
+             <div className="print:hidden mt-4">
                  <input
                     type="file"
                     ref={fileInputRef}
@@ -261,9 +257,9 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
                 )}
              </div>
              
-             <div className="mt-4 bg-muted/50 p-4 rounded-lg min-h-[150px] print:bg-white print:border print:border-gray-200">
+             <div className="mt-4 bg-muted/50 p-4 rounded-lg min-h-[150px] print:bg-white print:p-0 print:border-none print:shadow-none">
                 {isAnalysisPending && (
-                     <div className="space-y-3">
+                     <div className="space-y-4 p-4">
                         <Skeleton className="h-4 w-full" />
                         <Skeleton className="h-4 w-full" />
                         <Skeleton className="h-4 w-4/5" />
@@ -277,16 +273,29 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
                     </div>
                 )}
                 {analysis && (
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                    <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:my-4 prose-p:my-2">
                         <ReactMarkdown>{analysis}</ReactMarkdown>
                     </div>
                 )}
                 {!isAnalysisPending && !analysis && !error && (
                     <p className="text-sm text-muted-foreground text-center pt-10">
-                        Add images or documents and click "Generate AI Summary" to get an analysis of your symptom data.
+                        Click "Generate AI Summary" to get an analysis of your symptom data. You can optionally add images or documents first.
                     </p>
                 )}
              </div>
+
+            {previews.filter(p => p.type === 'image').length > 0 && (
+                <div className="mt-6 hidden print:block space-y-4">
+                     <h4 className="font-semibold text-lg">Uploaded Imaging</h4>
+                     {previews.filter(p => p.type === 'image').map((preview, index) => (
+                        <div key={index}>
+                            <p className="text-sm font-medium mb-2">{preview.name}</p>
+                            <img src={preview.url} alt={`Uploaded image ${preview.name}`} className="max-w-full rounded-md border" style={{ maxHeight: '400px' }} />
+                        </div>
+                    ))}
+                </div>
+            )}
+
 
             {analysis && !isAnalysisPending && (
                 <div className="mt-6 print:hidden">
@@ -294,32 +303,35 @@ function AiAnalysis({ symptoms }: { symptoms: SymptomData[] }) {
                         <MessageCircleQuestion className="mr-2 h-4 w-4" />
                         {isQuestionPending ? 'Generating Questions...' : 'Generate Doctor Questions'}
                     </Button>
-
-                    {isQuestionPending && (
-                        <div className="mt-4 space-y-2">
+                </div>
+            )}
+            
+            {(isQuestionPending || (doctorQuestions && doctorQuestions.questions.length > 0)) && (
+                <div className="mt-6">
+                    <h3 className="text-xl font-semibold border-b pb-2 mb-4">Questions for Your Doctor</h3>
+                    {isQuestionPending ? (
+                        <div className="space-y-3 p-4">
                             <Skeleton className="h-4 w-3/4" />
                             <Skeleton className="h-4 w-4/5" />
                             <Skeleton className="h-4 w-2/3" />
                         </div>
-                    )}
-                    
-                    {doctorQuestions && doctorQuestions.questions.length > 0 && (
-                        <div className="mt-4 bg-muted/50 p-4 rounded-lg">
-                            <h4 className="font-semibold mb-2">Questions for Your Doctor:</h4>
-                            <ul className="list-disc list-inside space-y-2 text-sm">
-                                {doctorQuestions.questions.map((q, i) => (
-                                    <li key={i}>{q}</li>
-                                ))}
-                            </ul>
-                        </div>
+                    ) : (
+                        doctorQuestions && (
+                             <div className="prose prose-sm dark:prose-invert max-w-none">
+                                <ul className="list-disc list-outside space-y-2 pl-5">
+                                    {doctorQuestions.questions.map((q, i) => (
+                                        <li key={i}>{q}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )
                     )}
                 </div>
             )}
 
-
-            {analysis && (
-                <div className="mt-4 pt-4 border-t text-xs text-muted-foreground">
-                    <p><strong>Disclaimer:</strong> This application and its AI-powered analyses are for informational purposes only and are not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition. <strong>This application is not HIPAA compliant.</strong> Please do not store sensitive personal health information.</p>
+            {(analysis || doctorQuestions) && (
+                <div className="mt-8 pt-4 border-t text-xs text-muted-foreground space-y-2">
+                    <p><strong>Disclaimer:</strong> This application and its AI-powered analyses are for informational purposes only and are not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition. This summary includes mostly the items that were found to be wrong with the patient, based on the provided imaging, imaging reports, and symptom tracker information from the tool. <strong>This application is not HIPAA compliant.</strong> Please do not store sensitive personal health information.</p>
                 </div>
             )}
         </div>
@@ -394,14 +406,20 @@ export default function SymptomReportPage() {
       {/* Main report content, styled for screen and print. */}
       <main className="p-4 sm:p-8 flex-1">
         <div className="max-w-4xl mx-auto bg-card p-6 sm:p-10 rounded-lg shadow-md border print:shadow-none print:border-none print:p-0">
-          <div className="flex justify-between items-start mb-8">
+          
+          <div className="hidden print:block mb-8">
+             <h2 className="text-center text-lg font-semibold">The Chiari Voices Foundation's Chiari Connects Symptom Summary Tool</h2>
+             <p className="text-center text-sm text-gray-600">Report Generated on {format(new Date(), 'MMMM d, yyyy')}</p>
+          </div>
+
+          <div className="flex justify-between items-start mb-8 print:hidden">
             <div>
               <h2 className="text-3xl font-bold text-foreground">Symptom History Report</h2>
               <p className="text-muted-foreground">
                 Generated on {format(new Date(), 'MMMM d, yyyy')} for {user.displayName || user.email}
               </p>
             </div>
-            <Icons.logo className="w-32 h-32 text-primary hidden sm:block print:hidden" />
+            <Icons.logo className="w-24 h-24 text-primary" />
           </div>
 
           {isLoadingSymptoms && (
@@ -423,10 +441,10 @@ export default function SymptomReportPage() {
               {symptoms.length > 0 ? (
                 <div className="space-y-12">
                    {/* AI Analysis Section */}
-                   <AiAnalysis symptoms={symptoms} />
+                   <AiAnalysis symptoms={symptoms} user={user} />
                   
                   {/* Summary Statistics Section */}
-                  <div>
+                  <div className="page-break-before">
                     <h3 className="text-xl font-semibold border-b pb-2 mb-4">Data Summary</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
                         <div className="bg-muted/50 p-4 rounded-lg">
@@ -490,9 +508,6 @@ export default function SymptomReportPage() {
           )}
 
           <div className="mt-12 pt-6 border-t text-xs text-muted-foreground text-center">
-            <p className="print:hidden">
-              <strong>Disclaimer:</strong> This report is a log of self-reported data and is intended for informational purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment.
-            </p>
              <p className="mt-2">© 2024 The Chiari Voices Foundation. All rights reserved.</p>
           </div>
         </div>
@@ -509,6 +524,9 @@ export default function SymptomReportPage() {
           .print\\:hidden {
             display: none;
           }
+          .print\\:block {
+            display: block;
+          }
           .print\\:shadow-none {
             box-shadow: none;
           }
@@ -521,11 +539,19 @@ export default function SymptomReportPage() {
           .print\\:bg-white {
             background-color: #fff;
           }
-          .print\\:border {
-            border-width: 1px;
+          .prose {
+            color: #000;
           }
-          .print\\:border-gray-200 {
-            border-color: #e5e7eb;
+          .prose-headings\\:my-4 {
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+          }
+          .prose-p\\:my-2 {
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+          }
+          .page-break-before {
+            break-before: page;
           }
         }
       `}</style>

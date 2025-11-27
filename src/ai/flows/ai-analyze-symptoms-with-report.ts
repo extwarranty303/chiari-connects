@@ -40,7 +40,7 @@ const AnalyzeSymptomsWithReportOutputSchema = z.object({
   analysis: z
     .string()
     .describe(
-      'A concise, professional analysis combining findings from the medical report and the user\'s symptom patterns, formatted in Markdown. The tone must be objective and data-driven.'
+      "A concise, professional analysis combining clinically relevant findings from the medical report and the user's symptom patterns, formatted in Markdown. The tone must be objective and data-driven, focusing on abnormalities or key findings."
     ),
 });
 
@@ -99,10 +99,10 @@ const prompt = ai.definePrompt({
 
   **CRITICAL INSTRUCTIONS**:
   1.  **DO NOT PROVIDE A DIAGNOSIS, PROGNOSIS, OR MEDICAL ADVICE.** Your role is strictly observational and to summarize findings.
-  2.  **Synthesize, Do Not Invent**: When analyzing the report, extract and summarize the key findings written by the radiologist. If the text is from a PDF, extract the relevant clinical information. Do not add your own interpretation of the findings.
-  3.  **Correlate, Do Not Conclude**: Relate the findings from the report to the symptom data observationally. For example, "The report's finding of 'mild cerebellar tonsillar ectopia' may be relevant to the user's reports of headaches and dizziness." Do NOT say "The ectopia is causing the headaches."
-  4.  **Maintain Neutral, Objective Tone**: The output must be professional and data-driven, suitable for a healthcare provider.
-  5.  **Use Markdown Formatting**: Structure the output using Markdown. Use headings (e.g., '### Report Findings'), bullet points (e.g., '- Symptom: ...'), and bold text to improve readability.
+  2.  **Synthesize and Summarize Key Findings**: Do not simply copy the report. Extract and summarize only the most important findings, particularly abnormalities, from the radiologist's report.
+  3.  **Correlate, Do Not Conclude**: Relate the key findings from the report to the symptom data observationally. For example, "The report's finding of 'mild cerebellar tonsillar ectopia' may be relevant to the user's reports of headaches and dizziness." Do NOT say "The ectopia is causing the headaches."
+  4.  **Maintain Neutral, Objective Tone**: The output must be professional and data-driven.
+  5.  **Use Markdown for Readability**: Structure the output with ample spacing. Use headings (e.g., '### Key Report Findings'), bullet points, and bold text.
 
   **Symptom Data:**
   {{#each symptoms}}
@@ -117,12 +117,12 @@ const prompt = ai.definePrompt({
   {{/if}}
 
   **Analysis Task:**
-  Based on all provided data, generate a Markdown-formatted summary that includes:
-  1.  **Report Findings**: Under a '### Report Findings' heading, summarize the key observations and conclusions mentioned in the medical report.
-  2.  **Symptom Patterns**: Under a '### Symptom Patterns' heading, mention the most frequent/severe symptoms and any apparent trends from the data log.
-  3.  **Potential Correlations**: Under a '### Potential Correlations' heading, objectively note any potential links between the report's findings and the reported symptoms without claiming causality.
+  Generate a Markdown-formatted summary focusing on items that appear to be abnormal or are key findings. Include:
+  1.  **Key Report Findings**: Under a '### Key Report Findings' heading, summarize only the most significant observations and conclusions from the medical report.
+  2.  **Symptom Patterns**: Under a '### Symptom Patterns' heading, highlight the most severe/frequent symptoms.
+  3.  **Potential Correlations**: Under a '### Potential Correlations' heading, objectively note potential links between the report's findings and the reported symptoms without claiming causality.
 
-  Start with a neutral introductory sentence.
+  Start with a neutral introductory sentence. Ensure there is clear separation between sections.
   
   Analysis:`,
 });
