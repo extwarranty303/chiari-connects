@@ -1,11 +1,22 @@
 'use client';
 
-import { useEffect, useState, useTransition, useRef } from 'react';
+import { useEffect, useState, useTransition, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { format, parseISO } from 'date-fns';
 import { Loader2, Printer, BrainCircuit, AlertTriangle, Upload, File, X, Image as ImageIcon, MessageCircleQuestion } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
+
 
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { type SymptomData } from '@/app/symptom-tracker/page';
@@ -31,40 +42,11 @@ import { Footer } from '@/components/app/footer';
 /**
  * @fileoverview This page generates a professional, printable report of the user's logged symptoms.
  *
- * It fetches all symptom data for the current user, organizes it into a clean table,
- * and provides a button to print the report or save it as a PDF. The page is designed to be
- * printer-friendly, hiding non-essential UI elements during printing. It also includes an
+ * It fetches all symptom data, organizes it into visual charts and summary tables,
+ * and provides a button to print the report or save it as a PDF. It also includes an
  * AI-powered analysis of the symptom data, with an option to upload medical imaging and reports
  * for a more comprehensive summary.
  */
-
-/**
- * Calculates a statistical summary of the provided symptom data.
- * @param {SymptomData[]} symptoms - An array of symptom data objects.
- * @returns An object containing the total entries, number of unique symptoms, and average severity/frequency.
- */
-function getReportSummary(symptoms: SymptomData[]) {
-  if (!symptoms || symptoms.length === 0) {
-    return {
-      totalEntries: 0,
-      uniqueSymptoms: 0,
-      avgSeverity: 0,
-      avgFrequency: 0,
-    };
-  }
-
-  const totalEntries = symptoms.length;
-  const uniqueSymptoms = new Set(symptoms.map(s => s.symptom.toLowerCase())).size;
-  const totalSeverity = symptoms.reduce((sum, s) => sum + s.severity, 0);
-  const totalFrequency = symptoms.reduce((sum, s) => sum + s.frequency, 0);
-
-  return {
-    totalEntries,
-    uniqueSymptoms,
-    avgSeverity: (totalSeverity / totalEntries).toFixed(1),
-    avgFrequency: (totalFrequency / totalEntries).toFixed(1),
-  };
-}
 
 // Define types for previewing uploaded files
 interface FilePreview {
@@ -73,13 +55,78 @@ interface FilePreview {
     url: string; // data URI
 }
 
+// Pre-defined color palette for the chart
+const CHART_COLORS = [
+  'hsl(var(--chart-1))',
+  'hsl(var(--chart-2))',
+  'hsl(var(--chart-3))',
+  'hsl(var(--chart-4))',
+  'hsl(var(--chart-5))',
+  '#82ca9d',
+  '#ffc658',
+  '#ff8042',
+  '#00C49F',
+  '#FFBB28',
+];
+
+
+/**
+ * Processes raw symptom data to prepare it for charting and summary tables.
+ * @param {SymptomData[]} symptoms - An array of raw symptom data.
+ * @returns An object containing data formatted for the chart and the summary table.
+ */
+function processSymptomData(symptoms: SymptomData[] | null) {
+  if (!symptoms || symptoms.length === 0) {
+    return { chartData: [], summaryData: [], symptomColorMap: {} };
+  }
+
+  const summaryMap = new Map<string, { severities: number[], frequencies: number[], count: number }>();
+  
+  // Group data by symptom name
+  symptoms.forEach(s => {
+    const entry = summaryMap.get(s.symptom) || { severities: [], frequencies: [], count: 0 };
+    entry.severities.push(s.severity);
+    entry.frequencies.push(s.frequency);
+    entry.count += 1;
+    summaryMap.set(s.symptom, entry);
+  });
+  
+  // Create summary data and assign colors
+  const symptomColorMap: { [key: string]: string } = {};
+  const summaryData = Array.from(summaryMap.entries()).map(([symptom, data], index) => {
+    symptomColorMap[symptom] = CHART_COLORS[index % CHART_COLORS.length];
+    return {
+      symptom,
+      count: data.count,
+      avgSeverity: (data.severities.reduce((a, b) => a + b, 0) / data.count).toFixed(1),
+      avgFrequency: (data.frequencies.reduce((a, b) => a + b, 0) / data.count).toFixed(1),
+    };
+  });
+
+  // Create data structured for the line chart
+  const chartDataMap = new Map<string, any[]>();
+  symptoms.forEach(s => {
+    const dateStr = format(parseISO(s.date), 'yyyy-MM-dd');
+    if (!chartDataMap.has(dateStr)) {
+      chartDataMap.set(dateStr, { date: dateStr });
+    }
+    const dayData = chartDataMap.get(dateStr)!;
+    dayData[s.symptom] = s.severity;
+  });
+  
+  // Sort by date and convert map to array
+  const chartData = Array.from(chartDataMap.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(d => ({
+      ...d,
+      date: format(new Date(d.date), 'MMM d')
+  }));
+
+  return { chartData, summaryData, symptomColorMap };
+}
+
+
 /**
  * A component that provides an AI-powered analysis of the user's symptom data.
- * It allows for optional medical imaging and report uploads to generate a more comprehensive summary.
  * The analysis is generated on-demand by calling a Genkit AI flow.
- *
- * @param {{symptoms: SymptomData[], user: any}} props - The user's symptom data and user object.
- * @returns {React.ReactElement} The AI analysis section component.
  */
 function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) {
     const [isAnalysisPending, startAnalysisTransition] = useTransition();
@@ -92,11 +139,6 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
 
-    /**
-     * Converts a File object to a Base64 encoded data URI.
-     * @param {File} file The file to convert.
-     * @returns {Promise<string>} A promise that resolves with the data URI string.
-     */
     const toDataURL = (file: File): Promise<string> =>
         new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -105,49 +147,38 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
             reader.readAsDataURL(file);
     });
 
-    /**
-     * Handles the change event from the file input, validating and adding the selected files.
-     * @param {React.ChangeEvent<HTMLInputElement>} event - The file input change event.
-     */
     const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-            const allowedDocTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
-            
-            const isImage = allowedImageTypes.includes(file.type);
-            const isDocument = allowedDocTypes.includes(file.type);
+        if (event.target.files) {
+             const file = event.target.files[0];
+            if (file) {
+                const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                const allowedDocTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+                
+                const isImage = allowedImageTypes.includes(file.type);
+                const isDocument = allowedDocTypes.includes(file.type);
 
-            if (isImage || isDocument) {
-                const dataUrl = await toDataURL(file);
-                setUploadedFiles(prev => [...prev, file]);
-                setPreviews(prev => [...prev, { name: file.name, type: isImage ? 'image' : 'document', url: dataUrl }]);
-            } else {
-                toast({
-                    variant: 'destructive',
-                    title: 'Invalid File Type',
-                    description: `Please upload a valid image (JPG, PNG) or document (PDF, DOCX, TXT) file.`,
-                });
+                if (isImage || isDocument) {
+                    const dataUrl = await toDataURL(file);
+                    setUploadedFiles(prev => [...prev, file]);
+                    setPreviews(prev => [...prev, { name: file.name, type: isImage ? 'image' : 'document', url: dataUrl }]);
+                } else {
+                    toast({
+                        variant: 'destructive',
+                        title: 'Invalid File Type',
+                        description: `Please upload a valid image (JPG, PNG) or document (PDF, DOCX, TXT) file.`,
+                    });
+                }
             }
         }
-        // Reset file input to allow uploading the same file again
         if(fileInputRef.current) fileInputRef.current.value = '';
     };
     
-    /**
-     * Removes a file from the uploaded list by its index.
-     * @param {number} indexToRemove The index of the file to remove.
-     */
     const removeFile = (indexToRemove: number) => {
         setUploadedFiles(prev => prev.filter((_, index) => index !== indexToRemove));
         setPreviews(prev => prev.filter((_, index) => index !== indexToRemove));
     }
 
 
-    /**
-     * Triggers the AI analysis flow. It prepares the input data (symptoms and all uploaded files)
-     * and calls the appropriate AI flow, then displays the result or an error message.
-     */
     const handleGenerateAnalysis = () => {
         startAnalysisTransition(async () => {
             setError('');
@@ -189,9 +220,6 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
         });
     };
 
-    /**
-     * Triggers the AI flow to generate questions for a doctor based on the existing analysis.
-     */
     const handleGenerateQuestions = () => {
         if (!analysis) return;
 
@@ -211,7 +239,7 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
     }
     
     return (
-        <div>
+        <div className="page-break-inside-avoid">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                  <div className="flex-grow">
                     <h3 className="text-xl font-semibold border-b pb-2 mb-2">AI-Generated Summary</h3>
@@ -234,6 +262,7 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
                     onChange={handleFileChange}
                     accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,.doc,.docx,.txt"
                     className="hidden"
+                    multiple={false} // Only allow one file at a time, but manage a list
                 />
                 <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isAnalysisPending}>
                     <Upload className="mr-2 h-4 w-4" />
@@ -286,7 +315,7 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
              </div>
 
             {previews.filter(p => p.type === 'image').length > 0 && (
-                <div className="mt-6 hidden print:block space-y-4">
+                <div className="mt-6 hidden print:block space-y-4 page-break-inside-avoid">
                      <h4 className="font-semibold text-lg">Uploaded Imaging</h4>
                      {previews.filter(p => p.type === 'image').map((preview, index) => (
                         <div key={index}>
@@ -308,7 +337,7 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
             )}
             
             {(isQuestionPending || (doctorQuestions && doctorQuestions.questions.length > 0)) && (
-                <div className="mt-6">
+                <div className="mt-6 page-break-inside-avoid">
                     <h3 className="text-xl font-semibold border-b pb-2 mb-4">Questions for Your Doctor</h3>
                     {isQuestionPending ? (
                         <div className="space-y-3 p-4">
@@ -343,22 +372,18 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
  * The main component for the Symptom Report page.
  * It handles user authentication, fetches all symptom data from Firestore,
  * displays it in a structured format, and manages the print functionality.
- *
- * @returns {React.ReactElement} The rendered symptom report page.
  */
 export default function SymptomReportPage() {
   const { firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
 
-  // Redirect unauthenticated users.
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/auth');
     }
   }, [user, isUserLoading, router]);
 
-  // Create a memoized, ordered query for all of the user's symptoms.
   const symptomsQuery = useMemoFirebase(() => {
     if (!user) return null;
     return query(collection(firestore, 'users', user.uid, 'symptoms'), orderBy('date', 'desc'));
@@ -370,15 +395,18 @@ export default function SymptomReportPage() {
     error: symptomsError,
   } = useCollection<SymptomData>(symptomsQuery);
 
-  /**
-   * Triggers the browser's print dialog to print or save the report as a PDF.
-   */
   const handlePrint = () => {
     window.print();
   };
 
-  // Show a full-page loader while checking authentication.
-  if (isUserLoading || !user) {
+  const { chartData, summaryData, symptomColorMap } = useMemo(
+    () => processSymptomData(symptoms),
+    [symptoms]
+  );
+  
+  const isLoading = isUserLoading || isLoadingSymptoms;
+
+  if (isLoading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -386,11 +414,9 @@ export default function SymptomReportPage() {
     );
   }
 
-  const summary = getReportSummary(symptoms || []);
 
   return (
     <div className="bg-background text-foreground min-h-screen flex flex-col">
-      {/* Header section, hidden from print output. */}
       <header className="p-4 sm:p-8 flex justify-between items-center print:hidden">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Symptom Report</h1>
         <div className="flex items-center gap-4">
@@ -404,7 +430,6 @@ export default function SymptomReportPage() {
         </div>
       </header>
 
-      {/* Main report content, styled for screen and print. */}
       <main className="p-4 sm:p-8 flex-1">
         <div className="max-w-4xl mx-auto bg-card p-6 sm:p-10 rounded-lg shadow-md border print:shadow-none print:border-none print:p-0">
           
@@ -423,7 +448,7 @@ export default function SymptomReportPage() {
             <Icons.logo className="w-24 h-24 text-primary" />
           </div>
 
-          {isLoadingSymptoms && (
+          {isLoading && (
             <div className="flex items-center justify-center h-64">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
@@ -437,56 +462,65 @@ export default function SymptomReportPage() {
             </Alert>
           )}
 
-          {!isLoadingSymptoms && symptoms && (
+          {!isLoading && symptoms && (
             <>
               {symptoms.length > 0 ? (
                 <div className="space-y-12">
-                   {/* AI Analysis Section */}
                    <AiAnalysis symptoms={symptoms} user={user} />
                   
-                  {/* Summary Statistics Section */}
-                  <div className="page-break-before">
-                    <h3 className="text-xl font-semibold border-b pb-2 mb-4">Data Summary</h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-                        <div className="bg-muted/50 p-4 rounded-lg">
-                            <p className="text-2xl font-bold">{summary.totalEntries}</p>
-                            <p className="text-sm text-muted-foreground">Total Entries</p>
-                        </div>
-                        <div className="bg-muted/50 p-4 rounded-lg">
-                            <p className="text-2xl font-bold">{summary.uniqueSymptoms}</p>
-                            <p className="text-sm text-muted-foreground">Unique Symptoms</p>
-                        </div>
-                         <div className="bg-muted/50 p-4 rounded-lg">
-                            <p className="text-2xl font-bold">{summary.avgSeverity}</p>
-                            <p className="text-sm text-muted-foreground">Avg. Severity</p>
-                        </div>
-                         <div className="bg-muted/50 p-4 rounded-lg">
-                            <p className="text-2xl font-bold">{summary.avgFrequency}</p>
-                            <p className="text-sm text-muted-foreground">Avg. Frequency</p>
-                        </div>
-                    </div>
+                  <div className="page-break-before page-break-inside-avoid">
+                     <h3 className="text-xl font-semibold border-b pb-2 mb-4">Symptom Severity Over Time</h3>
+                     <ResponsiveContainer width="100%" height={400}>
+                        <LineChart data={chartData}>
+                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                           <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
+                           <YAxis stroke="hsl(var(--muted-foreground))" domain={[0, 10]} />
+                           <Tooltip
+                                contentStyle={{
+                                    background: 'hsl(var(--card))',
+                                    border: '1px solid hsl(var(--border))',
+                                    borderRadius: 'var(--radius)',
+                                }}
+                            />
+                           <Legend />
+                           {Object.keys(symptomColorMap).map(symptom => (
+                                <Line 
+                                    key={symptom}
+                                    type="monotone" 
+                                    dataKey={symptom} 
+                                    stroke={symptomColorMap[symptom]} 
+                                    strokeWidth={2}
+                                    connectNulls
+                                    dot={{ r: 4 }}
+                                    activeDot={{ r: 6 }}
+                                />
+                           ))}
+                        </LineChart>
+                     </ResponsiveContainer>
                   </div>
 
-                  {/* Detailed Log Table Section */}
-                  <div>
-                    <h3 className="text-xl font-semibold border-b pb-2 mb-4">Detailed Log</h3>
+                  <div className="page-break-inside-avoid">
+                    <h3 className="text-xl font-semibold border-b pb-2 mb-4">Symptom Summary</h3>
                     <div className="border rounded-lg overflow-hidden">
                         <Table>
                         <TableHeader>
                             <TableRow>
-                            <TableHead className="w-1/4">Date</TableHead>
                             <TableHead>Symptom</TableHead>
-                            <TableHead className="text-center">Severity (1-10)</TableHead>
-                            <TableHead className="text-center">Frequency (1-10)</TableHead>
+                            <TableHead className="text-center">Times Logged</TableHead>
+                            <TableHead className="text-center">Avg. Severity (1-10)</TableHead>
+                            <TableHead className="text-center">Avg. Frequency (1-10)</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {symptoms.map(symptom => (
-                            <TableRow key={symptom.id}>
-                                <TableCell>{format(parseISO(symptom.date), 'PPP')}</TableCell>
-                                <TableCell className="font-medium">{symptom.symptom}</TableCell>
-                                <TableCell className="text-center">{symptom.severity}</TableCell>
-                                <TableCell className="text-center">{symptom.frequency}</TableCell>
+                            {summaryData.map(symptom => (
+                            <TableRow key={symptom.symptom}>
+                                <TableCell className="font-medium flex items-center gap-2">
+                                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: symptomColorMap[symptom.symptom] }}/>
+                                   {symptom.symptom}
+                                </TableCell>
+                                <TableCell className="text-center">{symptom.count}</TableCell>
+                                <TableCell className="text-center">{symptom.avgSeverity}</TableCell>
+                                <TableCell className="text-center">{symptom.avgFrequency}</TableCell>
                             </TableRow>
                             ))}
                         </TableBody>
@@ -513,9 +547,7 @@ export default function SymptomReportPage() {
           </div>
         </div>
       </main>
-      <Footer />
 
-      {/* Print-specific styles to hide UI elements and optimize layout for printing. */}
       <style jsx global>{`
         @media print {
           body {
@@ -537,7 +569,7 @@ export default function SymptomReportPage() {
           .print\\:p-0 {
             padding: 0;
           }
-          .print\\:bg-white {
+           .print\\:bg-white {
             background-color: #fff;
           }
           .prose {
@@ -553,6 +585,15 @@ export default function SymptomReportPage() {
           }
           .page-break-before {
             break-before: page;
+          }
+          .page-break-inside-avoid {
+            break-inside: avoid;
+          }
+          .recharts-legend-wrapper {
+             display: none; /* Hide legend on print for cleaner look */
+          }
+          .recharts-wrapper {
+             font-size: 10px;
           }
         }
       `}</style>
