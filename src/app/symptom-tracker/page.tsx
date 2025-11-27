@@ -136,10 +136,9 @@ export default function SymptomTrackerPage() {
 
   // Memoized Firestore query to fetch the last 30 symptoms for the current user, ordered by date.
   const symptomsQuery = useMemoFirebase(() => {
-    // **FIX**: Do not create the query until the user is fully loaded and available.
-    if (isUserLoading || !user) return null;
+    if (!user || !firestore) return null;
     return query(collection(firestore, 'users', user.uid, 'symptoms'), orderBy('date', 'desc'), limit(30));
-  }, [firestore, user, isUserLoading]);
+  }, [firestore, user]);
 
   const {
     data: symptoms,

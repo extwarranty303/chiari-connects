@@ -136,7 +136,7 @@ export default function SymptomTrackerPage() {
 
   // Memoized Firestore query to fetch the last 30 symptoms for the current user, ordered by date.
   const symptomsQuery = useMemoFirebase(() => {
-    if (!user) return null;
+    if (!user || !firestore) return null;
     return query(collection(firestore, 'users', user.uid, 'symptoms'), orderBy('date', 'desc'), limit(30));
   }, [firestore, user]);
 
@@ -401,7 +401,7 @@ export default function SymptomTrackerPage() {
                                     <Select onValueChange={(val) => field.onChange(Number(val))} value={String(field.value)}>
                                         <SelectTrigger id="frequency" aria-label="Select frequency">
                                             <SelectValue placeholder="Select frequency" />
-                                        </Trigger>
+                                        </SelectTrigger>
                                         <SelectContent>
                                             {[...Array(10)].map((_, i) => (
                                                 <SelectItem key={i+1} value={String(i+1)}>{i+1}</SelectItem>
