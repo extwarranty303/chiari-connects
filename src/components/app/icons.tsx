@@ -13,56 +13,45 @@ export const Icons = {
    * symbolizing connectivity and analysis.
    */
   logo: (props: SVGProps<SVGSVGElement>) => (
-    <svg
+     <svg 
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 100 70"
-      {...props}
-    >
-      <title>Chiari Connects Logo</title>
-      {/* Circle with nodes */}
-      <g strokeWidth="0.5" stroke="#4a90e2">
-        {/* Top arc */}
-        <circle cx="50" cy="35" r="14" fill="none" stroke="none" />
-        <circle cx="50" cy="21" r="1.5" fill="#4a90e2" stroke="none" />
-        <circle cx="59" cy="25" r="1.5" fill="#4a90e2" stroke="none" />
-        <circle cx="41" cy="25" r="1.5" fill="white" stroke="#4a90e2" />
-        <circle cx="65" cy="32" r="1.5" fill="#4a90e2" stroke="none" />
-        <circle cx="35" cy="32" r="1.5" fill="white" stroke="#4a90e2" />
-        <circle cx="66" cy="40" r="1.5" fill="#50e3c2" stroke="none" />
-        <circle cx="34" cy="40" r="1.5" fill="#50e3c2" stroke="none" />
-        <circle cx="62" cy="48" r="1.5" fill="#b8e986" stroke="none" />
-        <circle cx="38" cy="48" r="1.5" fill="white" stroke="#b8e986" />
-        <circle cx="55" cy="53" r="1.5" fill="#b8e986" stroke="none" />
-        <circle cx="45" cy="53" r="1.5" fill="#b8e986" stroke="none" />
+      viewBox="0 0 160 70"
+      {...props}>
+      <title>Chiari Connect Logo</title>
+      <text x="0" y="30" fontFamily="Inter, sans-serif" fontSize="24" fontWeight="bold" fill="hsl(var(--primary))">Chiari</text>
+      <text x="68" y="30" fontFamily="Inter, sans-serif" fontSize="24" fill="#50e3c2">Connect</text>
+      
+      <g transform="translate(110, 4)">
+          <g strokeWidth="0.5" stroke="#4a90e2">
+            <circle cx="25" cy="25" r="14" fill="none" stroke="none" />
+            <circle cx="25" cy="11" r="1.5" fill="#4a90e2" stroke="none" />
+            <circle cx="34" cy="15" r="1.5" fill="#4a90e2" stroke="none" />
+            <circle cx="16" cy="15" r="1.5" fill="white" stroke="#4a90e2" />
+            <circle cx="40" cy="22" r="1.5" fill="#4a90e2" stroke="none" />
+            <circle cx="10" cy="22" r="1.5" fill="white" stroke="#4a90e2" />
+            <circle cx="41" cy="30" r="1.5" fill="#50e3c2" stroke="none" />
+            <circle cx="9" cy="30" r="1.5" fill="#50e3c2" stroke="none" />
+            <circle cx="37" cy="38" r="1.5" fill="#b8e986" stroke="none" />
+            <circle cx="13" cy="38" r="1.5" fill="white" stroke="#b8e986" />
+            <circle cx="30" cy="43" r="1.5" fill="#b8e986" stroke="none" />
+            <circle cx="20" cy="43" r="1.5" fill="#b8e986" stroke="none" />
 
-        <path d="M50 21 a14,14 0 0,1 9,4" fill="none" />
-        <path d="M59 25 a14,14 0 0,1 6,7" fill="none" />
-        <path d="M41 25 a14,14 0 0,0 -6,7" fill="none" />
-        <path d="M65 32 a14,14 0 0,1 1,8" fill="none" stroke="#50e3c2" />
-        <path d="M35 32 a14,14 0 0,0 -1,8" fill="none" stroke="#50e3c2" />
-        <path d="M66 40 a14,14 0 0,1 -4,8" fill="none" stroke="#b8e986" />
-        <path d="M34 40 a14,14 0 0,0 4,8" fill="none" stroke="#b8e986" />
-        <path d="M62 48 a14,14 0 0,1 -7,5" fill="none" stroke="#b8e986" />
-        <path d="M38 48 a14,14 0 0,0 7,5" fill="none" stroke="#b8e986" />
+            <path d="M25 11 a14,14 0 0,1 9,4" fill="none" />
+            <path d="M34 15 a14,14 0 0,1 6,7" fill="none" />
+            <path d="M16 15 a14,14 0 0,0 -6,7" fill="none" />
+            <path d="M40 22 a14,14 0 0,1 1,8" fill="none" stroke="#50e3c2" />
+            <path d="M10 22 a14,14 0 0,0 -1,8" fill="none" stroke="#50e3c2" />
+            <path d="M41 30 a14,14 0 0,1 -4,8" fill="none" stroke="#b8e986" />
+            <path d="M9 30 a14,14 0 0,0 4,8" fill="none" stroke="#b8e986" />
+            <path d="M37 38 a14,14 0 0,1 -7,5" fill="none" stroke="#b8e986" />
+            <path d="M13 38 a14,14 0 0,0 7,5" fill="none" stroke="#b8e986" />
+          </g>
+          
+          <path d="M 25 18 C 30 23, 20 28, 25 33 C 30 38, 20 43, 25 48" stroke="#0b3d91" strokeWidth="0.8" fill="none" />
+          <path d="M 25 18 C 20 23, 30 28, 25 33 C 20 38, 30 43, 25 48" stroke="#0b3d91" strokeWidth="0.8" fill="none" transform="translate(1, -0.5)" />
       </g>
       
-      {/* Inner "S" shape */}
-      <path 
-        d="M 50 28 C 55 33, 45 38, 50 43 C 55 48, 45 53, 50 58"
-        stroke="#0b3d91"
-        strokeWidth="0.8"
-        fill="none"
-      />
-      <path 
-        d="M 50 28 C 45 33, 55 38, 50 43 C 45 48, 55 53, 50 58"
-        stroke="#0b3d91"
-        strokeWidth="0.8"
-        fill="none"
-        transform="translate(1, -0.5)"
-      />
-      
-       {/* Powered by text */}
-      <text x="50" y="68" fontFamily="sans-serif" fontSize="8" fill="#a0aec0" textAnchor="middle">
+      <text x="0" y="55" fontFamily="sans-serif" fontSize="8" fill="#a0aec0">
         Powered by chiarivoices.org
       </text>
 

@@ -213,10 +213,7 @@ export default function AuthPage() {
           <div className="absolute bottom-[-20%] right-[-20%] top-auto h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle_farthest-side,rgba(255,0,182,.15),rgba(255,255,255,0))]"></div>
       </div>
       <div className="relative z-10 flex flex-col items-center gap-4 mb-6 text-center">
-        <Icons.logo className="w-48 h-auto text-primary" />
-        <h1 className="text-3xl font-semibold font-headline tracking-tight text-foreground -mt-4">
-          Chiari Connects
-        </h1>
+        <Icons.logo className="w-64 h-auto text-primary" />
       </div>
       <Tabs defaultValue="login" className="w-full max-w-md relative z-10">
         <TabsList className="grid w-full grid-cols-2">

@@ -467,7 +467,13 @@ export default function SymptomReportPage() {
       </div>
     );
   }
-
+  
+  const capitalize = (s: string) => {
+    if (!s) return "";
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  };
+  
+  const displayName = capitalize(userProfile?.username || user.displayName || user.email || '');
 
   return (
     <div className="bg-background text-foreground min-h-screen flex flex-col">
@@ -493,11 +499,11 @@ export default function SymptomReportPage() {
           </div>
 
           <div className="flex flex-col items-center text-center gap-2 mb-8">
-            <Icons.logo className="w-48 h-auto text-primary" />
+            <Icons.logo className="w-64 h-auto text-primary" />
             <div>
-                <h2 className="text-3xl font-bold text-foreground">Symptom History Report</h2>
+                <h2 className="text-xl font-bold text-foreground">Symptom History Report</h2>
                 <p className="text-muted-foreground">
-                    Analysis for: {userProfile?.username || user.displayName || user.email}
+                    Analysis for: {displayName}
                 </p>
             </div>
           </div>
