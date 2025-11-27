@@ -66,6 +66,15 @@
   body {
     @apply bg-background text-foreground;
   }
+  .prose ul {
+    @apply my-4 list-disc pl-5;
+  }
+  .prose ul li {
+    @apply my-2;
+  }
+  .prose p {
+      @apply my-4;
+  }
 }
 
 @layer utilities {
