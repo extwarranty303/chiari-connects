@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useFirebase, useUser, useDoc, useMemoFirebase } from '@/firebase';
-import { LogOut, User as UserIcon, Loader2, LogIn, UserPlus, Activity, MessageSquare, Shield } from 'lucide-react';
+import { LogOut, User as UserIcon, Loader2, LogIn, UserPlus, Activity, MessageSquare, Shield, Home } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { doc } from 'firebase/firestore';
@@ -125,6 +125,12 @@ export function UserNav() {
                 </Link>
               </DropdownMenuItem>
             )}
+           <DropdownMenuItem asChild>
+            <Link href="/">
+              <Home className="mr-2 h-4 w-4" />
+              <span>Home</span>
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link href="/profile">
               <UserIcon className="mr-2 h-4 w-4" />
