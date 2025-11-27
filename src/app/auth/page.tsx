@@ -133,7 +133,7 @@ export default function AuthPage() {
         const errorCode = error.code;
         let errorMessage = 'An unknown error occurred.';
         if (errorCode === 'auth/email-already-in-use') {
-            errorMessage = 'This email is already in use. Please log in instead.';
+            errorMessage = 'This email is already registered. If you used Google to sign up, please log in with Google instead.';
         } else if (errorCode === 'auth/weak-password') {
             errorMessage = 'The password is too weak.';
         }
