@@ -409,12 +409,23 @@ export default function SymptomReportPage() {
   const { firestore } = useFirebase();
   const { user, userProfile, isUserLoading } = useUser();
   const router = useRouter();
+  const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/auth');
     }
   }, [user, isUserLoading, router]);
+
+  useEffect(() => {
+    if (isPrinting) {
+      window.print();
+      // Reset printing state after the print dialog is handled
+      // This timeout allows the browser to process the print command
+      const timer = setTimeout(() => setIsPrinting(false), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isPrinting]);
 
   const symptomsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -428,7 +439,7 @@ export default function SymptomReportPage() {
   } = useCollection<SymptomData>(symptomsQuery);
 
   const handlePrint = () => {
-    window.print();
+    setIsPrinting(true);
   };
 
   const { chartData, summaryData } = useMemo(
