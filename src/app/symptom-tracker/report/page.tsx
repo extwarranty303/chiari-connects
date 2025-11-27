@@ -149,8 +149,8 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
 
     const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files) {
-             const file = event.target.files[0];
-            if (file) {
+            const newFiles = Array.from(event.target.files);
+            for (const file of newFiles) {
                 const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
                 const allowedDocTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
                 
@@ -165,7 +165,7 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
                     toast({
                         variant: 'destructive',
                         title: 'Invalid File Type',
-                        description: `Please upload a valid image (JPG, PNG) or document (PDF, DOCX, TXT) file.`,
+                        description: `File '${file.name}' was ignored. Please upload a valid image (JPG, PNG) or document (PDF, DOCX, TXT) file.`,
                     });
                 }
             }
@@ -262,7 +262,7 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
                     onChange={handleFileChange}
                     accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,.doc,.docx,.txt"
                     className="hidden"
-                    multiple={false} // Only allow one file at a time, but manage a list
+                    multiple={true}
                 />
                 <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isAnalysisPending}>
                     <Upload className="mr-2 h-4 w-4" />
@@ -417,7 +417,7 @@ export default function SymptomReportPage() {
 
   return (
     <div className="bg-background text-foreground min-h-screen flex flex-col">
-      <header className="p-4 sm:p-8 flex justify-between items-center print:hidden">
+      <header className="p-4 sm:p-8 flex justify-between items-center print:hidden border-b sticky top-0 bg-background/80 backdrop-blur-sm z-10">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Symptom Report</h1>
         <div className="flex items-center gap-4">
           <Button variant="outline" onClick={() => router.back()}>
@@ -445,7 +445,7 @@ export default function SymptomReportPage() {
                 Generated on {format(new Date(), 'MMMM d, yyyy')} for {user.displayName || user.email}
               </p>
             </div>
-            <Icons.logo className="w-24 h-24 text-primary" />
+            <Icons.logo className="w-32 h-32 text-primary" />
           </div>
 
           {isLoading && (
