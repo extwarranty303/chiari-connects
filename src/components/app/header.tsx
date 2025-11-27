@@ -54,7 +54,7 @@ export function AppHeader({ onUploadClick, onDownloadClick, showActions = true }
     <header className="flex items-center justify-between p-4 border-b bg-card/60 backdrop-blur-xl sticky top-0 z-50 shadow-sm">
       <div className="flex items-center gap-3">
         <Link href="/" className="flex items-center gap-3">
-          <Icons.logo className="w-48 h-auto text-primary" />
+          <Icons.logo className="w-56 h-auto text-primary" />
         </Link>
       </div>
 

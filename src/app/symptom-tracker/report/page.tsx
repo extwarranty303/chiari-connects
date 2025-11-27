@@ -456,7 +456,9 @@ export default function SymptomReportPage() {
   return (
     <div className="bg-background text-foreground min-h-screen flex flex-col">
       <header className="p-4 sm:p-8 flex justify-between items-center print:hidden border-b sticky top-0 bg-background/80 backdrop-blur-sm z-10">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Symptom Report</h1>
+        <h1 className="text-xl font-bold tracking-tight text-foreground">
+          Symptom History Report
+        </h1>
         <div className="flex items-center gap-4">
           <Button variant="outline" onClick={() => router.back()}>
             Back to Tracker
@@ -471,19 +473,13 @@ export default function SymptomReportPage() {
       <main className="p-4 sm:p-8 flex-1">
         <div className="max-w-4xl mx-auto bg-card p-6 sm:p-10 rounded-lg shadow-md border print:shadow-none print:border-none print:p-0">
           
-          <div className="hidden print:block mb-8 text-center">
-             <h2 className="text-lg font-semibold">The Chiari Voices Foundation's Chiari Connects Symptom Summary Tool</h2>
-             <p className="text-sm text-gray-600">Report Generated on {format(new Date(), 'MMMM d, yyyy')}</p>
-          </div>
-
-          <div className="flex flex-col items-center text-center gap-2 mb-8">
-            <Icons.logo className="w-64 h-auto text-primary" />
-            <div>
-                <h2 className="text-xl font-bold text-foreground">Symptom History Report</h2>
-                <p className="text-muted-foreground">
-                    Analysis for: {displayName}
-                </p>
-            </div>
+          <div className="mb-12 text-center">
+             <Icons.logo className="w-96 h-auto text-primary mx-auto mb-4" />
+             <h2 className="text-xl font-bold text-foreground">Symptom History Report</h2>
+             <p className="text-muted-foreground">
+                 Analysis for: {displayName}
+             </p>
+             <p className="text-sm text-gray-500 mt-1 print:hidden">Report Generated on {format(new Date(), 'MMMM d, yyyy')}</p>
           </div>
 
           {isLoading && (
@@ -582,7 +578,7 @@ export default function SymptomReportPage() {
           )}
 
           <div className="mt-12 pt-6 border-t text-xs text-muted-foreground text-center">
-             <p className="mt-2">© 2024 The Chiari Voices Foundation. All rights reserved.</p>
+             <p className="mt-2">© 2024 Chiari Connects. All rights reserved.</p>
           </div>
         </div>
       </main>

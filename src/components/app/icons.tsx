@@ -15,46 +15,11 @@ export const Icons = {
   logo: (props: SVGProps<SVGSVGElement>) => (
      <svg 
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 160 70"
+      viewBox="0 0 200 40"
       {...props}>
-      <title>Chiari Connect Logo</title>
-      <text x="0" y="30" fontFamily="Inter, sans-serif" fontSize="24" fontWeight="bold" fill="hsl(var(--primary))">Chiari</text>
-      <text x="68" y="30" fontFamily="Inter, sans-serif" fontSize="24" fill="#50e3c2">Connect</text>
-      
-      <g transform="translate(110, 4)">
-          <g strokeWidth="0.5" stroke="#4a90e2">
-            <circle cx="25" cy="25" r="14" fill="none" stroke="none" />
-            <circle cx="25" cy="11" r="1.5" fill="#4a90e2" stroke="none" />
-            <circle cx="34" cy="15" r="1.5" fill="#4a90e2" stroke="none" />
-            <circle cx="16" cy="15" r="1.5" fill="white" stroke="#4a90e2" />
-            <circle cx="40" cy="22" r="1.5" fill="#4a90e2" stroke="none" />
-            <circle cx="10" cy="22" r="1.5" fill="white" stroke="#4a90e2" />
-            <circle cx="41" cy="30" r="1.5" fill="#50e3c2" stroke="none" />
-            <circle cx="9" cy="30" r="1.5" fill="#50e3c2" stroke="none" />
-            <circle cx="37" cy="38" r="1.5" fill="#b8e986" stroke="none" />
-            <circle cx="13" cy="38" r="1.5" fill="white" stroke="#b8e986" />
-            <circle cx="30" cy="43" r="1.5" fill="#b8e986" stroke="none" />
-            <circle cx="20" cy="43" r="1.5" fill="#b8e986" stroke="none" />
-
-            <path d="M25 11 a14,14 0 0,1 9,4" fill="none" />
-            <path d="M34 15 a14,14 0 0,1 6,7" fill="none" />
-            <path d="M16 15 a14,14 0 0,0 -6,7" fill="none" />
-            <path d="M40 22 a14,14 0 0,1 1,8" fill="none" stroke="#50e3c2" />
-            <path d="M10 22 a14,14 0 0,0 -1,8" fill="none" stroke="#50e3c2" />
-            <path d="M41 30 a14,14 0 0,1 -4,8" fill="none" stroke="#b8e986" />
-            <path d="M9 30 a14,14 0 0,0 4,8" fill="none" stroke="#b8e986" />
-            <path d="M37 38 a14,14 0 0,1 -7,5" fill="none" stroke="#b8e986" />
-            <path d="M13 38 a14,14 0 0,0 7,5" fill="none" stroke="#b8e986" />
-          </g>
-          
-          <path d="M 25 18 C 30 23, 20 28, 25 33 C 30 38, 20 43, 25 48" stroke="#0b3d91" strokeWidth="0.8" fill="none" />
-          <path d="M 25 18 C 20 23, 30 28, 25 33 C 20 38, 30 43, 25 48" stroke="#0b3d91" strokeWidth="0.8" fill="none" transform="translate(1, -0.5)" />
-      </g>
-      
-      <text x="0" y="55" fontFamily="sans-serif" fontSize="8" fill="#a0aec0">
-        Powered by chiarivoices.org
-      </text>
-
+      <title>Chiari Connects Logo</title>
+      <text x="0" y="28" fontFamily="Inter, sans-serif" fontSize="24" fontWeight="bold" fill="hsl(var(--primary))">Chiari</text>
+      <text x="95" y="28" fontFamily="Inter, sans-serif" fontSize="24" fontWeight="bold" fill="hsl(var(--foreground))">Connects</text>
     </svg>
   ),
   /**
