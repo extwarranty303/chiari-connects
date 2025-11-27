@@ -31,7 +31,7 @@ import { Logo } from '@/components/app/logo';
 
 // Schema for the onboarding form validation.
 const onboardingSchema = z.object({
-  username: z.string().min(3, { message: 'Username must be at least 3 characters.' }).regex(/^[a-z0-9_]+$/, 'Username can only contain lowercase letters, numbers, and underscores.'),
+  username: z.string().min(3, { message: 'Username must be at least 3 characters.' }).regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores.'),
   firstName: z.string().min(1, { message: 'First name is required.' }),
   lastName: z.string().min(1, { message: 'Last name is required.' }),
   city: z.string().min(1, { message: 'City is required.' }),
