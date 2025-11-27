@@ -250,7 +250,7 @@ export default function SymptomTrackerPage() {
                         Delete All Data
                     </Button>
                   </AlertDialogTrigger>
-                  <AlertDialogContent className="glassmorphism">
+                  <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                       <AlertDialogDescription>

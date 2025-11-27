@@ -320,7 +320,7 @@ function AiAnalysis({ symptoms, user, userProfile }: { symptoms: SymptomData[], 
              
              <div className="mt-4 grid grid-cols-1 gap-6">
                 {isAnalysisPending && (
-                    <Card className="glassmorphism">
+                    <Card>
                         <CardHeader><CardTitle>Analyzing...</CardTitle></CardHeader>
                         <CardContent>
                              <div className="space-y-4 p-4">
@@ -340,7 +340,7 @@ function AiAnalysis({ symptoms, user, userProfile }: { symptoms: SymptomData[], 
                     </Alert>
                 )}
                 {analysisSections.length > 0 && analysisSections.map((section, index) => (
-                    <Card key={index} className="glassmorphism page-break-inside-avoid print:shadow-none print:border-none print:bg-transparent">
+                    <Card key={index} className="page-break-inside-avoid print:shadow-none print:border-none print:bg-transparent">
                         <CardHeader><CardTitle>{section.title}</CardTitle></CardHeader>
                         <CardContent>
                             <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -371,7 +371,7 @@ function AiAnalysis({ symptoms, user, userProfile }: { symptoms: SymptomData[], 
 
 
             {(isAnalysisPending || doctorQuestions.length > 0) && (
-                 <Card className="glassmorphism mt-6 page-break-before page-break-inside-avoid print:shadow-none print:border-none print:bg-transparent">
+                 <Card className="mt-6 page-break-before page-break-inside-avoid print:shadow-none print:border-none print:bg-transparent">
                     <CardHeader><CardTitle>Questions for Your Doctor</CardTitle></CardHeader>
                     <CardContent>
                          {isAnalysisPending && doctorQuestions.length === 0 ? (
@@ -517,7 +517,7 @@ export default function SymptomReportPage() {
                     
                     {symptoms.length > 0 && (
                         <div className="space-y-12">
-                        <Card className="glassmorphism page-break-before page-break-inside-avoid print:shadow-none print:border-none print:bg-transparent">
+                        <Card className="page-break-before page-break-inside-avoid print:shadow-none print:border-none print:bg-transparent">
                             <CardHeader>
                                 <CardTitle>Symptom Progression</CardTitle>
                                 <CardDescription>Severity and frequency of symptoms over time.</CardDescription>
@@ -543,7 +543,7 @@ export default function SymptomReportPage() {
                             </CardContent>
                         </Card>
 
-                        <Card className="glassmorphism page-break-inside-avoid print:shadow-none print:border-none print:bg-transparent">
+                        <Card className="page-break-inside-avoid print:shadow-none print:border-none print:bg-transparent">
                             <CardHeader>
                                 <CardTitle>Symptom Summary</CardTitle>
                                 <CardDescription>An overview of all logged symptoms.</CardDescription>
