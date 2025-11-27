@@ -44,13 +44,13 @@ export function useDoc<T = any>(
   type StateDataType = WithId<T> | null;
 
   const [data, setData] = useState<StateDataType>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Start as loading if we expect a doc ref
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Default to true, will be set to false if ref is null
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
-    // If the doc ref is not ready, do nothing and wait.
+    // If the doc ref is not ready, do nothing and set loading to false.
     if (!memoizedDocRef) {
-      setIsLoading(true);
+      setIsLoading(false);
       setData(null);
       setError(null);
       return;
