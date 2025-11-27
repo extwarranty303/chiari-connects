@@ -62,7 +62,7 @@ export const Icons = {
       />
       
        {/* Powered by text */}
-      <text x="50" y="65" fontFamily="sans-serif" fontSize="6" fill="#a0aec0" textAnchor="middle">
+      <text x="50" y="68" fontFamily="sans-serif" fontSize="8" fill="#a0aec0" textAnchor="middle">
         Powered by chiarivoices.org
       </text>
 

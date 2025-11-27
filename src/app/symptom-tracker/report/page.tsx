@@ -37,8 +37,8 @@ import { useToast } from '@/hooks/use-toast';
 import { analyzeSymptoms } from '@/ai/flows/ai-analyze-symptoms';
 import { analyzeSymptomsWithImaging } from '@/ai/flows/ai-analyze-symptoms-with-imaging';
 import { analyzeSymptomsWithReport } from '@/ai/flows/ai-analyze-symptoms-with-report';
+import { consolidateAnalyses } from '@/ai/flows/ai-consolidate-analyses';
 import { generateDoctorQuestions, GenerateDoctorQuestionsOutput } from '@/ai/flows/ai-generate-doctor-questions';
-import { Footer } from '@/components/app/footer';
 
 /**
  * @fileoverview This page generates a professional, printable report of the user's logged symptoms.
@@ -132,33 +132,36 @@ function processSymptomData(symptoms: SymptomData[] | null) {
 function splitMarkdownIntoSections(markdownText: string): Array<{ title: string, content: string }> {
     if (!markdownText) return [];
     
-    // Split by '---' first for multi-file reports, then by headings.
-    const fileSections = markdownText.split(/\n---\n/);
+    const sections = markdownText.split(/(?=^###\s)/m);
     const finalSections: Array<{ title: string, content: string }> = [];
 
-    fileSections.forEach(fileSection => {
-        const sections = fileSection.split(/(?=^###\s)/m);
+    for (const section of sections) {
+        const trimmedSection = section.trim();
+        if (!trimmedSection) continue;
         
-        for (const section of sections) {
-            const trimmedSection = section.trim();
-            if (!trimmedSection) continue;
-            
-            const firstLineEnd = trimmedSection.indexOf('\n');
-            if (firstLineEnd === -1) {
-                finalSections.push({ title: 'Summary', content: trimmedSection });
-                continue;
+        const firstLineEnd = trimmedSection.indexOf('\n');
+        // If there's no newline, it's a single-line section (or the whole thing).
+        if (firstLineEnd === -1) {
+            // Check if it starts like a heading
+            if (trimmedSection.startsWith('###')) {
+                finalSections.push({ title: trimmedSection.replace('###', '').trim(), content: '' });
+            } else {
+                 finalSections.push({ title: 'AI-Generated Summary', content: trimmedSection });
             }
-
-            const titleLine = trimmedSection.substring(0, firstLineEnd).replace('###', '').trim();
-            const content = trimmedSection.substring(firstLineEnd + 1).trim();
-
-            if (titleLine) {
-                 finalSections.push({ title: titleLine, content });
-            }
+            continue;
         }
-    });
 
-    // If splitting results in nothing, return the whole text as one section.
+        const titleLine = trimmedSection.substring(0, firstLineEnd).replace('###', '').trim();
+        const content = trimmedSection.substring(firstLineEnd + 1).trim();
+
+        if (titleLine) {
+            finalSections.push({ title: titleLine, content });
+        } else if (content) {
+            // Handle content that doesn't start with a heading
+            finalSections.push({ title: 'AI-Generated Summary', content: content });
+        }
+    }
+
     if (finalSections.length === 0 && markdownText.trim()) {
         return [{ title: 'AI-Generated Summary', content: markdownText.trim() }];
     }
@@ -166,13 +169,11 @@ function splitMarkdownIntoSections(markdownText: string): Array<{ title: string,
     return finalSections;
 }
 
-
-
 /**
  * A component that provides an AI-powered analysis of the user's symptom data.
  * The analysis is generated on-demand by calling a Genkit AI flow.
  */
-function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) {
+function AiAnalysis({ symptoms, user, userProfile }: { symptoms: SymptomData[], user: any, userProfile: any }) {
     const [isAnalysisPending, startAnalysisTransition] = useTransition();
     const [analysis, setAnalysis] = useState('');
     const [doctorQuestions, setDoctorQuestions] = useState<GenerateDoctorQuestionsOutput | null>(null);
@@ -183,6 +184,7 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
     const { toast } = useToast();
 
     const analysisSections = useMemo(() => splitMarkdownIntoSections(analysis), [analysis]);
+    const questionsList = doctorQuestions?.questions || [];
 
     const toDataURL = (file: File): Promise<string> =>
         new Promise((resolve, reject) => {
@@ -235,8 +237,6 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
             setAnalysis('');
             setDoctorQuestions(null);
             
-            let combinedAnalysis = '';
-
             try {
                 const symptomInput = {
                     symptoms: symptoms.map(s => ({
@@ -247,11 +247,10 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
                     }))
                 };
 
-                if (previews.length === 0) {
-                    const result = await analyzeSymptoms(symptomInput);
-                    combinedAnalysis = result.analysis;
-                } else {
-                    const analysisPromises = previews.map(preview => {
+                let individualAnalyses: string[] = [];
+
+                if (previews.length > 0) {
+                     const analysisPromises = previews.map(preview => {
                         if (preview.type === 'image') {
                             return analyzeSymptomsWithImaging({ ...symptomInput, imagingDataUri: preview.url });
                         } else {
@@ -259,15 +258,23 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
                         }
                     });
                     const results = await Promise.all(analysisPromises);
-                    combinedAnalysis = results.map((result, index) => 
-                        `### Analysis for: ${previews[index].name}\n\n${result.analysis}`
-                    ).join('\n\n---\n\n');
+                    individualAnalyses = results.map(res => res.analysis);
+                } else {
+                    const result = await analyzeSymptoms(symptomInput);
+                    individualAnalyses.push(result.analysis);
                 }
-                setAnalysis(combinedAnalysis);
+
+                // Consolidate the analyses into a single report
+                const consolidationResult = await consolidateAnalyses({ 
+                    analyses: individualAnalyses,
+                    userName: userProfile?.username || user.displayName || 'the patient'
+                });
+                const finalReport = consolidationResult.consolidatedReport;
+                setAnalysis(finalReport);
 
                 // Now, automatically generate questions
-                if (combinedAnalysis) {
-                    const questionsResult = await generateDoctorQuestions({ analysis: combinedAnalysis });
+                if (finalReport) {
+                    const questionsResult = await generateDoctorQuestions({ analysis: finalReport });
                     setDoctorQuestions(questionsResult);
                 }
 
@@ -379,8 +386,7 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
             )}
 
 
-            
-            {(isAnalysisPending || (doctorQuestions && doctorQuestions.questions.length > 0)) && (
+            {(isAnalysisPending || questionsList.length > 0) && (
                  <Card className="glassmorphism mt-6 page-break-before page-break-inside-avoid">
                     <CardHeader><CardTitle>Questions for Your Doctor</CardTitle></CardHeader>
                     <CardContent>
@@ -391,15 +397,13 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
                                 <Skeleton className="h-4 w-2/3" />
                             </div>
                         ) : (
-                            doctorQuestions && (
-                                <div className="prose prose-sm dark:prose-invert max-w-none">
-                                    <ul className="list-disc list-outside space-y-2 pl-5">
-                                        {doctorQuestions.questions.map((q, i) => (
-                                            <li key={i}>{q}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )
+                            <div className="prose prose-sm dark:prose-invert max-w-none">
+                                <ul className="list-disc list-outside space-y-2 pl-5">
+                                    {questionsList.map((q, i) => (
+                                        <li key={i}>{q}</li>
+                                    ))}
+                                </ul>
+                            </div>
                         )}
                     </CardContent>
                 </Card>
@@ -407,7 +411,7 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
 
             {(analysis || doctorQuestions) && (
                 <div className="mt-8 pt-4 border-t text-xs text-muted-foreground space-y-2">
-                    <p><strong>Disclaimer:</strong> This application and its AI-powered analyses are for informational purposes only and are not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition. This summary includes mostly the items that were found to be wrong with the patient, based on the provided imaging, imaging reports, and symptom tracker information from the tool. <strong>This application is not HIPAA compliant.</strong> Please do not store sensitive personal health information.</p>
+                    <p><strong>Disclaimer:</strong> This application and its AI-powered analyses are for informational purposes only and are not a substitute for professional medical advice, diagnosis, or treatment. This summary includes mostly the items that were found to be wrong with the patient, based on the provided imaging, imaging reports, and symptom tracker information from the tool. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition. <strong>This application is not HIPAA compliant.</strong> Please do not store sensitive personal health information.</p>
                 </div>
             )}
         </div>
@@ -421,7 +425,7 @@ function AiAnalysis({ symptoms, user }: { symptoms: SymptomData[], user: any }) 
  */
 export default function SymptomReportPage() {
   const { firestore } = useFirebase();
-  const { user, isUserLoading } = useUser();
+  const { user, userProfile, isUserLoading } = useUser();
   const router = useRouter();
 
   useEffect(() => {
@@ -452,7 +456,7 @@ export default function SymptomReportPage() {
   
   const isLoading = isUserLoading || isLoadingSymptoms;
 
-  if (isLoading || !user) {
+  if (isLoading || !user || !userProfile) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -479,9 +483,9 @@ export default function SymptomReportPage() {
       <main className="p-4 sm:p-8 flex-1">
         <div className="max-w-4xl mx-auto bg-card p-6 sm:p-10 rounded-lg shadow-md border print:shadow-none print:border-none print:p-0">
           
-          <div className="hidden print:block mb-8">
-             <h2 className="text-center text-lg font-semibold">The Chiari Voices Foundation's Chiari Connects Symptom Summary Tool</h2>
-             <p className="text-center text-sm text-gray-600">Report Generated on {format(new Date(), 'MMMM d, yyyy')}</p>
+          <div className="hidden print:block mb-8 text-center">
+             <h2 className="text-lg font-semibold">The Chiari Voices Foundation's Chiari Connects Symptom Summary Tool</h2>
+             <p className="text-sm text-gray-600">Report Generated on {format(new Date(), 'MMMM d, yyyy')}</p>
           </div>
 
           <div className="flex justify-between items-start mb-8 print:hidden">
@@ -491,7 +495,7 @@ export default function SymptomReportPage() {
                 Generated on {format(new Date(), 'MMMM d, yyyy')} for {user.displayName || user.email}
               </p>
             </div>
-            <Icons.logo className="w-32 h-32 text-primary" />
+            <Icons.logo className="w-48 h-auto text-primary -mt-4" />
           </div>
 
           {isLoading && (
@@ -512,7 +516,7 @@ export default function SymptomReportPage() {
             <>
               {symptoms.length > 0 ? (
                 <div className="space-y-12">
-                   <AiAnalysis symptoms={symptoms} user={user} />
+                   <AiAnalysis symptoms={symptoms} user={user} userProfile={userProfile} />
                   
                   <div className="page-break-before page-break-inside-avoid">
                      <h3 className="text-xl font-semibold border-b pb-2 mb-4">Symptom Severity Over Time</h3>

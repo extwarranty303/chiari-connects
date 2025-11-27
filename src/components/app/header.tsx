@@ -54,8 +54,8 @@ export function AppHeader({ onUploadClick, onDownloadClick, showActions = true }
     <header className="flex items-center justify-between p-4 border-b bg-card/60 backdrop-blur-xl sticky top-0 z-50 shadow-sm">
       <div className="flex items-center gap-3">
         <Link href="/" className="flex items-center gap-3">
-          <Icons.logo className="w-12 h-12 text-primary" />
-          <h1 className="text-xl font-semibold font-headline tracking-tight text-foreground">
+          <Icons.logo className="w-32 h-auto text-primary" />
+          <h1 className="text-xl font-semibold font-headline tracking-tight text-foreground hidden sm:block">
             Chiari Connects
           </h1>
         </Link>
