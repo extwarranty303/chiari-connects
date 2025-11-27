@@ -234,9 +234,8 @@ export default function ProfilePage() {
                 <CardContent className="text-center">
                   <div className="text-sm text-muted-foreground space-y-4">
                     <div>
-                      <p>Account created on:</p>
-                      <p className="font-medium text-foreground">
-                        {userProfile?.createdAt ? format(new Date(userProfile.createdAt), 'MMMM d, yyyy') : 'N/A'}
+                      <p>
+                        Member since <span className="font-medium text-foreground">{userProfile?.createdAt ? format(new Date(userProfile.createdAt), 'MMMM d, yyyy') : 'N/A'}</span>
                       </p>
                     </div>
                      <div>
