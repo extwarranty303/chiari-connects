@@ -50,7 +50,7 @@ export function UserNav() {
 
   // Memoized document reference to the user's profile in Firestore.
   const userProfileRef = useMemoFirebase(() => {
-    if (!user) return null;
+    if (!user || !firestore) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
 
@@ -159,3 +159,5 @@ export function UserNav() {
     </DropdownMenu>
   );
 }
+
+    

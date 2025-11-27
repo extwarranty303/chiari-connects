@@ -417,7 +417,7 @@ export default function SymptomReportPage() {
   }, [user, isUserLoading, router]);
 
   const symptomsQuery = useMemoFirebase(() => {
-    if (!user) return null;
+    if (!user || !firestore) return null;
     return query(collection(firestore, 'users', user.uid, 'symptoms'), orderBy('date', 'desc'));
   }, [firestore, user]);
 
@@ -636,3 +636,5 @@ export default function SymptomReportPage() {
     </div>
   );
 }
+
+    

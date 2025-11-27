@@ -120,21 +120,25 @@ export default function AdminDashboardPage() {
 
   // Memoized query to fetch all users.
   const allUsersQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
     return query(collection(firestore, 'users'), orderBy('createdAt', 'desc'));
   }, [firestore]);
 
   // Memoized query to fetch all discussion posts.
   const allDiscussionsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
     return query(collection(firestore, 'discussions'), orderBy('createdAt', 'desc'));
   }, [firestore]);
 
   // Memoized query to fetch all symptom documents (only for counting).
   const allSymptomsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
     return collectionGroup(firestore, 'symptoms');
   }, [firestore]);
   
   // Memoized query to fetch all reports from the 'reports' subcollection group.
   const allReportsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
     return query(collectionGroup(firestore, 'reports'), orderBy('createdAt', 'desc'));
   }, [firestore]);
 
@@ -433,3 +437,5 @@ export default function AdminDashboardPage() {
     </AdminRouteGuard>
   );
 }
+
+    
