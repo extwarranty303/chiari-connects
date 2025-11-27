@@ -2,7 +2,7 @@
 
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, UserCredential } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore'
 import { errorEmitter } from './error-emitter';
 import { FirestorePermissionError } from './errors';
@@ -43,24 +43,50 @@ export function getSdks(firebaseApp: FirebaseApp) {
         const userRef = doc(firestore, 'users', user.uid);
         const userSnap = await getDoc(userRef);
 
-        if (!userSnap.exists()) {
-            // This case handles Google Sign-In where user doc might not exist yet.
-            const username = user.displayName?.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '') || `user${Math.random().toString().substring(2, 8)}`;
-            const [firstName, lastName] = user.displayName?.split(' ') || ['', ''];
-            
-            const newUserDoc = {
-                id: user.uid,
-                email: user.email,
-                username: username,
-                firstName: firstName,
-                lastName: lastName || '',
-                city: '', // These will be empty for Google sign-in initially
-                state: '',
-                phoneNumber: user.phoneNumber || '',
-                photoURL: user.photoURL || '',
-                createdAt: new Date().toISOString(),
-                points: 0,
-            };
+        // Additional metadata available on first login with a credential
+        const isNewUser = user.metadata.creationTime === user.metadata.lastSignInTime;
+
+        if (!userSnap.exists() && isNewUser) {
+            // This case handles new user creation.
+            const providerId = user.providerData?.[0]?.providerId;
+            let newUserDoc;
+
+            if (providerId === 'google.com') {
+                 // User signed up with Google.
+                 const username = user.displayName?.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '') || `user${Math.random().toString().substring(2, 8)}`;
+                 const [firstName, lastName] = user.displayName?.split(' ') || ['', ''];
+
+                 newUserDoc = {
+                    id: user.uid,
+                    email: user.email,
+                    username: username,
+                    firstName: firstName || '',
+                    lastName: lastName || '',
+                    city: '', // Google does not provide these
+                    state: '',
+                    phoneNumber: user.phoneNumber || '',
+                    photoURL: user.photoURL || '',
+                    createdAt: new Date().toISOString(),
+                    points: 0,
+                };
+            } else {
+                // For email/password, we assume the data is captured elsewhere and won't have it here.
+                // The signup form logic in `auth/page.tsx` is now the primary source for creating the user doc.
+                // This block is a fallback in case that flow is interrupted.
+                 newUserDoc = {
+                    id: user.uid,
+                    email: user.email,
+                    username: user.email?.split('@')[0] || `user${Math.random().toString().substring(2, 8)}`,
+                    firstName: '',
+                    lastName: '',
+                    city: '',
+                    state: '',
+                    phoneNumber: '',
+                    photoURL: '',
+                    createdAt: new Date().toISOString(),
+                    points: 0,
+                };
+            }
             
             // Use non-blocking write with contextual error handling
             setDoc(userRef, newUserDoc, { merge: true })
