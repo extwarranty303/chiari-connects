@@ -63,6 +63,7 @@ function UserProfileForm({ userProfile, userId }: { userProfile: UserProfile, us
     const { firestore } = useFirebase();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const { isAdmin, isModerator } = useUser();
 
     const { register, handleSubmit, formState: { errors, isDirty } } = useForm<ProfileFormValues>({
         resolver: zodResolver(profileSchema),
@@ -83,12 +84,14 @@ function UserProfileForm({ userProfile, userId }: { userProfile: UserProfile, us
         toast({ title: 'Profile Updated', description: 'Your information has been saved.' });
         setIsSubmitting(false);
     };
+    
+    const userRole = isAdmin ? 'Admin' : isModerator ? 'Moderator' : 'User';
 
     return (
         <Card className="glassmorphism">
             <CardHeader>
                 <CardTitle>Your Information</CardTitle>
-                <CardDescription>Keep your personal details up to date. Your username cannot be changed.</CardDescription>
+                <CardDescription>Keep your personal details up to date. Your username and role cannot be changed.</CardDescription>
             </CardHeader>
             <CardContent>
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -128,6 +131,10 @@ function UserProfileForm({ userProfile, userId }: { userProfile: UserProfile, us
                      <div className="space-y-2">
                         <Label>Email</Label>
                         <Input value={userProfile.email} disabled />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>User Role</Label>
+                        <Input value={userRole} disabled />
                     </div>
                     <div className="flex justify-end">
                         <Button type="submit" disabled={isSubmitting || !isDirty}>

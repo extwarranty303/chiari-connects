@@ -46,8 +46,7 @@ export function useCollection<T = any>(
   type StateDataType = ResultItemType[] | null;
 
   const [data, setData] = useState<StateDataType>(null);
-  // The loading state should be true ONLY if we have a query to act on.
-  const [isLoading, setIsLoading] = useState<boolean>(!!memoizedTargetRefOrQuery);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
@@ -57,6 +56,15 @@ export function useCollection<T = any>(
       setData(null);
       setIsLoading(false);
       setError(null);
+      return;
+    }
+
+    // Add safety check for undefined paths
+    const path = (memoizedTargetRefOrQuery as any).path;
+    if (path && path.includes('undefined')) {
+      console.error('Query contains undefined path segment:', path);
+      setError(new Error('Invalid query: path contains undefined'));
+      setIsLoading(false);
       return;
     }
 
