@@ -405,9 +405,9 @@ function AiAnalysis({ symptoms, user, userProfile }: { symptoms: SymptomData[], 
                             </div>
                         ) : (
                             <div className="prose prose-sm dark:prose-invert max-w-none">
-                                <ReactMarkdown>
-                                    {questionsList.map(q => `- ${q}`).join('\n')}
-                                </ReactMarkdown>
+                                <ul className="list-disc pl-5 space-y-2">
+                                    {questionsList.map((q, i) => <li key={i}>{q}</li>)}
+                                </ul>
                             </div>
                         )}
                     </CardContent>
@@ -493,8 +493,8 @@ export default function SymptomReportPage() {
              <p className="text-sm text-gray-600">Report Generated on {format(new Date(), 'MMMM d, yyyy')}</p>
           </div>
 
-          <div className="flex flex-col items-center text-center gap-2 mb-8 print:hidden">
-            <Icons.logo className="w-64 h-auto text-primary" />
+          <div className="flex flex-col items-center text-center gap-2 mb-8">
+            <Icons.logo className="w-48 h-auto text-primary" />
             <div>
                 <h2 className="text-3xl font-bold text-foreground">Symptom History Report</h2>
                 <p className="text-muted-foreground">
@@ -519,7 +519,7 @@ export default function SymptomReportPage() {
 
           {!isLoading && symptoms && (
             <>
-              {(symptoms.length > 0 || previews.length > 0) ? (
+              {(symptoms.length > 0) ? (
                 <div className="space-y-12">
                    <AiAnalysis symptoms={symptoms} user={user} userProfile={userProfile} />
                   
