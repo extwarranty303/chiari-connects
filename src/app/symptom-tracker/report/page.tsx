@@ -474,7 +474,7 @@ export default function SymptomReportPage() {
         <div className="max-w-4xl mx-auto bg-card p-6 sm:p-10 rounded-lg shadow-md border print:shadow-none print:border-none print:p-0">
           
           <div className="mb-12 flex flex-col items-center">
-             <Logo width={788} height={158} />
+             <Logo width={1182} height={237} />
              <div className="text-center mt-4">
                 <h2 className="text-xl font-bold text-foreground">Symptom History Report</h2>
                 <p className="text-muted-foreground">
