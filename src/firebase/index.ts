@@ -2,8 +2,9 @@
 
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged, UserCredential } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore'
+import { getAuth, onAuthStateChanged, updateProfile } from 'firebase/auth';
+import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 import { errorEmitter } from './error-emitter';
 import { FirestorePermissionError } from './errors';
 
@@ -37,6 +38,7 @@ export function initializeFirebase() {
 export function getSdks(firebaseApp: FirebaseApp) {
   const auth = getAuth(firebaseApp);
   const firestore = getFirestore(firebaseApp);
+  const storage = getStorage(firebaseApp);
 
   onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -107,7 +109,8 @@ export function getSdks(firebaseApp: FirebaseApp) {
   return {
     firebaseApp,
     auth,
-    firestore
+    firestore,
+    storage,
   };
 }
 
@@ -117,6 +120,7 @@ export * from './firestore/use-collection';
 export * from './firestore/use-doc';
 export * from './auth/use-user';
 export * from './auth/user-claims';
+export * from './storage';
 export * from './non-blocking-updates';
 export * from './non-blocking-login';
 export * from './errors';

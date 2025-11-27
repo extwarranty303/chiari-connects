@@ -1,16 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { collection, query, orderBy, doc } from 'firebase/firestore';
 import { format } from 'date-fns';
-import { Loader2, User as UserIcon, Activity, FileText, LogOut, Award } from 'lucide-react';
+import { Loader2, User as UserIcon, Activity, FileText, LogOut, Award, Edit } from 'lucide-react';
 import Link from 'next/link';
+import { updateProfile } from 'firebase/auth';
 
-import { useFirebase, useUser, updateDocumentNonBlocking } from '@/firebase';
+import { useFirebase, useUser, updateDocumentNonBlocking, uploadFile } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { AppHeader } from '@/components/app/header';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -25,7 +26,7 @@ import { useToast } from '@/hooks/use-toast';
  *
  * It provides a comprehensive overview of the user's account information and
  * a summary of their tracked symptom data. It now includes an editable form
- * for updating personal details and displays the user's earned community points.
+ * for updating personal details, displays community points, and allows profile picture uploads.
  */
 
 // Zod schema for the profile update form.
@@ -64,8 +65,6 @@ function UserProfileForm({ userProfile, userId }: { userProfile: UserProfile, us
         const userRef = doc(firestore, 'users', userId);
         updateDocumentNonBlocking(userRef, values);
         
-        // The update is non-blocking, so we can provide immediate feedback.
-        // The real-time listener will update the UI automatically.
         toast({ title: 'Profile Updated', description: 'Your information has been saved.' });
         setIsSubmitting(false);
     };
@@ -127,20 +126,14 @@ function UserProfileForm({ userProfile, userId }: { userProfile: UserProfile, us
     );
 }
 
-
-/**
- * The main component for the user profile page.
- * It handles authentication, fetches all necessary user and symptom data,
- * and renders a dashboard-like interface for the user.
- *
- * @returns {React.ReactElement} The rendered user profile page.
- */
 export default function ProfilePage() {
-  const { auth, firestore } = useFirebase();
+  const { auth, firestore, storage } = useFirebase();
   const { user, userProfile, isUserLoading } = useUser();
   const router = useRouter();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
-  // Redirect unauthenticated users.
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/auth');
@@ -153,9 +146,45 @@ export default function ProfilePage() {
     });
   };
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0 || !user) {
+      return;
+    }
+    const file = event.target.files[0];
+    const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!acceptedTypes.includes(file.type)) {
+      toast({ variant: 'destructive', title: 'Invalid File Type', description: 'Please upload a JPG, PNG, or WEBP image.' });
+      return;
+    }
+    
+    setIsUploading(true);
+    try {
+      const filePath = `profile-pictures/${user.uid}`;
+      const photoURL = await uploadFile(storage, filePath, file);
+      
+      // Update Firebase Auth user profile
+      await updateProfile(user, { photoURL });
+
+      // Update Firestore user document
+      const userRef = doc(firestore, 'users', user.uid);
+      updateDocumentNonBlocking(userRef, { photoURL });
+
+      toast({ title: 'Profile Picture Updated!', description: 'Your new avatar has been saved.' });
+    } catch (error) {
+      console.error("Error uploading profile picture: ", error);
+      toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not update your profile picture. Please try again.' });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+
   const isLoading = isUserLoading || !userProfile;
 
-  // Show a loading screen while data is being fetched.
   if (isLoading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -165,7 +194,6 @@ export default function ProfilePage() {
   }
 
   const userInitial = userProfile?.username ? userProfile.username.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : '?');
-
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground font-body">
@@ -180,21 +208,31 @@ export default function ProfilePage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column: User Info & Actions */}
             <div className="lg:col-span-1 space-y-8">
               <Card className="glassmorphism">
-                <CardHeader className="flex flex-row items-center gap-4">
-                  <Avatar className="h-16 w-16">
-                    <AvatarImage src={user.photoURL ?? ''} alt={userProfile?.username ?? 'User'} />
-                    <AvatarFallback>{userInitial}</AvatarFallback>
-                  </Avatar>
-                  <div>
+                <CardHeader className="items-center text-center">
+                    <div className="relative group">
+                        <Avatar className="h-24 w-24 cursor-pointer" onClick={handleAvatarClick}>
+                            <AvatarImage src={user.photoURL ?? ''} alt={userProfile?.username ?? 'User'} />
+                            <AvatarFallback className="text-4xl">{userInitial}</AvatarFallback>
+                        </Avatar>
+                        <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleAvatarClick}>
+                           {isUploading ? (
+                               <Loader2 className="h-8 w-8 animate-spin text-white" />
+                           ) : (
+                               <Edit className="h-8 w-8 text-white" />
+                           )}
+                        </div>
+                    </div>
+                    <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/jpeg, image/png, image/webp" />
+
+                  <div className="mt-4">
                     <CardTitle className="text-2xl">{userProfile?.username ?? 'User'}</CardTitle>
                     <CardDescription>{userProfile?.email}</CardDescription>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-sm text-muted-foreground space-y-2">
+                <CardContent className="text-center">
+                  <div className="text-sm text-muted-foreground space-y-4">
                     <div>
                       <p>Account created on:</p>
                       <p className="font-medium text-foreground">
@@ -202,7 +240,7 @@ export default function ProfilePage() {
                       </p>
                     </div>
                      <div>
-                        <p className="flex items-center gap-1"><Award className="w-4 h-4 text-amber-500" /> Community Points:</p>
+                        <p className="flex items-center justify-center gap-1"><Award className="w-4 h-4 text-amber-500" /> Community Points:</p>
                         <p className="font-medium text-foreground text-lg">{userProfile?.points ?? 0}</p>
                     </div>
                   </div>
@@ -234,7 +272,6 @@ export default function ProfilePage() {
               </Card>
             </div>
 
-            {/* Right Column: Editable Profile Form */}
             <div className="lg:col-span-2">
                 {userProfile && <UserProfileForm userProfile={userProfile} userId={user.uid} />}
             </div>
