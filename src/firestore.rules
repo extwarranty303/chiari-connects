@@ -71,15 +71,6 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.moderator == true;
     }
 
-    /**
-     * Helper function to check if this is the seed operation.
-     * This is a temporary measure that allows the database to be populated with initial data.
-     * It checks for a specific flag in the written data.
-     */
-    function isSeedOperation() {
-      return request.resource.data.isSeed == true;
-    }
-
     // ------------------------------------------------------------------------
     // User Profile Rules
     // ------------------------------------------------------------------------
@@ -96,12 +87,22 @@ service cloud.firestore {
       allow get: if isOwner(userId) || isAdmin();
       // Only admins can list all users.
       allow list: if isAdmin();
-      // Owners can create their own profile.
+      // Owners can create their own profile, ensuring the ID matches.
       allow create: if isOwner(userId) && request.resource.data.id == userId;
-      // Admins can update any user's document. Users can only update their own, and cannot change their roles.
-      allow update: if isAdmin() || (isOwner(userId) && !('roles' in request.resource.data));
-      // Seed operation is allowed to write. This covers create and update during the seed.
-      allow write: if isSeedOperation();
+      // Admins can update any user's document.
+      // Users can only update their own, and cannot change their roles or username.
+      // The hasCompletedOnboarding flag can only be set to true.
+      allow update: if isAdmin() || 
+                      (isOwner(userId) 
+                        && !('roles' in request.resource.data) 
+                        && request.resource.data.username == resource.data.username
+                        && (
+                            // Allow update if onboarding is already complete
+                            resource.data.hasCompletedOnboarding == true ||
+                            // Or if this update is completing the onboarding
+                            request.resource.data.hasCompletedOnboarding == true
+                           )
+                      );
       // An owner can delete their own account, or an admin can.
       allow delete: if isExistingOwner(userId) || isAdmin();
       
@@ -119,7 +120,7 @@ service cloud.firestore {
       match /symptoms/{symptomId} {
         allow get: if isOwner(userId);
         allow list: if isOwner(userId);
-        allow create: if (isOwner(userId) && request.resource.data.userId == userId) || isSeedOperation();
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
         allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
         allow delete: if isExistingOwner(userId);
       }
@@ -202,11 +203,9 @@ service cloud.firestore {
      */
     match /discussions/{discussionId} {
       allow read: if isSignedIn();
-      allow create: if (isSignedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.category is string && request.resource.data.category.size() > 0);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.category is string && request.resource.data.category.size() > 0;
       // Owners can update/delete their own posts. Admins/Moderators can update/delete any post.
       allow update, delete: if isOwner(resource.data.userId) || isAdmin() || isModerator();
-      // The seed operation uses a batch write. This rule allows it to create and update posts.
-      allow write: if isSeedOperation();
 
       // --------------------------------------------------------------------
       // Post Report Rules (Nested under Discussion)
