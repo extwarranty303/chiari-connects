@@ -1,6 +1,7 @@
-
 'use client';
 
+// At the top of your admin/page.tsx
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { collection, query, orderBy, collectionGroup } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { Loader2, User, MessageSquare, Activity, Download, ShieldAlert, FileText, CheckCircle, Trash2 } from 'lucide-react';
@@ -130,6 +131,11 @@ export default function AdminDashboardPage() {
   const { firestore } = useFirebase();
   const { toast } = useToast();
   const { user: currentUser, isAdmin } = useUser();
+  
+  // Inside your AdminDashboardPage component
+  const functions = getFunctions(); // Get the Functions instance
+  const makeUserModerator = httpsCallable(functions, 'makeUserModerator'); // Reference your cloud function by name
+  const deleteUserAccount = httpsCallable(functions, 'deleteUserAccount'); // Reference your other cloud function
 
   // Memoized query to fetch all users. Only runs if the user is an admin.
   const allUsersQuery = useMemoFirebase(() => {
@@ -187,39 +193,26 @@ export default function AdminDashboardPage() {
     }
   };
   
-  /**
-   * Placeholder function for making a user a moderator.
-   * This would typically call a Firebase Cloud Function to set custom claims.
-   * @param {string} userId - The ID of the user to make a moderator.
-   */
   const handleMakeModerator = (userId: string) => {
-    // In a production app, this would trigger a Firebase Cloud Function.
-    // For example:
-    // const makeModerator = httpsCallable(functions, 'makeModerator');
-    // makeModerator({ userId: userId }).then(...).catch(...);
-    console.log(`Attempting to make user ${userId} a moderator.`);
-    toast({
-        title: 'Feature In Development',
-        description: `Would assign moderator role to user: ${userId}. This requires a server-side function to set custom claims securely.`,
-    });
+    makeUserModerator({ userId: userId })
+      .then((result) => {
+        toast({ title: 'Success!', description: `User ${userId} is now a moderator.` });
+      })
+      .catch((error) => {
+        console.error("Error making user a moderator:", error);
+        toast({ variant: 'destructive', title: 'Error', description: error.message });
+      });
   };
 
-  /**
-   * Placeholder function for deleting a user.
-   * This would typically call a Firebase Cloud Function to delete the user from Auth and Firestore.
-   * @param {string} userId - The ID of the user to delete.
-   */
   const handleDeleteUser = (userId: string) => {
-    // In a production app, this would trigger a Firebase Cloud Function.
-    // For example:
-    // const deleteUser = httpsCallable(functions, 'deleteUser');
-    // deleteUser({ userId: userId }).then(...).catch(...);
-    console.log(`Attempting to delete user ${userId}.`);
-    toast({
-      variant: 'destructive',
-      title: 'Feature In Development',
-      description: `Would delete user: ${userId}. This requires a server-side function to properly delete the user from Authentication and clean up all their data.`,
-    });
+    deleteUserAccount({ userId: userId })
+      .then((result) => {
+        toast({ title: 'User Deleted', description: `User account ${userId} has been deleted.` });
+      })
+      .catch((error) => {
+        console.error("Error deleting user:", error);
+        toast({ variant: 'destructive', title: 'Error', description: error.message });
+      });
   };
 
 
@@ -497,5 +490,3 @@ export default function AdminDashboardPage() {
     </AdminRouteGuard>
   );
 }
-
-    
