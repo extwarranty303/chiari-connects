@@ -31,7 +31,7 @@ export interface UseCollectionResult<T> {
  * 
  *
  * IMPORTANT! YOU MUST MEMOIZE the inputted memoizedTargetRefOrQuery or BAD THINGS WILL HAPPEN
- * use useMemo to memoize it per React guidence.  Also make sure that it's dependencies are stable
+ * use useMemoFirebase to memoize it per React guidence.  Also make sure that it's dependencies are stable
  * references
  *  
  * @template T Optional type for document data. Defaults to any.
@@ -46,7 +46,7 @@ export function useCollection<T = any>(
   type StateDataType = ResultItemType[] | null;
 
   const [data, setData] = useState<StateDataType>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(!!memoizedTargetRefOrQuery);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Start as true
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
@@ -56,15 +56,6 @@ export function useCollection<T = any>(
       setData(null);
       setIsLoading(false);
       setError(null);
-      return;
-    }
-
-    // Add safety check for undefined paths
-    const path = (memoizedTargetRefOrQuery as any).path;
-    if (path && path.includes('undefined')) {
-      console.error('Query contains undefined path segment:', path);
-      setError(new Error('Invalid query: path contains undefined'));
-      setIsLoading(false);
       return;
     }
 

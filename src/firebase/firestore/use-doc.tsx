@@ -45,7 +45,7 @@ export function useDoc<T = any>(
 
   const [data, setData] = useState<StateDataType>(null);
   // The loading state should be true ONLY if we have a reference to act on.
-  const [isLoading, setIsLoading] = useState<boolean>(!!memoizedDocRef);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Start as true
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
