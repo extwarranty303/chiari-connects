@@ -21,7 +21,7 @@ export function Logo({ width, height, className }: LogoProps) {
   return (
     <div className={cn('relative', className)} style={{ width, height }}>
         <Image
-            src="/logo.png"
+            src="/ChiariConnectsLogo.svg"
             alt="Chiari Connects Logo"
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
