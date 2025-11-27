@@ -92,8 +92,8 @@ service cloud.firestore {
      * @principle A user can create their own root document and has full control over it thereafter.
      */
     match /users/{userId} {
-      // Admins can read any user profile, owners can read their own.
-      allow get: if isAdmin() || isOwner(userId);
+      // Owners can read their own profile, Admins can read any.
+      allow get: if isOwner(userId) || isAdmin();
       // Only admins can list all users.
       allow list: if isAdmin();
       // Owners can create their own profile.
