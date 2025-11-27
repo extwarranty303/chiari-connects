@@ -46,10 +46,18 @@ export function getSdks(firebaseApp: FirebaseApp) {
         if (!userSnap.exists()) {
             // This case handles Google Sign-In where user doc might not exist yet.
             const username = user.displayName?.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '') || `user${Math.random().toString().substring(2, 8)}`;
+            const [firstName, lastName] = user.displayName?.split(' ') || ['', ''];
+            
             const newUserDoc = {
                 id: user.uid,
                 email: user.email,
                 username: username,
+                firstName: firstName,
+                lastName: lastName || '',
+                city: '', // These will be empty for Google sign-in initially
+                state: '',
+                phoneNumber: user.phoneNumber || '',
+                photoURL: user.photoURL || '',
                 createdAt: new Date().toISOString(),
                 points: 0,
             };

@@ -19,6 +19,30 @@
           "type": "string",
           "description": "User's username."
         },
+        "firstName": {
+          "type": "string",
+          "description": "User's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "User's last name."
+        },
+        "city": {
+          "type": "string",
+          "description": "User's city."
+        },
+        "state": {
+          "type": "string",
+          "description": "User's state."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "User's phone number."
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "URL for the user's profile picture."
+        },
         "points": {
             "type": "number",
             "description": "Gamification points earned by the user."
@@ -47,6 +71,11 @@
         "id",
         "email",
         "username",
+        "firstName",
+        "lastName",
+        "city",
+        "state",
+        "phoneNumber",
         "createdAt"
       ]
     },

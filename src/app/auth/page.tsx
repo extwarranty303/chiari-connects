@@ -49,6 +49,11 @@ import { Logo } from '@/components/app/logo';
 // Schema for the sign-up form validation.
 const signupSchema = z.object({
   username: z.string().min(3, { message: 'Username must be at least 3 characters.'}),
+  firstName: z.string().min(1, { message: 'First name is required.' }),
+  lastName: z.string().min(1, { message: 'Last name is required.' }),
+  city: z.string().min(1, { message: 'City is required.' }),
+  state: z.string().min(1, { message: 'State is required.' }),
+  phoneNumber: z.string().min(10, { message: 'Phone number must be at least 10 digits.' }),
   email: z.string().email({ message: 'Invalid email address.' }),
   password: z
     .string()
@@ -81,7 +86,7 @@ export default function AuthPage() {
 
   const signupForm = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
-    defaultValues: { username: '', email: '', password: '' },
+    defaultValues: { username: '', firstName: '', lastName: '', city: '', state: '', phoneNumber: '', email: '', password: '' },
   });
 
   const loginForm = useForm<LoginFormValues>({
@@ -134,8 +139,8 @@ export default function AuthPage() {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         // If a new user signs up via email, create their document in Firestore.
-        const signupUsername = signupForm.getValues('username');
-        if (signupUsername) {
+        const signupValues = signupForm.getValues();
+        if (signupValues.username && signupValues.firstName) { // check for new fields
             const userRef = doc(firestore, 'users', user.uid);
             // This set is now technically redundant but safe.
             // The logic in firebase/index.ts is the primary source of truth.
@@ -143,7 +148,12 @@ export default function AuthPage() {
             setDocumentNonBlocking(userRef, {
                 id: user.uid,
                 email: user.email,
-                username: signupUsername,
+                username: signupValues.username,
+                firstName: signupValues.firstName,
+                lastName: signupValues.lastName,
+                city: signupValues.city,
+                state: signupValues.state,
+                phoneNumber: signupValues.phoneNumber,
                 createdAt: new Date().toISOString(),
                 points: 0
             }, { merge: true });
@@ -208,7 +218,7 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden bg-background p-4">
+    <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-auto bg-background p-4 py-8">
       <div className="absolute inset-0 z-0">
           <div className="absolute bottom-0 left-[-20%] right-0 top-[-10%] h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle_farthest-side,rgba(255,0,182,.15),rgba(255,255,255,0))]"></div>
           <div className="absolute bottom-[-20%] right-[-20%] top-auto h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle_farthest-side,rgba(255,0,182,.15),rgba(255,255,255,0))]"></div>
@@ -297,7 +307,7 @@ export default function AuthPage() {
             <CardHeader>
               <CardTitle>Sign Up</CardTitle>
               <CardDescription className='text-foreground/80'>
-                Choose a username and create an account. Your username cannot be changed later.
+                Your username cannot be changed later. All fields are required.
               </CardDescription>
             </CardHeader>
             <form onSubmit={signupForm.handleSubmit(handleSignup)}>
@@ -322,51 +332,49 @@ export default function AuthPage() {
                     </span>
                   </div>
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-firstName">First Name</Label>
+                    <Input id="signup-firstName" placeholder="Jane" {...signupForm.register('firstName')} />
+                    {signupForm.formState.errors.firstName && (<p className="text-xs text-destructive">{signupForm.formState.errors.firstName.message}</p>)}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-lastName">Last Name</Label>
+                    <Input id="signup-lastName" placeholder="Doe" {...signupForm.register('lastName')} />
+                     {signupForm.formState.errors.lastName && (<p className="text-xs text-destructive">{signupForm.formState.errors.lastName.message}</p>)}
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-username">Username</Label>
-                  <Input
-                    id="signup-username"
-                    placeholder="yourusername"
-                    aria-invalid={signupForm.formState.errors.username ? 'true' : 'false'}
-                    aria-describedby="signup-username-error"
-                    {...signupForm.register('username')}
-                  />
-                  {signupForm.formState.errors.username && (
-                    <p id="signup-username-error" className="text-xs text-destructive">
-                      {signupForm.formState.errors.username.message}
-                    </p>
-                  )}
+                  <Input id="signup-username" placeholder="janedoe" {...signupForm.register('username')} />
+                  {signupForm.formState.errors.username && (<p className="text-xs text-destructive">{signupForm.formState.errors.username.message}</p>)}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-city">City</Label>
+                    <Input id="signup-city" placeholder="Anytown" {...signupForm.register('city')} />
+                    {signupForm.formState.errors.city && (<p className="text-xs text-destructive">{signupForm.formState.errors.city.message}</p>)}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-state">State</Label>
+                    <Input id="signup-state" placeholder="CA" {...signupForm.register('state')} />
+                    {signupForm.formState.errors.state && (<p className="text-xs text-destructive">{signupForm.formState.errors.state.message}</p>)}
+                  </div>
+                </div>
+                 <div className="space-y-2">
+                  <Label htmlFor="signup-phoneNumber">Phone Number</Label>
+                  <Input id="signup-phoneNumber" type="tel" placeholder="(555) 555-5555" {...signupForm.register('phoneNumber')} />
+                  {signupForm.formState.errors.phoneNumber && (<p className="text-xs text-destructive">{signupForm.formState.errors.phoneNumber.message}</p>)}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    placeholder="m@example.com"
-                    aria-invalid={signupForm.formState.errors.email ? 'true' : 'false'}
-                    aria-describedby="signup-email-error"
-                    {...signupForm.register('email')}
-                  />
-                  {signupForm.formState.errors.email && (
-                    <p id="signup-email-error" className="text-xs text-destructive">
-                      {signupForm.formState.errors.email.message}
-                    </p>
-                  )}
+                  <Input id="signup-email" type="email" placeholder="m@example.com" {...signupForm.register('email')} />
+                  {signupForm.formState.errors.email && (<p className="text-xs text-destructive">{signupForm.formState.errors.email.message}</p>)}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    aria-invalid={signupForm.formState.errors.password ? 'true' : 'false'}
-                    aria-describedby="signup-password-error"
-                    {...signupForm.register('password')}
-                  />
-                  {signupForm.formState.errors.password && (
-                    <p id="signup-password-error" className="text-xs text-destructive">
-                      {signupForm.formState.errors.password.message}
-                    </p>
-                  )}
+                  <Input id="signup-password" type="password" {...signupForm.register('password')} />
+                  {signupForm.formState.errors.password && (<p className="text-xs text-destructive">{signupForm.formState.errors.password.message}</p>)}
                 </div>
               </CardContent>
               <CardFooter>
