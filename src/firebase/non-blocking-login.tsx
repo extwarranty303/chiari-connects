@@ -29,6 +29,13 @@ export function initiateEmailSignIn(authInstance: Auth, email: string, password:
 /** Initiate Google Sign-In with a popup (non-blocking). */
 export function initiateGoogleSignIn(authInstance: Auth) {
   const provider = new GoogleAuthProvider();
+  // This ensures that even if a user has selected a different Google account in the past,
+  // they are always prompted to choose, which is crucial for account linking scenarios.
+  provider.setCustomParameters({
+    prompt: 'select_account'
+  });
   // Returns a promise that can be caught by the caller for UI updates
   return signInWithPopup(authInstance, provider);
 }
+
+    

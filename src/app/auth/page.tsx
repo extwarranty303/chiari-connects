@@ -14,6 +14,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -23,6 +31,7 @@ import { useFirebase, useUser } from '@/firebase';
 import { initiateEmailSignUp, initiateGoogleSignIn, initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { Loader2 } from 'lucide-react';
 import { Logo } from '@/components/app/logo';
+import { getAuth, signInWithEmailAndPassword, linkWithCredential, GoogleAuthProvider, type AuthProvider, type AuthCredential } from 'firebase/auth';
 
 
 /**
@@ -34,6 +43,7 @@ import { Logo } from '@/components/app/logo';
  * - **Form Validation**: Uses `zod` and `react-hook-form` for robust client-side validation.
  * - **Email/Password Auth**: Handles user creation and sign-in with email and password.
  * - **Google Sign-In**: Provides a one-click Google sign-in option.
+ * - **Account Linking**: Prompts users to link accounts if they sign in with Google using an email that already exists.
  * - **Firebase Integration**: Uses a non-blocking approach for Firebase auth operations and relies on the `useUser` hook for redirection.
  * - **Error Handling**: Catches and displays authentication errors to the user via toasts.
  * - **Disclaimer**: Displays an important medical and HIPAA compliance disclaimer.
@@ -70,6 +80,12 @@ export default function AuthPage() {
   const router = useRouter();
 
   const [isPending, setIsPending] = useState(true);
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [linkCredential, setLinkCredential] = useState<AuthCredential | null>(null);
+  const [linkEmail, setLinkEmail] = useState('');
+  const [linkPassword, setLinkPassword] = useState('');
+  const [isLinking, setIsLinking] = useState(false);
+
 
   const signupForm = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -153,26 +169,63 @@ export default function AuthPage() {
   };
   
   /**
-   * Initiates the Google Sign-In popup flow.
+   * Initiates the Google Sign-In popup flow and handles account linking.
    */
   const handleGoogleSignIn = () => {
     setIsPending(true);
     initiateGoogleSignIn(auth)
     .catch((error) => {
         const errorCode = error.code;
-        // Don't show toast if user closes popup
-        if (errorCode === 'auth/popup-closed-by-user') {
-            setIsPending(false);
-            return;
+        
+        if (errorCode === 'auth/account-exists-with-different-credential') {
+            const credential = GoogleAuthProvider.credentialFromError(error);
+            const email = error.customData.email;
+            setLinkCredential(credential!);
+            setLinkEmail(email);
+            setShowLinkDialog(true);
+
+        } else if (errorCode === 'auth/popup-closed-by-user') {
+            // Do nothing, user cancelled.
+        } else {
+             toast({
+                variant: 'destructive',
+                title: 'Google Sign-In Failed',
+                description: 'Could not sign in with Google. Please try again.',
+            });
         }
-        toast({
-            variant: 'destructive',
-            title: 'Google Sign-In Failed',
-            description: 'Could not sign in with Google. Please try again.',
-        });
         setIsPending(false);
     });
   };
+  
+    /**
+   * Handles the account linking process after the user provides their password.
+   */
+    const handleLinkAccount = async () => {
+        if (!linkEmail || !linkPassword || !linkCredential) return;
+
+        setIsLinking(true);
+        try {
+            const userCredential = await signInWithEmailAndPassword(getAuth(), linkEmail, linkPassword);
+            await linkWithCredential(userCredential.user, linkCredential);
+            
+            toast({
+                title: 'Accounts Linked!',
+                description: 'You can now sign in with Google.',
+            });
+            setShowLinkDialog(false);
+            // The onIdTokenChanged listener will handle the redirect.
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Linking Failed',
+                description: 'The password you entered was incorrect. Please try again.',
+            });
+        } finally {
+            setIsLinking(false);
+            setLinkPassword('');
+        }
+    };
+
 
   // Display a full-page loader while checking auth status or if a redirect is imminent.
   if (isPending) {
@@ -185,6 +238,40 @@ export default function AuthPage() {
 
   return (
     <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-auto bg-background p-4 py-8">
+       {/* Account Linking Dialog */}
+        <Dialog open={showLinkDialog} onOpenChange={setShowLinkDialog}>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                <DialogTitle>Link Accounts</DialogTitle>
+                <DialogDescription>
+                    This email is already associated with an account. To link your Google account, please enter the password for <strong>{linkEmail}</strong>.
+                </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="link-password" className="text-right">
+                        Password
+                        </Label>
+                        <Input
+                        id="link-password"
+                        type="password"
+                        value={linkPassword}
+                        onChange={(e) => setLinkPassword(e.target.value)}
+                        className="col-span-3"
+                        />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setShowLinkDialog(false)}>Cancel</Button>
+                    <Button type="submit" onClick={handleLinkAccount} disabled={isLinking}>
+                        {isLinking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Link Account
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+
       <div className="absolute inset-0 z-0">
           <div className="absolute bottom-0 left-[-20%] right-0 top-[-10%] h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle_farthest-side,rgba(255,0,182,.15),rgba(255,255,255,0))]"></div>
           <div className="absolute bottom-[-20%] right-[-20%] top-auto h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle_farthest-side,rgba(255,0,182,.15),rgba(255,255,255,0))]"></div>
@@ -317,3 +404,5 @@ export default function AuthPage() {
     </div>
   );
 }
+
+    
