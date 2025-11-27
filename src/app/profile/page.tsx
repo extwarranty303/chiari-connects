@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { collection, query, orderBy, doc } from 'firebase/firestore';
-import { format } from 'date-fns';
-import { Loader2, User as UserIcon, Activity, FileText, LogOut, Award, Edit } from 'lucide-react';
+import { collection, query, orderBy, doc, limit, where } from 'firebase/firestore';
+import { format, formatDistanceToNow } from 'date-fns';
+import { Loader2, User as UserIcon, Activity, FileText, LogOut, Award, Edit, MessageSquare, Bookmark } from 'lucide-react';
 import Link from 'next/link';
 import { updateProfile } from 'firebase/auth';
 
-import { useFirebase, useUser, updateDocumentNonBlocking, uploadFile } from '@/firebase';
+import { useFirebase, useUser, useCollection, updateDocumentNonBlocking, uploadFile, useMemoFirebase, type UserProfile } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { AppHeader } from '@/components/app/header';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,14 +20,16 @@ import { Footer } from '@/components/app/footer';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 /**
  * @fileoverview This page serves as the user's personal dashboard.
  *
- * It provides a comprehensive overview of the user's account information and
- * a summary of their tracked symptom data. It now includes an editable form
+ * It provides a comprehensive overview of the user's account information,
+ * recent posts, and bookmarked discussions. It also includes an editable form
  * for updating personal details, displays community points, and allows profile picture uploads.
  */
+
 
 // Zod schema for the profile update form.
 const profileSchema = z.object({
@@ -40,9 +42,22 @@ const profileSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
+// Interfaces for fetched data
+interface DiscussionPost {
+  id: string;
+  title: string;
+  category: string;
+  createdAt: string;
+}
+
+interface BookmarkInfo {
+    id: string;
+    title: string;
+    category: string;
+}
+
 /**
  * A dedicated component for the user profile form.
- * Encapsulates the form logic for updating user details.
  */
 function UserProfileForm({ userProfile, userId }: { userProfile: UserProfile, userId: string }) {
     const { firestore } = useFirebase();
@@ -126,6 +141,84 @@ function UserProfileForm({ userProfile, userId }: { userProfile: UserProfile, us
     );
 }
 
+/**
+ * Component to display a list of the user's recent posts.
+ */
+function RecentPosts({ userId }: { userId: string }) {
+    const { firestore } = useFirebase();
+    const postsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'discussions'), where('userId', '==', userId), orderBy('createdAt', 'desc'), limit(5));
+    }, [firestore, userId]);
+    const { data: posts, isLoading } = useCollection<DiscussionPost>(postsQuery);
+
+    return (
+        <Card className="glassmorphism">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><MessageSquare /> Your Recent Posts</CardTitle>
+            </CardHeader>
+            <CardContent>
+                {isLoading && <Loader2 className="animate-spin" />}
+                {!isLoading && (!posts || posts.length === 0) && <p className="text-sm text-muted-foreground">You haven't made any posts yet.</p>}
+                {posts && posts.length > 0 && (
+                    <ul className="space-y-3">
+                        {posts.map(post => (
+                             <li key={post.id} className="text-sm">
+                                <Link href={`/discussions/post/${post.id}`}>
+                                    <div className="font-medium hover:underline text-primary">{post.title}</div>
+                                </Link>
+                                <div className="text-xs text-muted-foreground">
+                                    in <Badge variant="secondary" className="mr-1">{post.category}</Badge>
+                                    • {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+/**
+ * Component to display a list of the user's bookmarked posts.
+ */
+function BookmarkedPosts({ userId }: { userId: string }) {
+    const { firestore } = useFirebase();
+
+    // Query for bookmark document IDs
+    const bookmarksQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'users', userId, 'bookmarks'), orderBy('createdAt', 'desc'), limit(5));
+    }, [firestore, userId]);
+    
+    const { data: bookmarks, isLoading: isLoadingBookmarks } = useCollection<{postId: string}>(bookmarksQuery);
+
+    return (
+        <Card className="glassmorphism">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Bookmark /> Your Bookmarks</CardTitle>
+            </CardHeader>
+            <CardContent>
+                {isLoadingBookmarks && <Loader2 className="animate-spin" />}
+                {!isLoadingBookmarks && (!bookmarks || bookmarks.length === 0) && <p className="text-sm text-muted-foreground">You haven't bookmarked any posts yet.</p>}
+                {bookmarks && bookmarks.length > 0 && (
+                    <ul className="space-y-3">
+                        {bookmarks.map(bookmark => (
+                             <li key={bookmark.id} className="text-sm">
+                                <Link href={`/discussions/post/${bookmark.id}`}>
+                                    <div className="font-medium hover:underline text-primary">View bookmarked post</div>
+                                </Link>
+                                <div className="text-xs text-muted-foreground">Post ID: {bookmark.id}</div>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
 export default function ProfilePage() {
   const { auth, firestore, storage } = useFirebase();
   const { user, userProfile, isUserLoading } = useUser();
@@ -199,7 +292,7 @@ export default function ProfilePage() {
     <div className="flex flex-col h-screen bg-background text-foreground font-body">
       <AppHeader onUploadClick={() => {}} onDownloadClick={() => {}} showActions={false} />
       <main className="flex-1 overflow-y-auto p-4 md:p-8">
-        <div className="max-w-4xl mx-auto grid gap-8">
+        <div className="max-w-7xl mx-auto grid gap-8">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
               User Profile
@@ -245,6 +338,10 @@ export default function ProfilePage() {
                   </div>
                 </CardContent>
               </Card>
+              
+               <RecentPosts userId={user.uid} />
+
+              <BookmarkedPosts userId={user.uid} />
 
               <Card className="glassmorphism">
                 <CardHeader>
