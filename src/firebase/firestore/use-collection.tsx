@@ -51,10 +51,10 @@ export function useCollection<T = any>(
 
   useEffect(() => {
     // If the query is not ready (e.g., waiting for user ID), do not attempt to fetch.
-    // Set loading to false because we are not actively fetching.
+    // Set loading to true initially, as we are waiting for dependencies to be ready.
     if (!memoizedTargetRefOrQuery) {
       setData(null);
-      setIsLoading(false);
+      setIsLoading(true);
       setError(null);
       return;
     }
