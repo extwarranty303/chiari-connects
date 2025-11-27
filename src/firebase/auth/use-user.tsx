@@ -42,7 +42,7 @@ export interface UserAuthState {
  */
 export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthState {
   const [state, setState] = useState<UserAuthState>({
-    user: null,
+    user: auth.currentUser, // Start with the current user if available
     isUserLoading: true,
     userError: null,
     isAdmin: false,
@@ -53,8 +53,6 @@ export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthStat
   const router = useRouter();
 
   useEffect(() => {
-    setState(prevState => ({ ...prevState, isUserLoading: true }));
-
     let profileUnsubscribe: (() => void) | null = null;
 
     const idTokenUnsubscribe = onIdTokenChanged(
@@ -68,18 +66,10 @@ export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthStat
 
         if (user) {
           try {
-            // Get user roles from custom claims.
             const decodedToken: DecodedIdToken | null = await getDecodedIdToken(user, true);
             const isAdmin = decodedToken?.claims?.admin === true;
             const isModerator = decodedToken?.claims?.moderator === true;
             
-            // Wait for auth to be fully ready before fetching profile
-            if (auth.currentUser?.uid !== user.uid) {
-                // This can happen briefly during auth state transitions.
-                // We'll wait for the next auth state change to be certain.
-                return;
-            }
-
             // Set up a real-time listener for the user's profile document.
             const profileRef = doc(firestore, 'users', user.uid);
             profileUnsubscribe = onSnapshot(profileRef, 
@@ -87,11 +77,11 @@ export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthStat
                 const userProfile = profileSnap.exists() ? profileSnap.data() as UserProfile : null;
                 
                 // --- Onboarding Redirection Logic ---
-                // If the user profile exists but onboarding is not complete, redirect.
                 if (profileSnap.exists() && userProfile?.hasCompletedOnboarding === false) {
                     router.replace('/onboarding');
+                    // Keep loading true while we redirect
+                    setState({ user, isUserLoading: true, userError: null, isAdmin, isModerator, userProfile });
                 } else {
-                     // We use roles from the token for security, but roles in the document are useful for UI.
                     setState({ user, isUserLoading: false, userError: null, isAdmin, isModerator, userProfile });
                 }
               },

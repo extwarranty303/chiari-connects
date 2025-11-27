@@ -21,10 +21,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Icons } from '@/components/app/icons';
 import { useFirebase, useUser } from '@/firebase';
 import { initiateEmailSignUp, initiateGoogleSignIn, initiateEmailSignIn } from '@/firebase/non-blocking-login';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Loader2 } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc } from 'firebase/firestore';
 import { Logo } from '@/components/app/logo';
 
 
@@ -37,23 +35,13 @@ import { Logo } from '@/components/app/logo';
  * - **Form Validation**: Uses `zod` and `react-hook-form` for robust client-side validation.
  * - **Email/Password Auth**: Handles user creation and sign-in with email and password.
  * - **Google Sign-In**: Provides a one-click Google sign-in option.
- * - **Firebase Integration**:
- *   - Creates a new user document in Firestore upon successful sign-up.
- *   - Uses a non-blocking approach for Firebase auth operations for a smoother UX.
- *   - Listens for authentication state changes to redirect users automatically.
+ * - **Firebase Integration**: Uses a non-blocking approach for Firebase auth operations and relies on the `useUser` hook for redirection.
  * - **Error Handling**: Catches and displays authentication errors to the user via toasts.
- * - **Responsive Design**: Includes a loading state and redirects authenticated users away from the page.
  * - **Disclaimer**: Displays an important medical and HIPAA compliance disclaimer.
  */
 
 // Schema for the sign-up form validation.
 const signupSchema = z.object({
-  username: z.string().min(3, { message: 'Username must be at least 3 characters.'}),
-  firstName: z.string().min(1, { message: 'First name is required.' }),
-  lastName: z.string().min(1, { message: 'Last name is required.' }),
-  city: z.string().min(1, { message: 'City is required.' }),
-  state: z.string().min(1, { message: 'State is required.' }),
-  phoneNumber: z.string().min(10, { message: 'Phone number must be at least 10 digits.' }),
   email: z.string().email({ message: 'Invalid email address.' }),
   password: z
     .string()
@@ -78,15 +66,15 @@ type LoginFormValues = z.infer<typeof loginSchema>;
  */
 export default function AuthPage() {
   const { toast } = useToast();
-  const { auth, firestore } = useFirebase();
-  const { user, isUserLoading } = useUser();
+  const { auth } = useFirebase();
+  const { user, isUserLoading, userProfile } = useUser();
   const router = useRouter();
 
   const [isPending, setIsPending] = useState(true);
 
   const signupForm = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
-    defaultValues: { username: '', firstName: '', lastName: '', city: '', state: '', phoneNumber: '', email: '', password: '' },
+    defaultValues: { email: '', password: '' },
   });
 
   const loginForm = useForm<LoginFormValues>({
@@ -94,14 +82,18 @@ export default function AuthPage() {
     defaultValues: { email: '', password: '' },
   });
 
-  // Redirects the user to the home page if they are already logged in.
+  // Redirects the user if they are already logged in and have completed onboarding.
+  // The useUser hook handles redirection to the onboarding page.
   useEffect(() => {
     if (!isUserLoading && user) {
-      router.push('/');
+      if (userProfile?.hasCompletedOnboarding) {
+        router.push('/');
+      }
+      // If onboarding is not complete, useUser hook will redirect to /onboarding
     } else if (!isUserLoading && !user) {
       setIsPending(false);
     }
-  }, [user, isUserLoading, router]);
+  }, [user, userProfile, isUserLoading, router]);
 
   /**
    * Initiates the email and password sign-up process.
@@ -130,86 +122,53 @@ export default function AuthPage() {
   };
 
   /**
-   * This effect sets up a comprehensive listener for all Firebase authentication events.
-   * It handles successful authentication, user document creation in Firestore for new users,
-   * and centralized error handling for failed authentication attempts.
+   * This effect sets up listeners for auth state changes and errors.
    */
   useEffect(() => {
-    // onAuthStateChanged is the primary listener for any change in the user's auth status.
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        // If a new user signs up via email, create their document in Firestore.
-        const signupValues = signupForm.getValues();
-        if (signupValues.username && signupValues.firstName) { // check for new fields
-            const userRef = doc(firestore, 'users', user.uid);
-            // This set is now technically redundant but safe.
-            // The logic in firebase/index.ts is the primary source of truth.
-            // We keep it here to associate the chosen username immediately on sign-up.
-            setDocumentNonBlocking(userRef, {
-                id: user.uid,
-                email: user.email,
-                username: signupValues.username,
-                firstName: signupValues.firstName,
-                lastName: signupValues.lastName,
-                city: signupValues.city,
-                state: signupValues.state,
-                phoneNumber: signupValues.phoneNumber,
-                createdAt: new Date().toISOString(),
-                points: 0
-            }, { merge: true });
-            // Reset form to prevent re-triggering this on subsequent auth state changes.
-            signupForm.reset(); 
-        }
-        
+        // A user is now signed in. Let the main redirect logic in the other useEffect handle it.
+        // We no longer need to create the user document here; it is handled centrally.
         setIsPending(false);
-        router.push('/');
       } else {
-        // No user is signed in. Ensure loading is finished.
+        // No user is signed in.
         setIsPending(false);
       }
     });
     
-    // Centralized error handling by temporarily overriding console.error.
-    // The Firebase SDK logs auth errors to the console, which we intercept here.
+    // Centralized error handling for auth operations.
     const originalConsoleError = console.error;
     const newConsoleError = (...args: any[]) => {
-      // Check if the log message is a Firebase auth error.
       if (typeof args[0] === 'string' && args[0].includes('Firebase: Error (auth/')) {
-        setIsPending(false); // Stop the loading indicator.
-        
+        setIsPending(false);
         let errorMessage = 'An unknown authentication error occurred.';
         const errorCodeMatch = args[0].match(/\(auth\/([^)]+)\)/);
         if (errorCodeMatch && errorCodeMatch[1]) {
             const errorCode = errorCodeMatch[1];
-            // Don't show a toast if the user simply closes the Google sign-in popup.
             if (errorCode === 'popup-closed-by-user' || errorCode === 'cancelled-popup-request') {
               return;
             }
-            // Format the error code for better readability.
             errorMessage = errorCode.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         }
-
         toast({
           variant: 'destructive',
           title: 'Authentication Failed',
           description: errorMessage,
         });
       }
-      // Call the original console.error to maintain default behavior for other errors.
       originalConsoleError.apply(console, args);
     };
 
     console.error = newConsoleError;
     
-    // Cleanup function to restore the original console.error and unsubscribe the listener.
     return () => {
       unsubscribe();
       console.error = originalConsoleError;
     };
-  }, [auth, router, toast, firestore, signupForm]);
+  }, [auth, toast]);
 
-  // Display a full-page loader while checking auth status or if user is already logged in.
-  if (isUserLoading || user || isPending) {
+  // Display a full-page loader while checking auth status or if user is being redirected.
+  if (isUserLoading || (user && !isPending) || isPending) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -243,11 +202,7 @@ export default function AuthPage() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 gap-4">
                    <Button variant="outline" type="button" onClick={handleGoogleSignIn} disabled={isPending}>
-                      {isPending ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Icons.google className="mr-2 h-4 w-4" />
-                      )}
+                      <Icons.google className="mr-2 h-4 w-4" />
                       Google
                     </Button>
                 </div>
@@ -307,19 +262,15 @@ export default function AuthPage() {
             <CardHeader>
               <CardTitle>Sign Up</CardTitle>
               <CardDescription className='text-foreground/80'>
-                Your username cannot be changed later. All fields are required.
+                Create your account to get started. You'll set up your profile on the next step.
               </CardDescription>
             </CardHeader>
             <form onSubmit={signupForm.handleSubmit(handleSignup)}>
               <CardContent className="space-y-4">
                  <div className="grid grid-cols-1 gap-4">
                    <Button variant="outline" type="button" onClick={handleGoogleSignIn} disabled={isPending}>
-                      {isPending ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
                         <Icons.google className="mr-2 h-4 w-4" />
-                      )}
-                      Google
+                      Sign up with Google
                     </Button>
                 </div>
                  <div className="relative">
@@ -328,43 +279,9 @@ export default function AuthPage() {
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
                     <span className="bg-card/60 px-2 text-muted-foreground backdrop-blur-xl">
-                      Or continue with
+                      Or with email
                     </span>
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-firstName">First Name</Label>
-                    <Input id="signup-firstName" placeholder="Jane" {...signupForm.register('firstName')} />
-                    {signupForm.formState.errors.firstName && (<p className="text-xs text-destructive">{signupForm.formState.errors.firstName.message}</p>)}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-lastName">Last Name</Label>
-                    <Input id="signup-lastName" placeholder="Doe" {...signupForm.register('lastName')} />
-                     {signupForm.formState.errors.lastName && (<p className="text-xs text-destructive">{signupForm.formState.errors.lastName.message}</p>)}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-username">Username</Label>
-                  <Input id="signup-username" placeholder="janedoe" {...signupForm.register('username')} />
-                  {signupForm.formState.errors.username && (<p className="text-xs text-destructive">{signupForm.formState.errors.username.message}</p>)}
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-city">City</Label>
-                    <Input id="signup-city" placeholder="Anytown" {...signupForm.register('city')} />
-                    {signupForm.formState.errors.city && (<p className="text-xs text-destructive">{signupForm.formState.errors.city.message}</p>)}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-state">State</Label>
-                    <Input id="signup-state" placeholder="CA" {...signupForm.register('state')} />
-                    {signupForm.formState.errors.state && (<p className="text-xs text-destructive">{signupForm.formState.errors.state.message}</p>)}
-                  </div>
-                </div>
-                 <div className="space-y-2">
-                  <Label htmlFor="signup-phoneNumber">Phone Number</Label>
-                  <Input id="signup-phoneNumber" type="tel" placeholder="(555) 555-5555" {...signupForm.register('phoneNumber')} />
-                  {signupForm.formState.errors.phoneNumber && (<p className="text-xs text-destructive">{signupForm.formState.errors.phoneNumber.message}</p>)}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
