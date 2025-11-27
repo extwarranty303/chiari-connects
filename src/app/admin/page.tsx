@@ -1,6 +1,5 @@
 'use client';
 
-// At the top of your admin/page.tsx
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { collection, query, orderBy, collectionGroup } from 'firebase/firestore';
 import { format } from 'date-fns';
