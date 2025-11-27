@@ -124,7 +124,7 @@ export default function PostPage() {
    * If bookmarking, it awards points to the post's author.
    */
   const handleToggleBookmark = async () => {
-    if (!user || !post || !bookmarkRef) return;
+    if (!user || !post || !bookmarkRef || !firestore) return;
 
     if (isBookmarked) {
         // Delete the bookmark
@@ -161,7 +161,7 @@ export default function PostPage() {
    * Creates a report document in a subcollection of the post.
    */
   const handleReportSubmit = () => {
-    if (!user || !post || !selectedReason) {
+    if (!user || !post || !selectedReason || !firestore) {
         toast({ variant: 'destructive', title: 'Please select a reason for your report.' });
         return;
     }

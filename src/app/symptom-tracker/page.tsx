@@ -152,7 +152,7 @@ export default function SymptomTrackerPage() {
    * @param {SymptomFormValues} values - The validated form values.
    */
   const onSubmit = (values: SymptomFormValues) => {
-    if (!user) {
+    if (!user || !firestore) {
       toast({
         variant: 'destructive',
         title: 'Not Authenticated',
@@ -192,7 +192,7 @@ export default function SymptomTrackerPage() {
    * This is an irreversible action.
    */
   const handleDeleteAllSymptoms = () => {
-    if (!user) {
+    if (!user || !firestore) {
        toast({
         variant: 'destructive',
         title: 'Not Authenticated',
