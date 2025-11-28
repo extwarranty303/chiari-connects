@@ -1,122 +1,43 @@
-/**
- * This ruleset enforces a strict, multi-level user-ownership security model for a
- * React code analysis application. It is designed for rapid prototyping, focusing on
- * strong authorization while maintaining flexibility in data schemas.
- *
- * Core Philosophy:
- * The security model is centered around the principle that all user-generated data
- * is private and can only be accessed by its owner. There are no public or shared
- * collections.
- *
- * Data Structure:
- * All application data follows a strict hierarchical path starting with the user's
- * unique ID: `/users/{userId}`. All other data, including projects, code files,
- * AI suggestions, and symptoms, is nested within this user-specific data tree. This
- * path-based ownership is the cornerstone of the security model.
- *
- * Key Security Decisions:
- * - Strict Ownership: A user can only read or write data located under their own
- *   `/users/{userId}` path. Cross-user access is explicitly forbidden.
- * - Public Discussions: The `/discussions` collection is readable by any authenticated user
- *   to foster a community environment.
- * - Create/Update Ownership: Users can only create posts with their own userId and a valid category.
- *   They can only update or delete posts they have created.
- * - No Public User Data: Listing all users is forbidden to protect privacy.
- * - Relational Integrity: On document creation, rules ensure that internal ID
- *   fields (e.g., `userId`, `projectId`) match the IDs in the document path,
- *   enforcing data consistency. These IDs are immutable and cannot be changed on update.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ------------------------------------------------------------------------
-    // Helper Functions
-    // ------------------------------------------------------------------------
-
-    /**
-     * Verifies that the user is authenticated.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * Verifies that the currently authenticated user's UID matches the
-     * provided userId, typically from the document path.
-     */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    /**
-     * Verifies ownership for an existing document. Used for update and delete
-     * operations to prevent acting on non-existent data.
-     */
     function isExistingOwner(userId) {
       return isOwner(userId) && resource != null;
     }
     
-    /**
-     * Verifies if the user has an 'admin' custom claim.
-     */
     function isAdmin() {
       return isSignedIn() && request.auth.token.admin == true;
     }
     
-    /**
-     * Verifies if the user has a 'moderator' custom claim.
-     */
     function isModerator() {
       return isSignedIn() && request.auth.token.moderator == true;
     }
 
-    // ------------------------------------------------------------------------
-    // User Profile Rules
-    // ------------------------------------------------------------------------
-
-    /**
-     * @description Controls access to a user's own profile document.
-     * @path /users/{userId}
-     * @allow (create) A new user creating their own profile document.
-     * @deny (update) User 'abc' trying to modify the profile of user 'xyz'.
-     * @principle A user can create their own root document and has full control over it thereafter.
-     */
     match /users/{userId} {
-      // Owners can read their own profile, Admins can read any.
       allow get: if isOwner(userId) || isAdmin();
-      // Only admins can list all users.
       allow list: if isAdmin();
-      // Owners can create their own profile, ensuring the ID matches.
       allow create: if isOwner(userId) && request.resource.data.id == userId;
-      // Admins can update any user's document.
-      // Users can only update their own, and cannot change their roles or username.
-      // The hasCompletedOnboarding flag can only be set to true.
       allow update: if isAdmin() || 
                       (isOwner(userId) 
                         && !('roles' in request.resource.data) 
                         && request.resource.data.username == resource.data.username
                         && (
-                            // Allow update if onboarding is already complete
+                            !('hasCompletedOnboarding' in resource.data) ||
                             resource.data.hasCompletedOnboarding == true ||
-                            // Or if this update is completing the onboarding
                             request.resource.data.hasCompletedOnboarding == true
                            )
                       );
-      // An owner can delete their own account, or an admin can.
       allow delete: if isExistingOwner(userId) || isAdmin();
       
-      // ----------------------------------------------------------------------
-      // Symptom Rules (Nested under User)
-      // ----------------------------------------------------------------------
-      
-      /**
-       * @description Controls access to symptom entries, which are private to a user.
-       * @path /users/{userId}/symptoms/{symptomId}
-       * @allow (create) User 'abc' creating a new symptom entry in their own space.
-       * @deny (get) User 'xyz' trying to read a symptom entry owned by user 'abc'.
-       * @principle Enforces strict ownership for all symptom data.
-       */
       match /symptoms/{symptomId} {
         allow get: if isOwner(userId);
         allow list: if isOwner(userId);
@@ -125,25 +46,10 @@ service cloud.firestore {
         allow delete: if isExistingOwner(userId);
       }
       
-      // ----------------------------------------------------------------------
-      // Bookmark Rules (Nested under User)
-      // ----------------------------------------------------------------------
       match /bookmarks/{postId} {
         allow get, list, create, delete: if isOwner(userId);
       }
 
-
-      // ----------------------------------------------------------------------
-      // Project Rules (Nested under User)
-      // ----------------------------------------------------------------------
-
-      /**
-       * @description Controls access to projects, which are owned by a user.
-       * @path /users/{userId}/projects/{projectId}
-       * @allow (create) User 'abc' creating a new project in their own space.
-       * @deny (get) User 'xyz' trying to read a project owned by user 'abc'.
-       * @principle Enforces strict ownership for all project data and its subcollections.
-       */
       match /projects/{projectId} {
         allow get: if isOwner(userId);
         allow list: if isOwner(userId);
@@ -151,17 +57,6 @@ service cloud.firestore {
         allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
         allow delete: if isExistingOwner(userId);
 
-        // --------------------------------------------------------------------
-        // Code File Rules (Nested under Project)
-        // --------------------------------------------------------------------
-
-        /**
-         * @description Controls access to code files, which belong to a project.
-         * @path /users/{userId}/projects/{projectId}/codeFiles/{codeFileId}
-         * @allow (list) User 'abc' listing all code files within their own project.
-         * @deny (create) User 'abc' trying to create a code file in a project owned by user 'xyz'.
-         * @principle Access is inherited from the parent user, ensuring only the owner can manage code files.
-         */
         match /codeFiles/{codeFileId} {
           allow get: if isOwner(userId);
           allow list: if isOwner(userId);
@@ -169,17 +64,6 @@ service cloud.firestore {
           allow update: if isExistingOwner(userId) && request.resource.data.projectId == resource.data.projectId;
           allow delete: if isExistingOwner(userId);
 
-          // ------------------------------------------------------------------
-          // AI Suggestion Rules (Nested under CodeFile)
-          // ------------------------------------------------------------------
-
-          /**
-           * @description Controls access to AI suggestions for a specific code file.
-           * @path /users/{userId}/projects/{projectId}/codeFiles/{codeFileId}/aiSuggestions/{aiSuggestionId}
-           * @allow (delete) User 'abc' deleting a suggestion for one of their own code files.
-           * @deny (get) An unauthenticated user trying to read an AI suggestion.
-           * @principle Maintains the strict ownership model down to the deepest level of the data hierarchy.
-           */
           match /aiSuggestions/{aiSuggestionId} {
             allow get: if isOwner(userId);
             allow list: if isOwner(userId);
@@ -191,48 +75,16 @@ service cloud.firestore {
       }
     }
     
-    // ------------------------------------------------------------------------
-    // Discussion Post Rules
-    // ------------------------------------------------------------------------
-    /**
-     * @description Publicly readable discussion forum posts.
-     * @path /discussions/{discussionId}
-     * @allow (read) Any authenticated user can read all posts.
-     * @allow (create) Any authenticated user can create a post with a valid category.
-     * @allow (update, delete) Only the user who created the post can update or delete it.
-     */
     match /discussions/{discussionId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.category is string && request.resource.data.category.size() > 0;
-      // Owners can update/delete their own posts. Admins/Moderators can update/delete any post.
       allow update, delete: if isOwner(resource.data.userId) || isAdmin() || isModerator();
 
-      // --------------------------------------------------------------------
-      // Post Report Rules (Nested under Discussion)
-      // --------------------------------------------------------------------
       match /reports/{reportId} {
-        // Any signed-in user can create a report, but only for themselves.
         allow create: if isSignedIn() && request.resource.data.reporterId == request.auth.uid;
-        // Only Admins and Moderators can read or delete reports.
         allow read, delete: if isAdmin() || isModerator();
-        // Admins and moderators can list all reports
         allow list: if isAdmin() || isModerator();
-        // Nobody can update a report.
         allow update: if false;
-      }
-    }
-  }
-}
-
-
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      
-      match /symptoms/{symptomId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
   }
