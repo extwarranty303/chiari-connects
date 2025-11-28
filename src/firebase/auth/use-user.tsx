@@ -127,10 +127,13 @@ export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthStat
         const hasCompletedOnboarding = userProfile.hasCompletedOnboarding === true;
         if (!hasCompletedOnboarding && !isOnboardingPage) {
             router.replace('/onboarding');
+            // We return here to ensure no other logic runs, and the next render cycle will have the new pathname.
+            return;
         }
         // If they have completed onboarding but are on the onboarding page, send them to the home page.
         else if (hasCompletedOnboarding && isOnboardingPage) {
             router.replace('/');
+            return;
         }
     }
     
