@@ -34,7 +34,6 @@ export interface UserAuthState {
   userProfile: UserProfile | null;
 }
 
-// REWRITTEN HOOK TO BE STABLE AND PREVENT RACE CONDITIONS
 export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthState {
   const [user, setUser] = useState<User | null>(() => auth.currentUser);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -93,9 +92,6 @@ export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthStat
       (snapshot) => {
         const profile = snapshot.exists() ? (snapshot.data() as UserProfile) : null;
         setUserProfile(profile);
-        // This is the crucial part: we are only done loading the profile
-        // AFTER we get the first snapshot. If the profile doesn't exist yet,
-        // this listener will fire again when it's created by the cloud function.
         setIsLoadingProfile(false);
       },
       (error) => {
@@ -113,22 +109,18 @@ export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthStat
 
   // Effect 3: Handle Redirection Logic
   useEffect(() => {
-    // Don't redirect if we are still loading critical data.
     if (isUserLoading) {
       return;
     }
 
     const isOnboardingPage = pathname === '/onboarding';
     
-    // If we have a user but their profile hasn't been created yet OR onboarding is not complete, redirect to onboarding.
     if (user && userProfile) {
         const hasCompletedOnboarding = userProfile.hasCompletedOnboarding === true;
         if (!hasCompletedOnboarding && !isOnboardingPage) {
             router.replace('/onboarding');
-            // We return here to ensure no other logic runs, and the next render cycle will have the new pathname.
             return;
         }
-        // If they have completed onboarding but are on the onboarding page, send them to the home page.
         else if (hasCompletedOnboarding && isOnboardingPage) {
             router.replace('/');
             return;
@@ -137,7 +129,6 @@ export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthStat
     
   }, [user, userProfile, isUserLoading, pathname, router]);
   
-  // Memoize the final state to prevent unnecessary re-renders
   return useMemo(() => ({
     user,
     userProfile,
