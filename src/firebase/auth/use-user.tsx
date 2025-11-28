@@ -6,8 +6,6 @@ import { Firestore, doc, onSnapshot } from 'firebase/firestore';
 import { getDecodedIdToken, DecodedIdToken } from './user-claims';
 import { usePathname, useRouter } from 'next/navigation';
 
-// ... (interfaces UserProfile, UserAuthState remain the same) ...
-
 export interface UserProfile {
   id: string;
   username: string;
