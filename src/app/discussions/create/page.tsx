@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Footer } from '@/components/app/footer';
+import { categories } from '@/lib/categories';
 
 /**
  * @fileoverview This page allows authenticated users to create a new discussion post.
@@ -32,18 +33,6 @@ import { Footer } from '@/components/app/footer';
  * On successful submission, it creates a new post in the `/discussions` collection,
  * awards the user points for their contribution, and redirects them to the new post.
  */
-
-// A static list of forum categories for the form dropdown.
-const categories = [
-  { slug: 'symptom-management', name: 'Symptom Management' },
-  { slug: 'diagnosis-newly-diagnosed', name: 'Diagnosis & Newly Diagnosed' },
-  { slug: 'surgery-recovery', name: 'Surgery & Recovery' },
-  { slug: 'mental-health-wellness', name: 'Mental Health & Wellness' },
-  { slug: 'daily-life-work', name: 'Daily Life & Work' },
-  { slug: 'treatments-therapies', name: 'Treatments & Therapies' },
-  { slug: 'family-relationships', name: 'Family & Relationships' },
-  { slug: 'research-news', name: 'Research & News' },
-];
 
 // Zod schema for validating the new post form.
 const postSchema = z.object({

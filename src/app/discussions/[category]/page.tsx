@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
-import { Loader2, MessageSquare, AlertTriangle, Pill, Stethoscope, Brain, HeartHandshake, Briefcase, Users, Newspaper, PlusCircle } from 'lucide-react';
+import { Loader2, AlertTriangle, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
@@ -14,6 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Footer } from '@/components/app/footer';
+import { categoryDetails, defaultCategory } from '@/lib/categories';
 
 /**
  * @fileoverview This page displays a list of discussion posts within a specific category.
@@ -34,19 +35,6 @@ interface DiscussionPost {
   category: string;
 }
 
-// A static mapping of category slugs to their display names and icons.
-const categoryDetails: { [key: string]: { name: string; icon: React.ReactNode } } = {
-  'symptom-management': { name: 'Symptom Management', icon: <Pill /> },
-  'diagnosis-newly-diagnosed': { name: 'Diagnosis & Newly Diagnosed', icon: <Stethoscope /> },
-  'surgery-recovery': { name: 'Surgery & Recovery', icon: <Brain /> },
-  'mental-health-wellness': { name: 'Mental Health & Wellness', icon: <HeartHandshake /> },
-  'daily-life-work': { name: 'Daily Life & Work', icon: <Briefcase /> },
-  'treatments-therapies': { name: 'Treatments & Therapies', icon: <Pill /> },
-  'family-relationships': { name: 'Family & Relationships', icon: <Users /> },
-  'research-news': { name: 'Research & News', icon: <Newspaper /> },
-};
-
-
 /**
  * The main component for displaying posts within a category.
  * It fetches and renders discussion posts filtered by the category from the URL.
@@ -61,7 +49,7 @@ export default function CategoryPage() {
   const category = params.category as string;
   const [readPosts, setReadPosts] = useState<Set<string>>(new Set());
 
-  const currentCategory = categoryDetails[category] || { name: 'Discussions', icon: <MessageSquare /> };
+  const currentCategory = categoryDetails[category] || defaultCategory;
 
   // Load read posts from localStorage on component mount
   useEffect(() => {

@@ -5,10 +5,11 @@ import { useMemo } from 'react';
 import { AppHeader } from '@/components/app/header';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Brain, Stethoscope, HeartHandshake, Briefcase, Pill, Users, Newspaper, MessageSquare, PlusCircle } from 'lucide-react';
+import { ArrowRight, MessageSquare, PlusCircle } from 'lucide-react';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import { Footer } from '@/components/app/footer';
+import { categories } from '@/lib/categories';
 
 /**
  * @fileoverview This page serves as the main entry point for the community discussions, displaying a list of categories.
@@ -16,18 +17,6 @@ import { Footer } from '@/components/app/footer';
  * It provides a directory of different forum categories, allowing users to navigate to the topic that interests them.
  * Each category is presented as a clickable card with an icon, a brief description, and a post count.
  */
-
-// A static list of forum categories with metadata.
-const categories = [
-  { slug: 'symptom-management', name: 'Symptom Management', description: 'Share tips and strategies for managing daily symptoms.', icon: <Pill /> },
-  { slug: 'diagnosis-newly-diagnosed', name: 'Diagnosis & Newly Diagnosed', description: 'A place for newcomers to ask questions and share their diagnosis journey.', icon: <Stethoscope /> },
-  { slug: 'surgery-recovery', name: 'Surgery & Recovery', description: 'Discuss decompression surgery, recovery experiences, and tips.', icon: <Brain /> },
-  { slug: 'mental-health-wellness', name: 'Mental Health & Wellness', description: 'Support for the emotional and mental challenges of living with a chronic condition.', icon: <HeartHandshake /> },
-  { slug: 'daily-life-work', name: 'Daily Life & Work', description: 'Navigating work, hobbies, and daily routines with Chiari.', icon: <Briefcase /> },
-  { slug: 'treatments-therapies', name: 'Treatments & Therapies', description: 'Discussing various treatments, from physical therapy to medication.', icon: <Pill /> },
-  { slug: 'family-relationships', name: 'Family & Relationships', description: 'Guidance on explaining your condition and navigating relationships.', icon: <Users /> },
-  { slug: 'research-news', name: 'Research & News', description: 'The latest news, research, and developments in Chiari treatment.', icon: <Newspaper /> },
-];
 
 /**
  * The main component for the Discussions landing page.
