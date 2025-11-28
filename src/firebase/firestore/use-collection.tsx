@@ -20,19 +20,17 @@ export type WithId<T> = T & { id: string };
  * @template T Type of the document data.
  */
 export interface UseCollectionResult<T> {
-  data: WithId<T>[] | null; // Document data with ID, or null.
-  isLoading: boolean;       // True if loading.
-  error: FirestoreError | Error | null; // Error object, or null.
+  data: WithId<T>[] | null;
+  isLoading: boolean;
+  error: FirestoreError | Error | null;
 }
 
 /**
  * React hook to subscribe to a Firestore collection or query in real-time.
  * Handles nullable references/queries.
  * 
- *
  * IMPORTANT! YOU MUST MEMOIZE the inputted memoizedTargetRefOrQuery or BAD THINGS WILL HAPPEN
- * use useMemoFirebase to memoize it per React guidence.  Also make sure that it's dependencies are stable
- * references
+ * use useMemoFirebase to memoize it per React guidence. Also make sure that it's dependencies are stable references
  *  
  * @template T Optional type for document data. Defaults to any.
  * @param {CollectionReference<DocumentData> | Query<DocumentData> | null | undefined} targetRefOrQuery -
@@ -46,12 +44,11 @@ export function useCollection<T = any>(
   type StateDataType = ResultItemType[] | null;
 
   const [data, setData] = useState<StateDataType>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Default to true
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
-    // If the query is not ready (e.g., waiting for user ID or firestore), do not attempt to fetch.
-    // Set loading to false as we are not actively fetching.
+    // If the query is not ready, do not fetch. Set loading to false as we are not fetching.
     if (!memoizedTargetRefOrQuery) {
       setData(null);
       setIsLoading(false);
@@ -59,13 +56,9 @@ export function useCollection<T = any>(
       return;
     }
 
-    // Add safety check for undefined paths before attempting to fetch
     const path = (memoizedTargetRefOrQuery as any).path;
     if (path && path.includes('undefined')) {
-      console.error('Query contains undefined path segment:', path);
-      const pathError = new Error(`Invalid query: path contains undefined segment (${path})`);
-      setError(pathError);
-      setData(null);
+      // Don't treat this as a fatal error, just stop and wait for a valid path.
       setIsLoading(false);
       return;
     }
@@ -85,8 +78,6 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (error: FirestoreError) => {
-        // A collection group query is a special case, it does not have a path property.
-        // It has a _query object with a collectionId property.
         const isCollectionGroupQuery = (memoizedTargetRefOrQuery as any)._query?.collectionId;
         const path = isCollectionGroupQuery
           ? `Collection Group: ${(memoizedTargetRefOrQuery as any)._query.collectionId}`
@@ -101,22 +92,18 @@ export function useCollection<T = any>(
         setData(null)
         setIsLoading(false)
 
-        // trigger global error propagation
         errorEmitter.emit('permission-error', contextualError);
       }
     );
 
     return () => unsubscribe();
-  }, [memoizedTargetRefOrQuery]); // Re-run if the target query/reference changes.
+  }, [memoizedTargetRefOrQuery]);
   
   if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
-    // This check is a safeguard that is not foolproof, especially for collectionGroup queries
-    // which lack a .path property. We will log a warning instead of throwing an error for those.
     const isStandardQuery = !!(memoizedTargetRefOrQuery as any).path;
     if (isStandardQuery) {
       throw new Error(`The query for path "${(memoizedTargetRefOrQuery as any).path}" was not wrapped in useMemoFirebase. This is required to prevent infinite re-renders.`);
     } else {
-      // It might be a collection group or other complex query. Warn the developer.
       console.warn('A query was passed to useCollection without being wrapped in useMemoFirebase. This can lead to infinite render loops. Query:', memoizedTargetRefOrQuery);
     }
   }

@@ -19,9 +19,9 @@ type WithId<T> = T & { id: string };
  * @template T Type of the document data.
  */
 export interface UseDocResult<T> {
-  data: WithId<T> | null; // Document data with ID, or null.
-  isLoading: boolean;       // True if loading.
-  error: FirestoreError | Error | null; // Error object, or null.
+  data: WithId<T> | null;
+  isLoading: boolean;
+  error: FirestoreError | Error | null;
 }
 
 /**
@@ -44,11 +44,10 @@ export function useDoc<T = any>(
   type StateDataType = WithId<T> | null;
 
   const [data, setData] = useState<StateDataType>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Default to true
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
-    // If the doc ref is not ready (e.g., waiting for firestore or user ID), do nothing and set loading to false.
     if (!memoizedDocRef) {
       setIsLoading(false);
       setData(null);
@@ -56,12 +55,8 @@ export function useDoc<T = any>(
       return;
     }
 
-    // Add safety check for undefined paths before attempting to fetch
     if (memoizedDocRef.path && memoizedDocRef.path.includes('undefined')) {
-      console.error('Document reference contains undefined path segment:', memoizedDocRef.path);
-      const pathError = new Error(`Invalid document reference: path contains undefined segment (${memoizedDocRef.path})`);
-      setError(pathError);
-      setData(null);
+      // Don't treat this as a fatal error, just stop and wait for a valid path.
       setIsLoading(false);
       return;
     }
@@ -90,7 +85,6 @@ export function useDoc<T = any>(
         setData(null)
         setIsLoading(false)
 
-        // trigger global error propagation
         errorEmitter.emit('permission-error', contextualError);
       }
     );

@@ -27,7 +27,12 @@ export function useMemoFirebase<T>(
   
   // Mark the query with __memo flag if it's not null/undefined
   if (memoized && typeof memoized === 'object') {
-    (memoized as any).__memo = true;
+    Object.defineProperty(memoized, '__memo', {
+      value: true,
+      writable: false,
+      configurable: true, // Make it configurable so it can be re-defined if needed
+      enumerable: false,
+    });
   }
   
   return memoized;

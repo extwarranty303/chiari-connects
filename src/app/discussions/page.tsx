@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import { AppHeader } from '@/components/app/header';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, MessageSquare, PlusCircle } from 'lucide-react';
+import { ArrowRight, MessageSquare, PlusCircle, Loader2 } from 'lucide-react';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import { Footer } from '@/components/app/footer';
@@ -33,7 +33,7 @@ export default function DiscussionsPage() {
         return collection(firestore, 'discussions');
     }, [firestore]);
 
-    const { data: posts } = useCollection<{category: string}>(allPostsQuery);
+    const { data: posts, isLoading: isLoadingPosts } = useCollection<{category: string}>(allPostsQuery);
 
     // Calculate post counts for each category
     const postCounts = useMemo(() => {
@@ -88,7 +88,9 @@ export default function DiscussionsPage() {
                     </div>
                   </CardHeader>
                   <div className="p-6 pt-2 flex justify-between items-center text-sm text-muted-foreground">
-                    <span>{postCounts[category.slug] ?? 0} Posts</span>
+                    <div className="flex items-center">
+                        {isLoadingPosts ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <span>{postCounts[category.slug] ?? 0} Posts</span>}
+                    </div>
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-primary">
                       <ArrowRight className="inline-block" />
                     </div>
