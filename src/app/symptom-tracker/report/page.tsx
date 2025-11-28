@@ -471,7 +471,7 @@ export default function SymptomReportPage() {
             <div id="printable-area" className="max-w-4xl mx-auto bg-card p-6 sm:p-10 rounded-lg shadow-md border print:shadow-none print:border-none print:p-0 print:bg-transparent">
             
             <div className="mb-12 flex flex-col items-center">
-                <Logo width={1182} height={237} />
+                <Logo width={177.3} height={35.55} />
                 <div className="text-center mt-4">
                     <h2 className="text-xl font-bold text-foreground">Symptom History Report</h2>
                     <p className="text-muted-foreground">
@@ -576,6 +576,7 @@ export default function SymptomReportPage() {
             )}
 
             <div className="mt-12 pt-6 border-t text-xs text-muted-foreground text-center">
+                <p>Generated on {format(new Date(), 'MMMM d, yyyy')}</p>
                 <p className="mt-2">© 2024 Chiari Connects. All rights reserved.</p>
             </div>
             </div>
