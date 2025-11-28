@@ -3,7 +3,7 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { collection, query, orderBy, collectionGroup } from 'firebase/firestore';
 import { format } from 'date-fns';
-import { Loader2, User, MessageSquare, Activity, Download, ShieldAlert, FileText, CheckCircle, Trash2 } from 'lucide-react';
+import { Loader2, User, MessageSquare, Activity, Download, ShieldAlert, FileText, CheckCircle, Trash2, KeyRound } from 'lucide-react';
 import Link from 'next/link';
 
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
@@ -33,6 +33,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 /**
  * @fileoverview This is the main page for the Admin Dashboard.
@@ -44,7 +46,7 @@ import {
  * - **User Management**: Shows a table of all registered users with their details and roles. Admins can manage users (e.g., assign roles, delete users).
  * - **Content Moderation**: Displays tables for all discussion posts and user-submitted reports.
  * - **Data Export**: Allows admins to export user and post data as CSV files.
- * - **Data Fetching**: Uses admin-specific queries to fetch all user, content, and report data.
+ * - **IAM Integration**: Provides a UI for managing Google Cloud IAM API key connections.
  */
 
 // Data-shape interfaces for clarity.
@@ -133,8 +135,9 @@ export default function AdminDashboardPage() {
   
   // Inside your AdminDashboardPage component
   const functions = getFunctions(); // Get the Functions instance
-  const makeUserModerator = httpsCallable(functions, 'makeUserModerator'); // Reference your cloud function by name
-  const deleteUserAccount = httpsCallable(functions, 'deleteUserAccount'); // Reference your other cloud function
+  const makeUserModerator = httpsCallable(functions, 'makeUserModerator');
+  const deleteUserAccount = httpsCallable(functions, 'deleteUserAccount');
+  const connectIam = httpsCallable(functions, 'connectIam');
 
   // Memoized query to fetch all users. Only runs if the user is an admin.
   const allUsersQuery = useMemoFirebase(() => {
@@ -211,6 +214,24 @@ export default function AdminDashboardPage() {
       .catch((error) => {
         console.error("Error deleting user:", error);
         toast({ variant: 'destructive', title: 'Error', description: error.message });
+      });
+  };
+  
+  const handleIamConnect = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const apiKey = (event.currentTarget.elements.namedItem('apiKey') as HTMLInputElement).value;
+    if (!apiKey) {
+      toast({ variant: 'destructive', title: 'API Key Required', description: 'Please enter an API key to connect.' });
+      return;
+    }
+    toast({ title: 'Connecting...', description: 'Attempting to connect to Google Cloud IAM.' });
+    connectIam({ apiKey: apiKey })
+      .then(() => {
+        toast({ title: 'Connection Successful', description: 'Backend is connected to Google Cloud IAM.' });
+      })
+      .catch((error) => {
+        console.error("Error connecting to IAM:", error);
+        toast({ variant: 'destructive', title: 'Connection Failed', description: error.message });
       });
   };
 
@@ -431,6 +452,30 @@ export default function AdminDashboardPage() {
                               </TableBody>
                           </Table>
                       </CardContent>
+                  </Card>
+                )}
+                
+                {/* IAM Integration Card */}
+                {isAdmin && (
+                  <Card className="glassmorphism">
+                    <CardHeader>
+                      <CardTitle>Google Cloud IAM Integration</CardTitle>
+                      <CardDescription>Connect to Google Cloud IAM by providing a backend API key. This key will be sent to a secure cloud function.</CardDescription>
+                    </CardHeader>
+                    <form onSubmit={handleIamConnect}>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="apiKey">API Key</Label>
+                          <div className="flex gap-2">
+                            <Input id="apiKey" name="apiKey" type="password" placeholder="Enter your Google Cloud API Key" />
+                            <Button type="submit">
+                              <KeyRound className="mr-2 h-4 w-4"/>
+                              Connect
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </form>
                   </Card>
                 )}
 
