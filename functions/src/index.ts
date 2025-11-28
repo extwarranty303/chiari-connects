@@ -255,3 +255,85 @@ async function getSymptoms(userId: string): Promise<Symptom[]> {
     });
     return symptoms
 }
+
+
+// New Function: Make a user a moderator
+export const makeUserModerator = onCall(async (request) => {
+  // 1. Authentication & Authorization Check
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "You must be authenticated to perform this action.");
+  }
+  const callerUid = request.auth.uid;
+  const callerClaims = request.auth.token;
+
+  if (callerClaims.admin !== true) {
+    throw new HttpsError("permission-denied", "Only administrators can make users moderators.");
+  }
+
+  // 2. Input Validation
+  const targetUserId = request.data.userId;
+  if (!targetUserId || typeof targetUserId !== 'string') {
+    throw new HttpsError("invalid-argument", "A valid 'userId' must be provided.");
+  }
+
+  try {
+    // 3. Set Custom Claim
+    await admin.auth().setCustomUserClaims(targetUserId, { moderator: true });
+
+    // 4. Update Firestore document for immediate UI reflection
+    const userRef = admin.firestore().collection("users").doc(targetUserId);
+    await userRef.update({
+      "roles.moderator": true,
+    });
+    
+    logger.info(`User ${targetUserId} has been made a moderator by admin ${callerUid}.`);
+    return { success: true, message: `User ${targetUserId} is now a moderator.` };
+
+  } catch (error) {
+    logger.error(`Error setting moderator claim for user ${targetUserId}:`, error);
+    throw new HttpsError("internal", "An unexpected error occurred while setting user claims.");
+  }
+});
+
+
+// New Function: Delete a user's account
+export const deleteUserAccount = onCall(async (request) => {
+    // 1. Authentication & Authorization Check
+    if (!request.auth) {
+        throw new HttpsError("unauthenticated", "You must be authenticated to perform this action.");
+    }
+    const callerClaims = request.auth.token;
+    if (callerClaims.admin !== true) {
+        throw new HttpsError("permission-denied", "Only administrators can delete user accounts.");
+    }
+
+    // 2. Input Validation
+    const targetUserId = request.data.userId;
+    if (!targetUserId || typeof targetUserId !== 'string') {
+        throw new HttpsError("invalid-argument", "A valid 'userId' must be provided.");
+    }
+    if(targetUserId === request.auth.uid) {
+        throw new HttpsError("invalid-argument", "Administrators cannot delete their own accounts.");
+    }
+
+    try {
+        // 3. Delete from Firebase Authentication
+        await admin.auth().deleteUser(targetUserId);
+        logger.info(`Successfully deleted user ${targetUserId} from Firebase Authentication.`);
+
+        // 4. Delete from Firestore
+        const userRef = admin.firestore().collection("users").doc(targetUserId);
+        await userRef.delete();
+        logger.info(`Successfully deleted user document for ${targetUserId} from Firestore.`);
+
+        // Note: Deleting subcollections (like symptoms, bookmarks) should be handled
+        // by the Firebase Extension "Delete User Data" for robustness.
+        // This function handles the primary records.
+
+        return { success: true, message: `User ${targetUserId} has been deleted.` };
+
+    } catch (error) {
+        logger.error(`Error deleting user ${targetUserId}:`, error);
+        throw new HttpsError("internal", "An unexpected error occurred while deleting the user.");
+    }
+});

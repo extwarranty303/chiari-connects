@@ -137,7 +137,10 @@ export default function AdminDashboardPage() {
   const functions = getFunctions();
   const makeUserModerator = httpsCallable(functions, 'makeUserModerator');
   const deleteUserAccount = httpsCallable(functions, 'deleteUserAccount');
-  const connectIam = httpsCallable(functions, 'connectIam');
+  
+  // Placeholder for IAM connect function if it were implemented
+  const connectIam = (data: { apiKey: string }) => new Promise((res, rej) => rej(new Error("IAM connection not implemented.")));
+
 
   // State for post pagination
   const [posts, setPosts] = useState<DiscussionPost[]>([]);
@@ -600,5 +603,3 @@ export default function AdminDashboardPage() {
     </AdminRouteGuard>
   );
 }
-
-    
