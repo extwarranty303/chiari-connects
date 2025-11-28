@@ -109,18 +109,25 @@ export function useUserAuthState(auth: Auth, firestore: Firestore): UserAuthStat
 
   // Effect 3: Handle Redirection Logic
   useEffect(() => {
+    // Wait until all user data loading is complete.
     if (isUserLoading) {
       return;
     }
 
     const isOnboardingPage = pathname === '/onboarding';
     
+    // If we have a logged-in user and their profile data...
     if (user && userProfile) {
         const hasCompletedOnboarding = userProfile.hasCompletedOnboarding === true;
+        
+        // If user has NOT completed onboarding AND they are NOT on the onboarding page, redirect them there.
         if (!hasCompletedOnboarding && !isOnboardingPage) {
             router.replace('/onboarding');
+            // We return here, but isUserLoading remains true from the parent scope for this render cycle,
+            // preventing downstream components from rendering prematurely during the redirect.
             return;
         }
+        // If user HAS completed onboarding AND they are somehow on the onboarding page, redirect them away.
         else if (hasCompletedOnboarding && isOnboardingPage) {
             router.replace('/');
             return;
