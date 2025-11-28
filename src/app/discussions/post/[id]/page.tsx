@@ -240,7 +240,7 @@ export default function PostPage() {
     <div className="flex flex-col min-h-screen bg-background text-foreground font-body">
       <AppHeader onUploadClick={() => {}} onDownloadClick={() => {}} showActions={false} />
       <main className="flex-1 overflow-y-auto p-4 md:p-6">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           {postError && (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
@@ -376,5 +376,3 @@ export default function PostPage() {
     </div>
   );
 }
-
-    

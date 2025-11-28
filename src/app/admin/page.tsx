@@ -288,7 +288,7 @@ export default function AdminDashboardPage() {
     <AdminRouteGuard>
       <div className="flex flex-col min-h-screen bg-background text-foreground font-body">
         <AppHeader onUploadClick={() => { }} onDownloadClick={() => { }} showActions={false} />
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
           <div className="max-w-7xl mx-auto grid gap-8">
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-foreground">
