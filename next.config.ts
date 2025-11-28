@@ -32,10 +32,13 @@ const nextConfig: NextConfig = {
   },
   // This allows requests from the development environment's preview URL.
   allowedDevOrigins: [
-      "https://*.cluster-zsqzu5kebnaemxbyqrvoim2lxo.cloudworkstations.dev",
-      "https://9000-firebase-studio-1764172302696.cluster-zsqzu5kebnaemxbyqrvoim2lxo.cloudworkstations.dev",
-      "https://6000-firebase-studio-1764172302696.cluster-zsqzu5kebnaemxbyqrvoim2lxo.cloudworkstations.dev",
-  ]
+      "https://*.cluster-zsqzu5kebnaemxbyqrvoim2lxo.cloudworkstations.dev"
+  ],
+  // Increase server action timeout for slow AI operations
+  serverActions: {
+      bodySizeLimit: '4.5mb',
+      serverActionsBodySizeLimit: '4.5mb',
+  }
 };
 
 export default nextConfig;
