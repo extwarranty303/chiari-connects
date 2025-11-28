@@ -10,8 +10,6 @@ import { z } from 'zod';
 
 const ai = genkit({
     plugins: [googleGenai()],
-    logLevel: 'debug',
-    enableTracingAndMetrics: true,
 });
 
 admin.initializeApp();
