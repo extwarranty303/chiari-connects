@@ -1,0 +1,40 @@
+type User @table {
+  username: String!
+  email: String!
+  createdAt: Timestamp!
+  displayName: String
+  bio: String
+  profilePictureUrl: String
+}
+
+type ForumThread @table {
+  title: String!
+  content: String!
+  createdAt: Timestamp!
+  category: String!
+  tags: [String]
+  creator: User
+}
+
+type Post @table {
+  content: String!
+  createdAt: Timestamp!
+  updatedAt: Timestamp
+  author: User
+  thread: ForumThread
+}
+
+type Symptom @table {
+  name: String!
+  description: String!
+  commonSeverityScale: String
+}
+
+type SymptomEntry @table {
+  recordedAt: Timestamp!
+  severity: Int!
+  notes: String
+  isPrivate: Boolean
+  user: User
+  symptom: Symptom
+}
