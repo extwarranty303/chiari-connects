@@ -94,8 +94,8 @@ export default function CategoryPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-body">
       <AppHeader onUploadClick={() => {}} onDownloadClick={() => {}} showActions={false} />
-      <main className="flex-1 overflow-y-auto p-4 md:p-8">
-        <div className="max-w-4xl mx-auto">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <div className="max-w-7xl mx-auto">
           <div className="mb-8">
              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
                 <Button variant="ghost" onClick={() => router.push('/discussions')}>
@@ -170,3 +170,5 @@ export default function CategoryPage() {
     </div>
   );
 }
+
+    

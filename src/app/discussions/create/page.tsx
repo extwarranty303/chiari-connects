@@ -142,7 +142,7 @@ export default function CreatePostPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-body">
       <AppHeader onUploadClick={() => {}} onDownloadClick={() => {}} showActions={false} />
-      <main className="flex-1 overflow-y-auto p-4 md:p-8">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6">
         <div className="max-w-3xl mx-auto">
           <Card className="glassmorphism">
             <CardHeader>
@@ -223,3 +223,5 @@ export default function CreatePostPage() {
     </div>
   );
 }
+
+    

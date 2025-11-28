@@ -52,8 +52,8 @@ export default function DiscussionsPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-body">
       <AppHeader onUploadClick={() => {}} onDownloadClick={() => {}} showActions={false} />
-      <main className="flex-1 overflow-y-auto p-4 md:p-8">
-        <div className="max-w-4xl mx-auto">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <div className="max-w-7xl mx-auto">
           <div className="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
@@ -101,3 +101,5 @@ export default function DiscussionsPage() {
     </div>
   );
 }
+
+    

@@ -239,7 +239,7 @@ export default function PostPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-body">
       <AppHeader onUploadClick={() => {}} onDownloadClick={() => {}} showActions={false} />
-      <main className="flex-1 overflow-y-auto p-4 md:p-8">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6">
         <div className="max-w-3xl mx-auto">
           {postError && (
             <Alert variant="destructive">
@@ -376,3 +376,5 @@ export default function PostPage() {
     </div>
   );
 }
+
+    

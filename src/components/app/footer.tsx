@@ -8,7 +8,9 @@
 export function Footer() {
   return (
     <footer className="w-full py-4 px-8 mt-auto text-center text-xs text-muted-foreground border-t bg-background/50 backdrop-blur-sm print:hidden">
-      <p>© 2025 Chiari Connects™, a Chiari Voices Foundation affiliate. All rights reserved.</p>
+      <p>© 2024 Chiari Connects™, a Chiari Voices Foundation affiliate. All rights reserved.</p>
     </footer>
   );
 }
+
+    
