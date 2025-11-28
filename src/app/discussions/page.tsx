@@ -39,8 +39,9 @@ export default function DiscussionsPage() {
     const postCounts = useMemo(() => {
         const counts: { [key: string]: number } = {};
         categories.forEach(cat => counts[cat.slug] = 0);
+        
         // Ensure posts data exists and is an array before trying to count
-        if (posts && Array.isArray(posts)) {
+        if (Array.isArray(posts)) {
             for (const post of posts) {
                 if (post && post.category in counts) {
                     counts[post.category]++;
