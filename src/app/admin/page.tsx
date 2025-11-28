@@ -153,6 +153,13 @@ export default function AdminDashboardPage() {
     return query(collection(firestore, 'users'), orderBy('createdAt', 'desc'));
   }, [firestore, isAdmin]);
 
+  // Query to get all discussions for counting total posts.
+  const allDiscussionsQueryForCount = useMemoFirebase(() => {
+      if (!firestore) return null;
+      return collection(firestore, 'discussions');
+  }, [firestore]);
+
+
   // Memoized query to fetch all symptom documents (only for counting).
   const allSymptomsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -167,12 +174,11 @@ export default function AdminDashboardPage() {
 
 
   const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(allUsersQuery);
-  // Manual fetch for posts to handle pagination
-  // const { data: posts, isLoading: isLoadingPosts } = useCollection<DiscussionPost>(allDiscussionsQuery);
+  const { data: allPostsForCount, isLoading: isLoadingAllPosts } = useCollection<DiscussionPost>(allDiscussionsQueryForCount);
   const { data: symptoms, isLoading: isLoadingSymptoms } = useCollection<Symptom>(allSymptomsQuery);
   const { data: reports, isLoading: isLoadingReports } = useCollection<PostReport>(allReportsQuery);
   
-  const isLoadingStats = isLoadingUsers || isLoadingSymptoms || isLoadingReports;
+  const isLoadingStats = isLoadingUsers || isLoadingSymptoms || isLoadingReports || isLoadingAllPosts;
 
   // Initial post fetch
   useEffect(() => {
@@ -235,8 +241,8 @@ export default function AdminDashboardPage() {
    * Handles the export of post data to a CSV file.
    */
   const handleExportPosts = () => {
-    if (posts) {
-      exportToCsv(`chiari-connects-posts-${new Date().toISOString().split('T')[0]}.csv`, posts.map(({ id, title, username, category, createdAt }) => ({ id, title, username, category, createdAt })));
+    if (allPostsForCount) {
+      exportToCsv(`chiari-connects-posts-${new Date().toISOString().split('T')[0]}.csv`, allPostsForCount.map(({ id, title, username, category, createdAt }) => ({ id, title, username, category, createdAt })));
       toast({ title: 'Post data export started.' });
     } else {
       toast({ variant: 'destructive', title: 'No post data to export.' });
@@ -319,7 +325,7 @@ export default function AdminDashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                     {isLoadingPosts ? <Loader2 className="h-6 w-6 animate-spin" /> : posts?.length ?? 0}
+                     {isLoadingAllPosts ? <Loader2 className="h-6 w-6 animate-spin" /> : allPostsForCount?.length ?? 0}
                   </div>
                 </CardContent>
               </Card>
@@ -534,7 +540,7 @@ export default function AdminDashboardPage() {
                             <CardTitle>All Discussion Posts</CardTitle>
                             <CardDescription>A view of all posts across the community.</CardDescription>
                         </div>
-                        <Button variant="outline" size="sm" onClick={handleExportPosts} disabled={isLoadingPosts || !posts || posts.length === 0}>
+                        <Button variant="outline" size="sm" onClick={handleExportPosts} disabled={isLoadingAllPosts || !allPostsForCount || allPostsForCount.length === 0}>
                            <Download className="mr-2 h-4 w-4" />
                            Export Posts
                         </Button>
@@ -594,3 +600,5 @@ export default function AdminDashboardPage() {
     </AdminRouteGuard>
   );
 }
+
+    

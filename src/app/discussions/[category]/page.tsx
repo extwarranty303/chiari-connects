@@ -170,3 +170,5 @@ export default function CategoryPage() {
     </div>
   );
 }
+
+    
