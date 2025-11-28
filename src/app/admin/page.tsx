@@ -1,7 +1,7 @@
 'use client';
 
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { collection, query, orderBy, collectionGroup } from 'firebase/firestore';
+import { collection, query, orderBy, collectionGroup, limit, startAfter, getDocs, DocumentSnapshot } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { Loader2, User, MessageSquare, Activity, Download, ShieldAlert, FileText, CheckCircle, Trash2, KeyRound } from 'lucide-react';
 import Link from 'next/link';
@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useEffect, useState } from 'react';
 
 /**
  * @fileoverview This is the main page for the Admin Dashboard.
@@ -44,7 +45,7 @@ import { Label } from '@/components/ui/label';
  * - **Security**: Wrapped in an `AdminRouteGuard` to ensure only admins can access it.
  * - **Statistics**: Displays high-level site statistics like total users, posts, and symptom entries.
  * - **User Management**: Shows a table of all registered users with their details and roles. Admins can manage users (e.g., assign roles, delete users).
- * - **Content Moderation**: Displays tables for all discussion posts and user-submitted reports.
+ * - **Content Moderation**: Displays tables for all discussion posts (with pagination) and user-submitted reports.
  * - **Data Export**: Allows admins to export user and post data as CSV files.
  * - **IAM Integration**: Provides a UI for managing Google Cloud IAM API key connections.
  */
@@ -133,23 +134,24 @@ export default function AdminDashboardPage() {
   const { toast } = useToast();
   const { user: currentUser, isAdmin } = useUser();
   
-  // Inside your AdminDashboardPage component
-  const functions = getFunctions(); // Get the Functions instance
+  const functions = getFunctions();
   const makeUserModerator = httpsCallable(functions, 'makeUserModerator');
   const deleteUserAccount = httpsCallable(functions, 'deleteUserAccount');
   const connectIam = httpsCallable(functions, 'connectIam');
+
+  // State for post pagination
+  const [posts, setPosts] = useState<DiscussionPost[]>([]);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+  const [lastVisible, setLastVisible] = useState<DocumentSnapshot | null>(null);
+  const [hasMorePosts, setHasMorePosts] = useState(true);
+  const [isLoadingMorePosts, setIsLoadingMorePosts] = useState(false);
+  const POST_LIMIT = 25;
 
   // Memoized query to fetch all users. Only runs if the user is an admin.
   const allUsersQuery = useMemoFirebase(() => {
     if (!firestore || !isAdmin) return null;
     return query(collection(firestore, 'users'), orderBy('createdAt', 'desc'));
   }, [firestore, isAdmin]);
-
-  // Memoized query to fetch all discussion posts.
-  const allDiscussionsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'discussions'), orderBy('createdAt', 'desc'));
-  }, [firestore]);
 
   // Memoized query to fetch all symptom documents (only for counting).
   const allSymptomsQuery = useMemoFirebase(() => {
@@ -165,11 +167,57 @@ export default function AdminDashboardPage() {
 
 
   const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(allUsersQuery);
-  const { data: posts, isLoading: isLoadingPosts } = useCollection<DiscussionPost>(allDiscussionsQuery);
+  // Manual fetch for posts to handle pagination
+  // const { data: posts, isLoading: isLoadingPosts } = useCollection<DiscussionPost>(allDiscussionsQuery);
   const { data: symptoms, isLoading: isLoadingSymptoms } = useCollection<Symptom>(allSymptomsQuery);
   const { data: reports, isLoading: isLoadingReports } = useCollection<PostReport>(allReportsQuery);
   
-  const isLoading = isLoadingUsers || isLoadingPosts || isLoadingSymptoms || isLoadingReports;
+  const isLoadingStats = isLoadingUsers || isLoadingSymptoms || isLoadingReports;
+
+  // Initial post fetch
+  useEffect(() => {
+    if (!firestore) return;
+
+    const fetchInitialPosts = async () => {
+      setIsLoadingPosts(true);
+      const first = query(collection(firestore, 'discussions'), orderBy('createdAt', 'desc'), limit(POST_LIMIT));
+      const documentSnapshots = await getDocs(first);
+
+      const newPosts = documentSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as DiscussionPost));
+      setPosts(newPosts);
+
+      const last = documentSnapshots.docs[documentSnapshots.docs.length - 1];
+      setLastVisible(last);
+
+      if (documentSnapshots.docs.length < POST_LIMIT) {
+        setHasMorePosts(false);
+      }
+      setIsLoadingPosts(false);
+    };
+
+    fetchInitialPosts();
+  }, [firestore]);
+
+  const handleLoadMorePosts = async () => {
+    if (!firestore || !lastVisible || !hasMorePosts) return;
+
+    setIsLoadingMorePosts(true);
+    const next = query(collection(firestore, 'discussions'), orderBy('createdAt', 'desc'), startAfter(lastVisible), limit(POST_LIMIT));
+    const documentSnapshots = await getDocs(next);
+
+    const newPosts = documentSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as DiscussionPost));
+    setPosts(prevPosts => [...prevPosts, ...newPosts]);
+
+    const last = documentSnapshots.docs[documentSnapshots.docs.length - 1];
+    setLastVisible(last);
+    
+    if (documentSnapshots.docs.length < POST_LIMIT) {
+      setHasMorePosts(false);
+    }
+
+    setIsLoadingMorePosts(false);
+  };
+
 
   /**
    * Handles the export of user data to a CSV file.
@@ -260,7 +308,7 @@ export default function AdminDashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : users?.length ?? (isAdmin ? 0 : 'N/A')}
+                    {isLoadingStats ? <Loader2 className="h-6 w-6 animate-spin" /> : users?.length ?? (isAdmin ? 0 : 'N/A')}
                   </div>
                 </CardContent>
               </Card>
@@ -271,7 +319,7 @@ export default function AdminDashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                     {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : posts?.length ?? 0}
+                     {isLoadingPosts ? <Loader2 className="h-6 w-6 animate-spin" /> : posts?.length ?? 0}
                   </div>
                 </CardContent>
               </Card>
@@ -282,7 +330,7 @@ export default function AdminDashboardPage() {
                 </CardHeader>
                 <CardContent>
                    <div className="text-2xl font-bold">
-                     {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : symptoms?.length ?? 0}
+                     {isLoadingStats ? <Loader2 className="h-6 w-6 animate-spin" /> : symptoms?.length ?? 0}
                   </div>
                 </CardContent>
               </Card>
@@ -293,7 +341,7 @@ export default function AdminDashboardPage() {
                 </CardHeader>
                 <CardContent>
                    <div className="text-2xl font-bold">
-                     {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : reports?.length ?? 0}
+                     {isLoadingStats ? <Loader2 className="h-6 w-6 animate-spin" /> : reports?.length ?? 0}
                   </div>
                 </CardContent>
               </Card>
@@ -524,6 +572,18 @@ export default function AdminDashboardPage() {
                                 )}
                             </TableBody>
                         </Table>
+                        {hasMorePosts && (
+                            <div className="mt-4 flex justify-center">
+                                <Button
+                                variant="outline"
+                                onClick={handleLoadMorePosts}
+                                disabled={isLoadingMorePosts}
+                                >
+                                {isLoadingMorePosts ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                Load More
+                                </Button>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>
