@@ -43,7 +43,7 @@ export default function DiscussionsPage() {
         // Ensure posts data exists and is an array before trying to count
         if (Array.isArray(posts)) {
             for (const post of posts) {
-                if (post && post.category in counts) {
+                if (post && post.category && post.category in counts) {
                     counts[post.category]++;
                 }
             }
@@ -59,17 +59,17 @@ export default function DiscussionsPage() {
           <div className="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                <MessageSquare className="w-8 h-8 text-primary" />
-                Community Forums
+                  <MessageSquare className="w-8 h-8 text-primary" />
+                  Community Forums
                 </h1>
                 <p className="text-muted-foreground">Choose a category to start browsing discussions.</p>
             </div>
-             <Button asChild>
-                <Link href="/discussions/create">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    New Post
-                </Link>
-             </Button>
+            <Button asChild>
+              <Link href="/discussions/create">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                New Post
+              </Link>
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -78,19 +78,19 @@ export default function DiscussionsPage() {
                 <Card className="glassmorphism hover:border-primary/50 transition-all duration-200 group flex flex-col h-full">
                   <CardHeader className="flex-grow">
                     <div className="flex flex-row gap-4 items-start">
-                        <div className="bg-primary/10 p-3 rounded-lg text-primary mt-1">
-                            {category.icon}
-                        </div>
-                        <div className="flex-1">
-                            <CardTitle className="text-lg">{category.name}</CardTitle>
-                            <CardDescription className="text-foreground/80 mt-1">{category.description}</CardDescription>
-                        </div>
+                      <div className="bg-primary/10 p-3 rounded-lg text-primary mt-1">
+                        {category.icon}
+                      </div>
+                      <div className="flex-1">
+                        <CardTitle className="text-lg">{category.name}</CardTitle>
+                        <CardDescription className="text-foreground/80 mt-1">{category.description}</CardDescription>
+                      </div>
                     </div>
                   </CardHeader>
                   <div className="p-6 pt-2 flex justify-between items-center text-sm text-muted-foreground">
-                    <span>{postCounts?.[category.slug] ?? 0} Posts</span>
+                    <span>{postCounts[category.slug] ?? 0} Posts</span>
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-primary">
-                        <ArrowRight className="inline-block" />
+                      <ArrowRight className="inline-block" />
                     </div>
                   </div>
                 </Card>
