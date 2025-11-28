@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, collection, runTransaction, increment } from 'firebase/firestore';
 import { format } from 'date-fns';
-import { Loader2, AlertTriangle, ArrowLeft, Bookmark, Flag, Tags } from 'lucide-react';
+import { Loader2, AlertTriangle, ArrowLeft, Bookmark, Flag, Tags, Sparkles } from 'lucide-react';
 import { useFirebase, useUser, useDoc, useMemoFirebase, setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
 import { AppHeader } from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,6 +27,10 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Footer } from '@/components/app/footer';
 import Link from 'next/link';
+import { summarizeDiscussion } from '@/ai/flows/ai-summarize-discussion';
+import ReactMarkdown from 'react-markdown';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 /**
  * @fileoverview This page displays a single, detailed discussion post.
@@ -79,6 +83,10 @@ export default function PostPage() {
   const { toast } = useToast();
   const [isReporting, setIsReporting] = useState(false);
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
+
+  const [isSummaryPending, startSummaryTransition] = useTransition();
+  const [summary, setSummary] = useState('');
+  const [showSummaryDialog, setShowSummaryDialog] = useState(false);
 
   // Mark the post as read in localStorage when the component mounts
   useEffect(() => {
@@ -196,6 +204,28 @@ export default function PostPage() {
         });
   };
 
+  /**
+   * Handles the AI summarization of the post.
+   */
+  const handleSummarize = () => {
+    if (!post) return;
+    setShowSummaryDialog(true);
+    setSummary(''); // Clear previous summary
+    startSummaryTransition(async () => {
+        try {
+            const result = await summarizeDiscussion({
+                title: post.title,
+                content: post.content,
+            });
+            setSummary(result.summary);
+        } catch (error) {
+            console.error("Error summarizing post:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not generate a summary. Please try again.' });
+            setSummary('Failed to generate summary.');
+        }
+    });
+  };
+
   if (isLoading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -232,6 +262,35 @@ export default function PostPage() {
                   <div className="flex justify-between items-start gap-4">
                     <CardTitle className="text-3xl font-bold">{post.title}</CardTitle>
                     <div className="flex gap-2 flex-shrink-0">
+                        <Dialog open={showSummaryDialog} onOpenChange={setShowSummaryDialog}>
+                            <DialogTrigger asChild>
+                                <Button variant="outline" size="icon" onClick={handleSummarize} aria-label="Summarize post">
+                                    <Sparkles className="h-5 w-5" />
+                                </Button>
+                            </DialogTrigger>
+                             <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>AI-Generated Summary</DialogTitle>
+                                    <DialogDescription>A quick overview of the key points in this post.</DialogDescription>
+                                </DialogHeader>
+                                <div className="py-4 prose prose-sm dark:prose-invert max-w-none">
+                                    {isSummaryPending ? (
+                                        <div className="space-y-2">
+                                            <Skeleton className="h-4 w-full" />
+                                            <Skeleton className="h-4 w-4/5" />
+                                            <Skeleton className="h-4 w-full" />
+                                        </div>
+                                    ) : (
+                                        <ReactMarkdown>{summary}</ReactMarkdown>
+                                    )}
+                                </div>
+                                <DialogFooter>
+                                    <DialogClose asChild>
+                                        <Button type="button">Close</Button>
+                                    </DialogClose>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
                         <Button variant="outline" size="icon" onClick={handleToggleBookmark} aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark post'}>
                             <Bookmark className={`h-5 w-5 ${isBookmarked ? 'fill-primary text-primary' : ''}`} />
                         </Button>

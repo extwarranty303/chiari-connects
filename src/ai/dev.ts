@@ -10,3 +10,4 @@ import '@/ai/flows/ai-analyze-symptoms-with-imaging.ts';
 import '@/ai/flows/ai-analyze-symptoms-with-report.ts';
 import '@/ai/flows/ai-generate-doctor-questions.ts';
 import '@/ai/flows/ai-consolidate-analyses.ts';
+import '@/ai/flows/ai-summarize-discussion.ts';
