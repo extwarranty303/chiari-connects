@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Loader2 } from 'lucide-react';
-import { doc } from 'firebase/firestore';
+import { doc, collection, query, where, getDocs } from 'firebase/firestore';
 
 import { useFirebase, useUser, updateDocumentNonBlocking } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -91,29 +91,51 @@ export default function OnboardingPage() {
    * Handles the form submission to complete the user's profile.
    * @param {OnboardingFormValues} values - The validated form values.
    */
-  const onSubmit = (values: OnboardingFormValues) => {
+  const onSubmit = async (values: OnboardingFormValues) => {
     if (!user) {
       toast({ variant: 'destructive', title: 'Error', description: 'You are not logged in.' });
       return;
     }
     setIsSubmitting(true);
 
-    const userRef = doc(firestore, 'users', user.uid);
-    const updatedData = {
-      ...values,
-      hasCompletedOnboarding: true, // This is the crucial flag
-    };
+    try {
+        // Check for username uniqueness
+        const usersRef = collection(firestore, 'users');
+        const q = query(usersRef, where('username', '==', values.username));
+        const querySnapshot = await getDocs(q);
 
-    updateDocumentNonBlocking(userRef, updatedData);
+        if (!querySnapshot.empty) {
+            // Check if the found user is the current user (in case they didn't change their pre-filled username)
+            const isSelf = querySnapshot.docs.some(doc => doc.id === user.uid);
+            if (!isSelf) {
+                 toast({ variant: 'destructive', title: 'Username Taken', description: 'This username is already in use. Please choose another one.' });
+                 form.setError('username', { type: 'manual', message: 'This username is already taken.' });
+                 setIsSubmitting(false);
+                 return;
+            }
+        }
 
-    // The update is non-blocking. We show a toast and the useUser hook will
-    // automatically redirect the user to the home page on the next state update.
-    toast({
-      title: 'Profile Complete!',
-      description: 'Welcome to Chiari Connects!',
-    });
-    // Manually push to trigger the redirection logic in the useEffect
-    router.push('/'); 
+        const userRef = doc(firestore, 'users', user.uid);
+        const updatedData = {
+        ...values,
+        hasCompletedOnboarding: true, // This is the crucial flag
+        };
+
+        updateDocumentNonBlocking(userRef, updatedData);
+
+        // The update is non-blocking. We show a toast and the useUser hook will
+        // automatically redirect the user to the home page on the next state update.
+        toast({
+        title: 'Profile Complete!',
+        description: 'Welcome to Chiari Connects!',
+        });
+        // Manually push to trigger the redirection logic in the useUser hook.
+        router.push('/'); 
+    } catch (error) {
+        console.error("Error during onboarding submission:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not save your profile. Please try again.' });
+        setIsSubmitting(false);
+    }
   };
   
   if (isUserLoading || !userProfile || userProfile.hasCompletedOnboarding) {

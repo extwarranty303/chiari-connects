@@ -114,19 +114,29 @@ export default function PostPage() {
   }, [firestore, user, id]);
 
   const { data: post, isLoading: isLoadingPost, error: postError } = useDoc<DiscussionPost>(postRef);
-  const { data: bookmark, isLoading: isLoadingBookmark } = useDoc<Bookmark>(bookmarkRef);
+  const { data: bookmarkData, isLoading: isLoadingBookmark } = useDoc<Bookmark>(bookmarkRef);
 
-  const isBookmarked = !!bookmark;
+  // Optimistic UI state for bookmarking
+  const [isBookmarked, setIsBookmarked] = useState(false);
+
+  useEffect(() => {
+    setIsBookmarked(!!bookmarkData);
+  }, [bookmarkData]);
+
+
   const isLoading = isLoadingPost || isUserLoading || isLoadingBookmark;
 
   /**
-   * Toggles the bookmark status for the current post.
-   * If bookmarking, it awards points to the post's author.
+   * Toggles the bookmark status for the current post with an optimistic UI update.
    */
   const handleToggleBookmark = async () => {
     if (!user || !post || !bookmarkRef || !firestore) return;
 
-    if (isBookmarked) {
+    const currentlyBookmarked = isBookmarked;
+    // Optimistically update the UI
+    setIsBookmarked(!currentlyBookmarked);
+
+    if (currentlyBookmarked) {
         // Delete the bookmark
         deleteDocumentNonBlocking(bookmarkRef);
         toast({ title: 'Bookmark removed.' });
@@ -151,7 +161,9 @@ export default function PostPage() {
             toast({ title: 'Post bookmarked!', description: "The author has been awarded 5 points." });
         } catch (error) {
             console.error("Failed to award points:", error);
-            toast({ title: 'Post bookmarked!', description: "Could not award points to the author." });
+            // Revert optimistic UI on failure
+            setIsBookmarked(true);
+            toast({ variant: "destructive", title: 'Error', description: "Could not bookmark post or award points." });
         }
     }
   };
