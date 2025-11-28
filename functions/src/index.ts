@@ -1,18 +1,17 @@
+'use server';
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { beforeUserCreated } from "firebase-functions/v2/identity";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import { logger } from "firebase-functions/v2";
-import { defineFlow, runFlow } from '@genkit-ai/flow';
-import { geminiPro, googleGenai } from '@genkit-ai/google-genai';
-import { generate } from '@genkit-ai/ai';
-import * as z from 'zod';
-import { configureGenkit } from '@genkit-ai/core';
+import { googleGenai } from '@genkit-ai/google-genai';
+import { genkit } from 'genkit';
+import { z } from 'zod';
 
-configureGenkit({
-  plugins: [googleGenai()],
-  logLevel: 'debug',
-  enableTracingAndMetrics: true,
+const ai = genkit({
+    plugins: [googleGenai()],
+    logLevel: 'debug',
+    enableTracingAndMetrics: true,
 });
 
 admin.initializeApp();
@@ -193,6 +192,25 @@ function getMostCommon(arr: string[]): string {
   return mostCommon;
 }
 
+const analyzeFlow = ai.defineFlow(
+  {
+    name: 'analyzeFlow',
+    inputSchema: z.string(),
+    outputSchema: z.string(),
+  },
+  async (prompt: string) => {
+    const llmResponse = await ai.generate({ 
+      prompt: prompt,
+      model: 'gemini-1.0-pro',
+      config: { 
+        maxOutputTokens: 2048,
+        temperature: 0.5, 
+        topP: 0.95, 
+      },
+    });
+    return llmResponse.text;
+  }
+);
 
 export const analyzeSymptomPatterns = onCall(async (request) => {
   if (!request.auth) {
@@ -213,28 +231,8 @@ export const analyzeSymptomPatterns = onCall(async (request) => {
   - Severity trends
   - Frequency correlations
   - Potential triggers`;
-
-  const analyzeFlow = defineFlow(
-    {
-      name: 'analyzeFlow',
-      inputSchema: z.string(),
-      outputSchema: z.string(),
-    },
-    async (prompt: string) => {
-      const llmResponse = await generate({ 
-        prompt: prompt,
-        model: geminiPro,
-        config: { 
-          maxOutputTokens: 2048,
-          temperature: 0.5, 
-          topP: 0.95, 
-        },
-      });
-      return llmResponse.text;
-    }
-  );
   
-  const result = await runFlow(analyzeFlow, prompt);
+  const result = await analyzeFlow(prompt);
   return { insights: result };
 });
 
