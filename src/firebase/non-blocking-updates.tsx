@@ -20,14 +20,12 @@ import {FirestorePermissionError} from '@/firebase/errors';
  */
 export function setDocumentNonBlocking(docRef: DocumentReference, data: any, options: SetOptions) {
   setDoc(docRef, data, options).catch(async (error) => {
-    errorEmitter.emit(
-      'permission-error',
-      new FirestorePermissionError({
-        path: docRef.path,
-        operation: 'write', // or 'create'/'update' based on options
-        requestResourceData: data,
-      })
-    )
+    const contextualError = new FirestorePermissionError({
+      path: docRef.path,
+      operation: 'write', // or 'create'/'update' based on options
+      requestResourceData: data,
+    });
+    errorEmitter.emit('permission-error', contextualError);
   })
   // Execution continues immediately
 }
@@ -41,14 +39,12 @@ export function setDocumentNonBlocking(docRef: DocumentReference, data: any, opt
 export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
   const promise = addDoc(colRef, data)
     .catch(async (error) => {
-      errorEmitter.emit(
-        'permission-error',
-        new FirestorePermissionError({
-          path: colRef.path,
-          operation: 'create',
-          requestResourceData: data,
-        })
-      )
+      const contextualError = new FirestorePermissionError({
+        path: colRef.path,
+        operation: 'create',
+        requestResourceData: data,
+      });
+      errorEmitter.emit('permission-error', contextualError);
     });
   return promise;
 }
@@ -61,14 +57,12 @@ export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
 export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) {
   updateDoc(docRef, data)
     .catch(async (error) => {
-      errorEmitter.emit(
-        'permission-error',
-        new FirestorePermissionError({
-          path: docRef.path,
-          operation: 'update',
-          requestResourceData: data,
-        })
-      )
+      const contextualError = new FirestorePermissionError({
+        path: docRef.path,
+        operation: 'update',
+        requestResourceData: data,
+      });
+      errorEmitter.emit('permission-error', contextualError);
     });
 }
 
@@ -80,13 +74,11 @@ export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) 
 export function deleteDocumentNonBlocking(docRef: DocumentReference) {
   deleteDoc(docRef)
     .catch(async (error) => {
-      errorEmitter.emit(
-        'permission-error',
-        new FirestorePermissionError({
-          path: docRef.path,
-          operation: 'delete',
-        })
-      )
+      const contextualError = new FirestorePermissionError({
+        path: docRef.path,
+        operation: 'delete',
+      });
+      errorEmitter.emit('permission-error', contextualError);
     });
 }
 
@@ -110,14 +102,12 @@ export function deleteCollectionNonBlocking(collectionRef: CollectionReference) 
         .catch(async (error) => {
             // Differentiate between read error (getDocs) and write error (commit)
             const isReadError = !('docs' in error); // Simple check, might need refinement
-            errorEmitter.emit(
-                'permission-error',
-                new FirestorePermissionError({
-                    path: collectionRef.path,
-                    // If we fail at getDocs, it's a 'list' op. If we fail at commit, it's a 'delete' op.
-                    operation: isReadError ? 'list' : 'delete',
-                })
-            );
+            const contextualError = new FirestorePermissionError({
+                path: collectionRef.path,
+                // If we fail at getDocs, it's a 'list' op. If we fail at commit, it's a 'delete' op.
+                operation: isReadError ? 'list' : 'delete',
+            });
+            errorEmitter.emit('permission-error', contextualError);
             // We need to re-throw or return a rejected promise so the caller's .catch can trigger
             throw error;
         });

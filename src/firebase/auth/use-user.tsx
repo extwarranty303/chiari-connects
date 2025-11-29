@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useAuthState } from 'react-firebase-hooks/auth';
+import { useAuthState as useFirebaseAuthState } from 'react-firebase-hooks/auth';
 import { useRouter, usePathname } from 'next/navigation';
-import { useFirebase } from '@/firebase/provider';
+import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 export interface UserProfile {
   id: string;
@@ -27,7 +28,7 @@ export interface UserProfile {
 export interface UserAuthState {
   user: any | null;
   isUserLoading: boolean;
-  userError: Error | null;
+  userError: Error | undefined | null;
   isAdmin: boolean;
   isModerator: boolean;
   userProfile: UserProfile | null;
@@ -35,63 +36,77 @@ export interface UserAuthState {
 }
 
 export function useUser(): UserAuthState {
-  const { auth } = useFirebase(); // ✅ Get auth from context
-  const [user, isUserLoading, userError] = useAuthState(auth);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const { auth, firestore } = useFirebase();
+  const [user, isFirebaseUserLoading, userError] = useFirebaseAuthState(auth);
+  
+  // This state now specifically tracks the loading of our combined user/profile/claims data
+  const [isUserLoading, setIsUserLoading] = useState(true);
+
+  const userProfileRef = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: userProfile, isLoading: isProfileLoading, error: profileError } = useDoc<UserProfile>(userProfileRef);
+
   const [isAdmin, setIsAdmin] = useState(false);
   const [isModerator, setIsModerator] = useState(false);
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+
+  const hasCompletedOnboarding = userProfile?.hasCompletedOnboarding ?? false;
 
   useEffect(() => {
+    // Start loading whenever the firebase user or profile starts loading
+    setIsUserLoading(isFirebaseUserLoading || isProfileLoading);
+    
     if (user) {
       user.getIdTokenResult().then((idTokenResult) => {
         setIsAdmin(!!idTokenResult.claims.admin);
         setIsModerator(!!idTokenResult.claims.moderator);
-        
-        const mockProfile: UserProfile = {
-          id: user.uid,
-          username: user.displayName || 'Anonymous',
-          email: user.email || 'anonymous@example.com',
-          createdAt: user.metadata.creationTime || new Date().toISOString(),
-          hasCompletedOnboarding: true,
-          roles: {
-            admin: !!idTokenResult.claims.admin,
-            moderator: !!idTokenResult.claims.moderator,
-          }
-        };
-        setUserProfile(mockProfile);
-        setHasCompletedOnboarding(mockProfile.hasCompletedOnboarding || false);
       });
     } else {
       setIsAdmin(false);
       setIsModerator(false);
-      setUserProfile(null);
-      setHasCompletedOnboarding(false);
     }
-  }, [user]);
+  }, [user, isFirebaseUserLoading, isProfileLoading]);
 
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!isUserLoading && !user && !['/auth', '/'].includes(pathname)) {
+    // Wait until loading is fully complete before running any redirect logic
+    if (isUserLoading) return;
+
+    const isAuthPage = pathname === '/auth';
+    const isOnboardingPage = pathname === '/onboarding';
+
+    // If there's no user, they should be on the auth page.
+    if (!user && !isAuthPage) {
       router.push('/auth');
+      return;
     }
-    if (!isUserLoading && user && !hasCompletedOnboarding && pathname !== '/onboarding') {
-      router.push('/onboarding');
+    
+    if (user) {
+      // If user exists but hasn't onboarded, they must be on the onboarding page.
+      if (!hasCompletedOnboarding && !isOnboardingPage) {
+        router.push('/onboarding');
+        return;
+      }
+      // If user has onboarded, they should NOT be on the onboarding page.
+      if (hasCompletedOnboarding && isOnboardingPage) {
+        router.push('/');
+        return;
+      }
     }
-    if (!isUserLoading && user && hasCompletedOnboarding && pathname === '/onboarding') {
-      router.push('/');
-    }
+
   }, [user, isUserLoading, hasCompletedOnboarding, pathname, router]);
 
   return useMemo(() => ({
     user,
-    isUserLoading,
-    userError,
+    isUserLoading, // Use our combined loading state
+    userError: userError || profileError,
     isAdmin,
     isModerator,
     userProfile,
     hasCompletedOnboarding,
-  }), [user, isUserLoading, userError, isAdmin, isModerator, userProfile, hasCompletedOnboarding]);
+  }), [user, isUserLoading, userError, profileError, isAdmin, isModerator, userProfile, hasCompletedOnboarding]);
 }

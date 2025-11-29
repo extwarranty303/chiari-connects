@@ -3,7 +3,7 @@
 import React, { createContext, useContext, ReactNode, useMemo } from 'react';
 import { FirebaseApp } from 'firebase/app';
 import { Firestore } from 'firebase/firestore';
-import { Auth } from 'firebase/auth';
+import { Auth, User } from 'firebase/auth';
 import { FirebaseStorage } from 'firebase/storage';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 import { useUser, type UserAuthState } from './auth/use-user';
@@ -17,17 +17,14 @@ interface FirebaseProviderProps {
 }
 
 // Combined state for the Firebase context
-export interface FirebaseContextState {
+export type FirebaseContextState = {
   areServicesAvailable: boolean; // True if core services (app, firestore, auth instance) are provided
   firebaseApp: FirebaseApp | null;
   firestore: Firestore | null;
   auth: Auth | null; // The Auth service instance
   storage: FirebaseStorage | null;
-  user: UserAuthState['user'];
-  loading: UserAuthState['loading'];
-  error: UserAuthState['error'];
-  claims: UserAuthState['claims'];
-}
+} & Omit<UserAuthState, 'user'> & { user: User | null }; // Omit original user, and redefine with firebase User type
+
 
 // Return type for useFirebase()
 export interface FirebaseServicesAndUser extends FirebaseContextState {
@@ -68,7 +65,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   storage,
 }) => {
   // Memoize the context value
-  const contextValue = useMemo((): FirebaseContextState => {
+  const contextValue = useMemo((): Omit<FirebaseContextState, keyof UserAuthState | 'user' > => {
     const servicesAvailable = !!(firebaseApp && firestore && auth && storage);
     return {
       areServicesAvailable: servicesAvailable,
@@ -76,15 +73,23 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       firestore: servicesAvailable ? firestore : null,
       auth: servicesAvailable ? auth : null,
       storage: servicesAvailable ? storage : null,
-      user: null,
-      loading: true,
-      error: null,
-      claims: null,
     };
   }, [firebaseApp, firestore, auth, storage]);
 
+  // Provide initial empty user state before AuthProvider hydrates it
+  const fullContextValue = useMemo(() => ({
+    ...contextValue,
+    user: null,
+    isUserLoading: true,
+    userError: null,
+    isAdmin: false,
+    isModerator: false,
+    userProfile: null,
+    hasCompletedOnboarding: false,
+  }), [contextValue]);
+
   return (
-    <FirebaseContext.Provider value={contextValue}>
+    <FirebaseContext.Provider value={fullContextValue}>
       <FirebaseErrorListener />
       <AuthProvider>{children}</AuthProvider>
     </FirebaseContext.Provider>
@@ -137,18 +142,4 @@ export const useFirebaseApp = (): FirebaseApp => {
 export const useStorage = (): FirebaseStorage => {
     const { storage } = useFirebase();
     return storage;
-}
-
-export function useMemoFirebase<T>(factory: () => T, deps: React.DependencyList): T {
-  const memoized = useMemo(factory, deps);
-  
-  if (memoized && typeof memoized === 'object') {
-    Object.defineProperty(memoized, '__memo', {
-      value: true,
-      writable: false,
-      enumerable: false,
-    });
-  }
-  
-  return memoized;
 }
