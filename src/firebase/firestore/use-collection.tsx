@@ -11,7 +11,6 @@ import {
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { useMemoFirebase } from '../use-memo-firebase';
 
 /** Utility type to add an 'id' field to a given type T. */
 export type WithId<T> = T & { id: string };
@@ -44,7 +43,6 @@ export function useCollection<T = any>(
   type ResultItemType = WithId<T>;
   type StateDataType = ResultItemType[] | null;
 
-  // ✅ FIXED: Moved validation BEFORE all hooks
   // This must happen before any useState or useEffect calls
   if (memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
     const isStandardQuery = !!(memoizedTargetRefOrQuery as any).path;
@@ -55,9 +53,8 @@ export function useCollection<T = any>(
     }
   }
 
-  // Now hooks come after validation
   const [data, setData] = useState<StateDataType>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // ✅ FIXED: Default to true
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
@@ -70,8 +67,8 @@ export function useCollection<T = any>(
     }
 
     const path = (memoizedTargetRefOrQuery as any).path;
+    // Critical check to prevent queries to an undefined path.
     if (path && path.includes('undefined')) {
-      // Don't treat this as a fatal error, just stop and wait for a valid path.
       setIsLoading(false);
       setData(null);
       setError(new Error(`Invalid query: path contains undefined segment (${path})`));

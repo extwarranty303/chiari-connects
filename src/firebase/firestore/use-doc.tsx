@@ -10,7 +10,6 @@ import {
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { useMemoFirebase } from '../use-memo-firebase';
 
 /** Utility type to add an 'id' field to a given type T. */
 type WithId<T> = T & { id: string };
@@ -42,18 +41,17 @@ export function useDoc<T = any>(
 ): UseDocResult<T> {
   type StateDataType = WithId<T> | null;
 
-  // ✅ FIXED: Moved validation BEFORE all hooks
   // This must happen before any useState or useEffect calls
   if (memoizedDocRef && !memoizedDocRef.__memo) {
     throw new Error(`The document reference for path "${memoizedDocRef.path}" was not wrapped in useMemoFirebase. This is required to prevent infinite re-renders.`);
   }
 
-  // Now hooks come after validation
   const [data, setData] = useState<StateDataType>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // ✅ FIXED: Default to true
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
+    // If the doc ref is not ready, do not fetch.
     if (!memoizedDocRef) {
       setIsLoading(false);
       setData(null);
@@ -61,6 +59,7 @@ export function useDoc<T = any>(
       return;
     }
 
+    // Critical check to prevent queries to an undefined path.
     if (memoizedDocRef.path && memoizedDocRef.path.includes('undefined')) {
       const pathError = new Error(`Invalid document reference: path contains undefined segment (${memoizedDocRef.path})`);
       setError(pathError);
