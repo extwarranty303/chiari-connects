@@ -73,13 +73,15 @@ export default function DiscussionsPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {categories.map((category) => (
+            {categories.map((category) => {
+              const Icon = category.icon;
+              return (
               <Link href={`/discussions/${category.slug}`} key={category.slug}>
                 <Card className="glassmorphism hover:border-primary/50 transition-all duration-200 group flex flex-col h-full">
                   <CardHeader className="flex-grow">
                     <div className="flex flex-row gap-4 items-start">
                       <div className="bg-primary/10 p-3 rounded-lg text-primary mt-1">
-                        {category.icon}
+                        <Icon />
                       </div>
                       <div className="flex-1">
                         <CardTitle className="text-lg">{category.name}</CardTitle>
@@ -97,7 +99,7 @@ export default function DiscussionsPage() {
                   </div>
                 </Card>
               </Link>
-            ))}
+            )})}
           </div>
         </div>
       </main>

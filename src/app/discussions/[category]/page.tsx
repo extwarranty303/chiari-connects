@@ -49,6 +49,7 @@ export default function CategoryPage() {
   const [readPosts, setReadPosts] = useState<Set<string>>(new Set());
 
   const currentCategory = categoryDetails[category] || defaultCategory;
+  const Icon = currentCategory.icon;
 
   // Load read posts from localStorage on component mount
   useEffect(() => {
@@ -100,7 +101,7 @@ export default function CategoryPage() {
                 </Button>
              </div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
-              <span className="text-primary">{currentCategory.icon}</span>
+              <span className="text-primary"><Icon /></span>
               {currentCategory.name}
             </h1>
             <p className="text-muted-foreground">Ask questions, share experiences, and connect with others.</p>
