@@ -39,7 +39,7 @@ const nextConfig: NextConfig = {
   */
   // This allows requests from the development environment's preview URL.
   allowedDevOrigins: [
-      "6000-firebase-studio-1764172302696.cluster-zsqzu5kebnaemxbyqrvoim2lxo.cloudworkstations.dev"
+      "https://*.cluster-zsqzu5kebnaemxbyqrvoim2lxo.cloudworkstations.dev"
   ],
 };
 
