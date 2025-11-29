@@ -79,7 +79,7 @@ export function useCollection<T = any>(
         setError(null);
         setIsLoading(false);
       },
-      (error: FirestoreError) => {
+      async (error: FirestoreError) => {
         const isCollectionGroupQuery = (memoizedTargetRefOrQuery as any)._query?.collectionId;
         const path = isCollectionGroupQuery
           ? `Collection Group: ${(memoizedTargetRefOrQuery as any)._query.collectionId}`
