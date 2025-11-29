@@ -17,12 +17,16 @@ interface FirebaseProviderProps {
 }
 
 // Combined state for the Firebase context
-export interface FirebaseContextState extends UserAuthState {
+export interface FirebaseContextState {
   areServicesAvailable: boolean; // True if core services (app, firestore, auth instance) are provided
   firebaseApp: FirebaseApp | null;
   firestore: Firestore | null;
   auth: Auth | null; // The Auth service instance
   storage: FirebaseStorage | null;
+  user: UserAuthState['user'];
+  loading: UserAuthState['loading'];
+  error: UserAuthState['error'];
+  claims: UserAuthState['claims'];
 }
 
 // Return type for useFirebase()
@@ -36,6 +40,23 @@ export interface FirebaseServicesAndUser extends FirebaseContextState {
 // React Context
 export const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
 
+const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const userAuthState = useUser();
+  const context = useContext(FirebaseContext);
+
+  // It's safe to assume context is defined here because AuthProvider is always a child of FirebaseProvider
+  const augmentedContext = useMemo(() => ({
+    ...context!,
+    ...userAuthState
+  }), [context, userAuthState]);
+
+  return (
+    <FirebaseContext.Provider value={augmentedContext}>
+      {children}
+    </FirebaseContext.Provider>
+  );
+}
+
 /**
  * FirebaseProvider manages and provides Firebase services and user authentication state.
  */
@@ -46,8 +67,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   auth,
   storage,
 }) => {
-  const userAuthState = useUser();
-
   // Memoize the context value
   const contextValue = useMemo((): FirebaseContextState => {
     const servicesAvailable = !!(firebaseApp && firestore && auth && storage);
@@ -57,14 +76,17 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       firestore: servicesAvailable ? firestore : null,
       auth: servicesAvailable ? auth : null,
       storage: servicesAvailable ? storage : null,
-      ...userAuthState
+      user: null,
+      loading: true,
+      error: null,
+      claims: null,
     };
-  }, [firebaseApp, firestore, auth, storage, userAuthState]);
+  }, [firebaseApp, firestore, auth, storage]);
 
   return (
     <FirebaseContext.Provider value={contextValue}>
       <FirebaseErrorListener />
-      {children}
+      <AuthProvider>{children}</AuthProvider>
     </FirebaseContext.Provider>
   );
 };

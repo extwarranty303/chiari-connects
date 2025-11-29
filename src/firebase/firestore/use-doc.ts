@@ -29,7 +29,7 @@ export interface UseDocResult<T> {
  * Handles nullable references.
  * 
  * IMPORTANT! YOU MUST MEMOIZE the inputted memoizedDocRef or BAD THINGS WILL HAPPEN
- * use useMemoFirebase to memoize it per React guidence. Also make sure that it's dependencies are stable references
+ * use useMemoFirebase to memoize it per React guidance. Also make sure that its dependencies are stable references
  *
  * @template T Optional type for document data. Defaults to any.
  * @param {DocumentReference<DocumentData> | null | undefined} docRef -
@@ -41,6 +41,13 @@ export function useDoc<T = any>(
 ): UseDocResult<T> {
   type StateDataType = WithId<T> | null;
 
+  // ✅ FIXED: Moved validation BEFORE all hooks
+  // This must happen before any useState or useEffect calls
+  if (memoizedDocRef && !memoizedDocRef.__memo) {
+    throw new Error(`The document reference for path "${memoizedDocRef.path}" was not wrapped in useMemoFirebase. This is required to prevent infinite re-renders.`);
+  }
+
+  // Now hooks come after validation
   const [data, setData] = useState<StateDataType>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
@@ -80,11 +87,11 @@ export function useDoc<T = any>(
         const contextualError = new FirestorePermissionError({
           operation: 'get',
           path: memoizedDocRef.path,
-        })
+        });
 
-        setError(contextualError)
-        setData(null)
-        setIsLoading(false)
+        setError(contextualError);
+        setData(null);
+        setIsLoading(false);
 
         errorEmitter.emit('permission-error', contextualError);
       }
@@ -92,10 +99,6 @@ export function useDoc<T = any>(
 
     return () => unsubscribe();
   }, [memoizedDocRef]);
-
-  if (memoizedDocRef && !memoizedDocRef.__memo) {
-    throw new Error(`The document reference for path "${memoizedDocRef.path}" was not wrapped in useMemoFirebase. This is required to prevent infinite re-renders.`);
-  }
 
   return { data, isLoading, error };
 }

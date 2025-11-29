@@ -2,7 +2,7 @@ import type {Metadata} from 'next';
 import { Toaster } from "@/components/ui/toaster"
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
-
+import { FirebaseProvider } from '@/firebase';
 export const metadata: Metadata = {
   title: {
     default: 'Chiari Connects | #1 Chiari Malformation Forum & Symptom Tracker',

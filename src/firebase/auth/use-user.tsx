@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { getAuth } from 'firebase/auth';
 import { useRouter, usePathname } from 'next/navigation';
+import { useFirebase } from '@/firebase/provider';
 
 export interface UserProfile {
   id: string;
@@ -35,7 +35,7 @@ export interface UserAuthState {
 }
 
 export function useUser(): UserAuthState {
-  const auth = getAuth(); // Moved getAuth() inside the hook
+  const { auth } = useFirebase(); // ✅ Get auth from context
   const [user, isUserLoading, userError] = useAuthState(auth);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -47,13 +47,13 @@ export function useUser(): UserAuthState {
       user.getIdTokenResult().then((idTokenResult) => {
         setIsAdmin(!!idTokenResult.claims.admin);
         setIsModerator(!!idTokenResult.claims.moderator);
-        // This is a mock user profile. In a real app, you would fetch this from Firestore.
+        
         const mockProfile: UserProfile = {
           id: user.uid,
           username: user.displayName || 'Anonymous',
           email: user.email || 'anonymous@example.com',
           createdAt: user.metadata.creationTime || new Date().toISOString(),
-          hasCompletedOnboarding: true, // Assume true for this mock
+          hasCompletedOnboarding: true,
           roles: {
             admin: !!idTokenResult.claims.admin,
             moderator: !!idTokenResult.claims.moderator,
@@ -74,22 +74,16 @@ export function useUser(): UserAuthState {
   const pathname = usePathname();
 
   useEffect(() => {
-    // If loading is finished and there's no user, redirect to auth page
-    // unless they are already on a public page.
     if (!isUserLoading && !user && !['/auth', '/'].includes(pathname)) {
       router.push('/auth');
     }
-    // If the user is logged in but hasn't completed onboarding, force them to the onboarding page.
     if (!isUserLoading && user && !hasCompletedOnboarding && pathname !== '/onboarding') {
       router.push('/onboarding');
     }
-    // If the user IS onboarded and tries to visit the onboarding page, send them to the homepage.
     if (!isUserLoading && user && hasCompletedOnboarding && pathname === '/onboarding') {
       router.push('/');
     }
-
   }, [user, isUserLoading, hasCompletedOnboarding, pathname, router]);
-
 
   return useMemo(() => ({
     user,

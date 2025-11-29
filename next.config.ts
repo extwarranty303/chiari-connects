@@ -1,13 +1,7 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // Remove dangerous ignore flags
   images: {
     remotePatterns: [
       {
@@ -30,17 +24,13 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  /*
-  serverActions: {
-    allowedOrigins: [
-      "6000-firebase-studio-1764172302696.cluster-zsqzu5kebnaemxbyqrvoim2lxo.cloudworkstations.dev"
+  experimental: {
+    allowedDevOrigins: [
+      '*.cluster-zsqzu5kebnaemxbyqrvoim2lxo.cloudworkstations.dev',
+      '*.cluster-omu5xfjeevhmgwf75twfksi4vc.cloudworkstations.dev',
     ],
   },
-  */
-  // This allows requests from the development environment's preview URL.
-  allowedDevOrigins: [
-      "https://*.cluster-zsqzu5kebnaemxbyqrvoim2lxo.cloudworkstations.dev"
-  ],
 };
 
 export default nextConfig;
+
