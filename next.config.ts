@@ -34,11 +34,6 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: [
       "https://*.cluster-zsqzu5kebnaemxbyqrvoim2lxo.cloudworkstations.dev"
   ],
-  // Increase server action timeout for slow AI operations
-  serverActions: {
-      bodySizeLimit: '4.5mb',
-      serverActionsBodySizeLimit: '4.5mb',
-  }
 };
 
 export default nextConfig;
