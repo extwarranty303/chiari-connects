@@ -1,10 +1,10 @@
-
 'use client';
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { FileUp, FileDown, Activity, MessageSquare, Menu } from 'lucide-react';
+import { FileUp, FileDown, Activity, MessageSquare, Menu, UserCircle } from 'lucide-react';
 import { UserNav } from '@/components/app/user-nav';
+import { useUser } from '@/firebase';
 import {
   Sheet,
   SheetContent,
@@ -23,7 +23,7 @@ import { Logo } from './logo';
  * - **Logo and Branding**: Displays the "Chiari Connects" logo, linking to the home page.
  * - **Desktop Navigation**: Shows primary navigation links (Discussions, Symptom Tracker) on larger screens.
  * - **Mobile Navigation**: On smaller screens, it collapses navigation into a slide-out sheet menu for better usability.
- * - **Placeholder Actions**: Includes "Upload" and "Download" buttons as placeholders for potential future file-handling features.
+ * - **User Authentication**: Displays a "Sign In" button for unauthenticated users and the UserNav component for logged-in users.
  *
  * @param {AppHeaderProps} props - The props for the AppHeader component.
  * @param {() => void} props.onUploadClick - Callback function for the placeholder upload button.
@@ -39,6 +39,7 @@ type AppHeaderProps = {
 };
 
 export function AppHeader({ onUploadClick, onDownloadClick, showActions = true }: AppHeaderProps) {
+  const { user } = useUser();
   
   return (
     <header className="flex items-center justify-between pl-2 pr-4 border-b bg-card/60 backdrop-blur-xl sticky top-0 z-50 shadow-sm">
@@ -75,6 +76,17 @@ export function AppHeader({ onUploadClick, onDownloadClick, showActions = true }
               Download
             </Button>
           </div>
+        )}
+
+        {user ? (
+            <UserNav />
+        ) : (
+             <Button asChild>
+                <Link href="/auth">
+                  <UserCircle className="mr-2 h-4 w-4" />
+                  Sign In
+                </Link>
+             </Button>
         )}
         
         {/* Mobile Navigation */}
@@ -121,7 +133,6 @@ export function AppHeader({ onUploadClick, onDownloadClick, showActions = true }
                 </SheetContent>
             </Sheet>
         </div>
-
       </div>
     </header>
   );

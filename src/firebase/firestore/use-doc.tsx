@@ -58,6 +58,8 @@ export function useDoc<T = any>(
     if (memoizedDocRef.path && memoizedDocRef.path.includes('undefined')) {
       // Don't treat this as a fatal error, just stop and wait for a valid path.
       setIsLoading(false);
+      setData(null);
+      setError(new Error(`Invalid document reference: path contains undefined segment (${memoizedDocRef.path})`));
       return;
     }
 

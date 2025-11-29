@@ -50,8 +50,8 @@ export function useCollection<T = any>(
   useEffect(() => {
     // If the query is not ready, do not fetch. Set loading to false as we are not fetching.
     if (!memoizedTargetRefOrQuery) {
-      setData(null);
       setIsLoading(false);
+      setData(null);
       setError(null);
       return;
     }
@@ -60,6 +60,8 @@ export function useCollection<T = any>(
     if (path && path.includes('undefined')) {
       // Don't treat this as a fatal error, just stop and wait for a valid path.
       setIsLoading(false);
+      setData(null);
+      setError(new Error(`Invalid query: path contains undefined segment (${path})`));
       return;
     }
 

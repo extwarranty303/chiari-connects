@@ -104,7 +104,7 @@ export type SymptomData = SymptomFormValues & { id: string; userId: string, crea
 export default function SymptomTrackerPage() {
   const { toast } = useToast();
   const { firestore } = useFirebase();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -147,7 +147,7 @@ export default function SymptomTrackerPage() {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Could not log symptom.',
+        description: 'Could not log symptom. You must be signed in.',
       });
       return;
     }
@@ -187,7 +187,7 @@ export default function SymptomTrackerPage() {
        toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Could not delete data.',
+        description: 'Could not delete data. You must be signed in.',
       });
       return;
     }
@@ -206,7 +206,7 @@ export default function SymptomTrackerPage() {
   };
 
   // Show a full-page loader while checking authentication.
-  if (!user) {
+  if (isUserLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

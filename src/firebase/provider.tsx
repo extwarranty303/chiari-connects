@@ -6,7 +6,7 @@ import { Firestore } from 'firebase/firestore';
 import { Auth } from 'firebase/auth';
 import { FirebaseStorage } from 'firebase/storage';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
-import { useUser, type UserAuthState, type UserProfile } from './auth/use-user';
+import { useUser, type UserAuthState } from './auth/use-user';
 
 interface FirebaseProviderProps {
   children: ReactNode;
@@ -32,9 +32,6 @@ export interface FirebaseServicesAndUser extends FirebaseContextState {
   auth: Auth;
   storage: FirebaseStorage;
 }
-
-// Return type for useUser() is now just the simplified UserAuthState
-export interface UserHookResult extends UserAuthState {}
 
 // React Context
 export const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
