@@ -1,6 +1,5 @@
 'use server';
 import { onCall, HttpsError } from "firebase-functions/v2/https";
-import { beforeUserCreated } from "firebase-functions/v2/identity";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import { logger } from "firebase-functions/v2";
@@ -23,40 +22,14 @@ interface Symptom {
   [key: string]: any;
 }
 
-export const onUserCreatedTrigger = beforeUserCreated(async (event) => {
-  const user = event.data;
-
-  try {
-    await admin.firestore().collection("users").doc(user.uid).set({
-      email: user.email,
-      displayName: user.displayName || "",
-      photoURL: user.photoURL || "",
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      emailVerified: user.emailVerified,
-      totalSymptoms: 0,
-    });
-
-    logger.info(`User profile created for ${user.uid}`);
-  } catch (error) {
-    logger.error("Error creating user profile:", error);
-  }
-});
-
 export const generateSymptomReport = onCall(async (request) => {
-  if (!request.auth) {
-    throw new HttpsError(
-      "unauthenticated",
-      "User must be authenticated to generate reports."
-    );
-  }
-
-  const userId = request.auth.uid;
+  const userId = request.data.userId; // Assume userId is passed in data
   const { startDate, endDate } = request.data;
 
-  if (!startDate || !endDate) {
+  if (!userId || !startDate || !endDate) {
     throw new HttpsError(
       "invalid-argument",
-      "startDate and endDate are required"
+      "userId, startDate and endDate are required"
     );
   }
 
@@ -112,10 +85,6 @@ export const generateSymptomReport = onCall(async (request) => {
 });
 
 export const sendNotificationEmail = onCall(async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "User must be authenticated.");
-  }
-
   const { recipientEmail, subject, message } = request.data;
 
   if (!recipientEmail || !subject || !message) {
@@ -211,14 +180,14 @@ const analyzeFlow = ai.defineFlow(
 );
 
 export const analyzeSymptomPatterns = onCall(async (request) => {
-  if (!request.auth) {
+  const userId = request.data.userId;
+  if (!userId) {
     throw new HttpsError(
-      "unauthenticated",
-      "User must be authenticated to analyze symptoms."
+      "invalid-argument",
+      "userId is required to analyze symptoms."
     );
   }
 
-  const userId = request.auth.uid;
   const symptoms = await getSymptoms(userId);
   
   const prompt = `Analyze these symptoms and identify patterns:

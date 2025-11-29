@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { FileUp, FileDown, Activity, MessageSquare, Menu, LogOut } from 'lucide-react';
+import { FileUp, FileDown, Activity, MessageSquare, Menu } from 'lucide-react';
 import { UserNav } from '@/components/app/user-nav';
 import {
   Sheet,
@@ -13,8 +13,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { useFirebase } from '@/firebase';
-import { useRouter } from 'next/navigation';
 import { Logo } from './logo';
 
 /**
@@ -25,7 +23,6 @@ import { Logo } from './logo';
  * - **Logo and Branding**: Displays the "Chiari Connects" logo, linking to the home page.
  * - **Desktop Navigation**: Shows primary navigation links (Discussions, Symptom Tracker) on larger screens.
  * - **Mobile Navigation**: On smaller screens, it collapses navigation into a slide-out sheet menu for better usability.
- * - **User Actions**: Integrates the `UserNav` component for user-specific actions like profile and logout.
  * - **Placeholder Actions**: Includes "Upload" and "Download" buttons as placeholders for potential future file-handling features.
  *
  * @param {AppHeaderProps} props - The props for the AppHeader component.
@@ -42,14 +39,6 @@ type AppHeaderProps = {
 };
 
 export function AppHeader({ onUploadClick, onDownloadClick, showActions = true }: AppHeaderProps) {
-  const { auth } = useFirebase();
-  const router = useRouter();
-
-  const handleLogout = () => {
-    auth.signOut().then(() => {
-      router.push('/');
-    });
-  };
   
   return (
     <header className="flex items-center justify-between pl-2 pr-4 border-b bg-card/60 backdrop-blur-xl sticky top-0 z-50 shadow-sm">
@@ -87,10 +76,7 @@ export function AppHeader({ onUploadClick, onDownloadClick, showActions = true }
             </Button>
           </div>
         )}
-        <div className="hidden md:block">
-          <UserNav />
-        </div>
-
+        
         {/* Mobile Navigation */}
         <div className="md:hidden">
             <Sheet>
@@ -131,14 +117,6 @@ export function AppHeader({ onUploadClick, onDownloadClick, showActions = true }
                                 </Button>
                             </>
                          )}
-                        <hr className="my-4" />
-                        <div className="flex justify-center mb-4">
-                            <UserNav />
-                        </div>
-                        <Button variant="outline" onClick={handleLogout} className="justify-center">
-                            <LogOut className="mr-2 h-4 w-4" />
-                            Logout
-                        </Button>
                     </nav>
                 </SheetContent>
             </Sheet>

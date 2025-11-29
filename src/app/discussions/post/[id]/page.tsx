@@ -76,7 +76,7 @@ const reportReasons = [
  */
 export default function PostPage() {
   const { firestore } = useFirebase();
-  const { user, isUserLoading } = useUser();
+  const { user } = useUser();
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
@@ -102,13 +102,6 @@ export default function PostPage() {
     }
   }, [id]);
 
-  // Redirect unauthenticated users.
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/auth');
-    }
-  }, [user, isUserLoading, router]);
-
   // Memoized query to fetch the specific discussion post.
   const postRef = useMemoFirebase(() => {
     if (!firestore || !id) return null;
@@ -132,7 +125,7 @@ export default function PostPage() {
   }, [bookmarkData]);
 
 
-  const isLoading = isLoadingPost || isUserLoading || isLoadingBookmark;
+  const isLoading = isLoadingPost || isLoadingBookmark;
 
   /**
    * Toggles the bookmark status for the current post with an optimistic UI update.

@@ -6,9 +6,8 @@ import { format } from 'date-fns';
 import { Loader2, User, MessageSquare, Activity, Download, ShieldAlert, FileText, CheckCircle, Trash2, KeyRound } from 'lucide-react';
 import Link from 'next/link';
 
-import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { AppHeader } from '@/components/app/header';
-import AdminRouteGuard from '@/components/app/admin-route-guard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -42,7 +41,6 @@ import { useEffect, useState } from 'react';
  *
  * It provides a centralized interface for administrators to manage the application.
  * Key functionalities include:
- * - **Security**: Wrapped in an `AdminRouteGuard` to ensure only admins can access it.
  * - **Statistics**: Displays high-level site statistics like total users, posts, and symptom entries.
  * - **User Management**: Shows a table of all registered users with their details and roles. Admins can manage users (e.g., assign roles, delete users).
  * - **Content Moderation**: Displays tables for all discussion posts (with pagination) and user-submitted reports.
@@ -132,7 +130,6 @@ function exportToCsv(filename: string, rows: any[]) {
 export default function AdminDashboardPage() {
   const { firestore } = useFirebase();
   const { toast } = useToast();
-  const { user: currentUser, isAdmin } = useUser();
   
   const functions = getFunctions();
   const makeUserModerator = httpsCallable(functions, 'makeUserModerator');
@@ -150,11 +147,11 @@ export default function AdminDashboardPage() {
   const [isLoadingMorePosts, setIsLoadingMorePosts] = useState(false);
   const POST_LIMIT = 25;
 
-  // Memoized query to fetch all users. Only runs if the user is an admin.
+  // Memoized query to fetch all users.
   const allUsersQuery = useMemoFirebase(() => {
-    if (!firestore || !isAdmin) return null;
+    if (!firestore) return null;
     return query(collection(firestore, 'users'), orderBy('createdAt', 'desc'));
-  }, [firestore, isAdmin]);
+  }, [firestore]);
 
   // Query to get all discussions for counting total posts.
   const allDiscussionsQueryForCount = useMemoFirebase(() => {
@@ -294,7 +291,6 @@ export default function AdminDashboardPage() {
 
 
   return (
-    <AdminRouteGuard>
       <div className="flex flex-col min-h-screen bg-background text-foreground font-body">
         <AppHeader onUploadClick={() => { }} onDownloadClick={() => { }} showActions={false} />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
@@ -317,7 +313,7 @@ export default function AdminDashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {isLoadingStats ? <Loader2 className="h-6 w-6 animate-spin" /> : users?.length ?? (isAdmin ? 0 : 'N/A')}
+                    {isLoadingStats ? <Loader2 className="h-6 w-6 animate-spin" /> : users?.length ?? 0}
                   </div>
                 </CardContent>
               </Card>
@@ -408,8 +404,7 @@ export default function AdminDashboardPage() {
 
 
             <div className="grid gap-8 md:grid-cols-1">
-                {/* User Management Table - Only visible to Admins */}
-                {isAdmin && (
+                {/* User Management Table */}
                   <Card className="glassmorphism">
                       <CardHeader className="flex flex-row items-center justify-between">
                           <div>
@@ -477,7 +472,7 @@ export default function AdminDashboardPage() {
                                                       <Button
                                                         variant="destructive"
                                                         size="sm"
-                                                        disabled={user.id === currentUser?.uid || !!user.roles?.admin}
+                                                        disabled={!!user.roles?.admin}
                                                       >
                                                         <Trash2 className="mr-2 h-4 w-4" />
                                                         Delete
@@ -510,10 +505,8 @@ export default function AdminDashboardPage() {
                           </Table>
                       </CardContent>
                   </Card>
-                )}
                 
                 {/* IAM Integration Card */}
-                {isAdmin && (
                   <Card className="glassmorphism">
                     <CardHeader>
                       <CardTitle>Google Cloud IAM Integration</CardTitle>
@@ -534,7 +527,6 @@ export default function AdminDashboardPage() {
                       </CardContent>
                     </form>
                   </Card>
-                )}
 
                 {/* Content Moderation Table */}
                 <Card className="glassmorphism">
@@ -600,6 +592,5 @@ export default function AdminDashboardPage() {
         </main>
         <Footer />
       </div>
-    </AdminRouteGuard>
   );
 }

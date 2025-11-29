@@ -7,7 +7,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Loader2, Tag, AlertTriangle, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 
-import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { AppHeader } from '@/components/app/header';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -39,7 +39,6 @@ interface DiscussionPost {
  */
 export default function TagPage() {
   const { firestore } = useFirebase();
-  const { user, isUserLoading } = useUser();
   const router = useRouter();
   const params = useParams();
   const tag = decodeURIComponent(params.tag as string);
@@ -58,13 +57,6 @@ export default function TagPage() {
     }
   }, []);
 
-  // Redirect unauthenticated users.
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/auth');
-    }
-  }, [user, isUserLoading, router]);
-
   // Memoized query to fetch discussion posts for the specific tag.
   const discussionsQuery = useMemoFirebase(() => {
     if (!firestore || !tag) return null;
@@ -77,8 +69,7 @@ export default function TagPage() {
 
   const { data: posts, isLoading, error } = useCollection<DiscussionPost>(discussionsQuery);
 
-  // Show a loading screen while user auth or data is being fetched.
-  if (isLoading || isUserLoading || !user) {
+  if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -164,5 +155,3 @@ export default function TagPage() {
     </div>
   );
 }
-
-    

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -16,7 +16,6 @@ import {
 } from 'recharts';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon, Loader2, FileText, AlertTriangle, Trash2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { AppHeader } from '@/components/app/header';
@@ -105,8 +104,7 @@ export type SymptomData = SymptomFormValues & { id: string; userId: string, crea
 export default function SymptomTrackerPage() {
   const { toast } = useToast();
   const { firestore } = useFirebase();
-  const { user, isUserLoading } = useUser();
-  const router = useRouter();
+  const { user } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -126,13 +124,6 @@ export default function SymptomTrackerPage() {
       date: new Date(),
     },
   });
-
-  // Redirect unauthenticated users to the auth page.
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/auth');
-    }
-  }, [user, isUserLoading, router]);
 
   // Memoized Firestore query to fetch the last 30 symptoms for the current user, ordered by date.
   const symptomsQuery = useMemoFirebase(() => {
@@ -155,8 +146,8 @@ export default function SymptomTrackerPage() {
     if (!user) {
       toast({
         variant: 'destructive',
-        title: 'Not Authenticated',
-        description: 'You must be logged in to track symptoms.',
+        title: 'Error',
+        description: 'Could not log symptom.',
       });
       return;
     }
@@ -195,8 +186,8 @@ export default function SymptomTrackerPage() {
     if (!user) {
        toast({
         variant: 'destructive',
-        title: 'Not Authenticated',
-        description: 'You must be logged in to delete data.',
+        title: 'Error',
+        description: 'Could not delete data.',
       });
       return;
     }
@@ -215,7 +206,7 @@ export default function SymptomTrackerPage() {
   };
 
   // Show a full-page loader while checking authentication.
-  if (isUserLoading || !user) {
+  if (!user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -477,5 +468,3 @@ export default function SymptomTrackerPage() {
     </div>
   );
 }
-
-    

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useTransition, useRef, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { format, parseISO } from 'date-fns';
 import { Loader2, Printer, BrainCircuit, AlertTriangle, Upload, File, X, Image as ImageIcon } from 'lucide-react';
@@ -16,7 +15,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-
+import { useRouter } from 'next/navigation';
 
 import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { type SymptomData } from '@/app/symptom-tracker/page';
@@ -251,7 +250,7 @@ function AiAnalysis({ symptoms, user, userProfile }: { symptoms: SymptomData[], 
                 // Consolidate the analyses into a single report
                 const consolidationResult = await consolidateAnalyses({ 
                     analyses: individualAnalyses,
-                    userName: userProfile?.username || user.displayName || 'the patient'
+                    userName: userProfile?.username || 'the patient'
                 });
                 const finalReport = consolidationResult.consolidatedReport;
                 setAnalysis(finalReport);
@@ -410,12 +409,6 @@ export default function SymptomReportPage() {
   const { user, userProfile, isUserLoading } = useUser();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/auth');
-    }
-  }, [user, isUserLoading, router]);
-
   const symptomsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(collection(firestore, 'users', user.uid, 'symptoms'), orderBy('date', 'desc'));
@@ -447,7 +440,7 @@ export default function SymptomReportPage() {
     return s.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
   
-  const displayName = capitalize(userProfile?.username || user.displayName || user.email || '');
+  const displayName = capitalize(userProfile?.username || 'User');
 
   return (
     <>
@@ -612,5 +605,3 @@ export default function SymptomReportPage() {
     </>
   );
 }
-
-    

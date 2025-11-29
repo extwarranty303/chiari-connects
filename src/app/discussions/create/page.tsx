@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -52,7 +52,7 @@ type PostFormValues = z.infer<typeof postSchema>;
  */
 export default function CreatePostPage() {
   const { firestore } = useFirebase();
-  const { user, userProfile, isUserLoading } = useUser();
+  const { user, userProfile } = useUser();
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,12 +67,6 @@ export default function CreatePostPage() {
     defaultValues: { title: '', content: '', category: '', tags: '' },
   });
 
-  // Redirect unauthenticated users.
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/auth');
-    }
-  }, [user, isUserLoading, router]);
 
   /**
    * Handles the form submission to create a new discussion post.
@@ -82,7 +76,7 @@ export default function CreatePostPage() {
    */
   const onSubmit = async (values: PostFormValues) => {
     if (!user || !userProfile) {
-      toast({ variant: 'destructive', title: 'You must be logged in to create a post.' });
+      toast({ variant: 'destructive', title: 'Could not create post.' });
       return;
     }
     setIsSubmitting(true);
@@ -131,7 +125,7 @@ export default function CreatePostPage() {
     }
   };
 
-  if (isUserLoading || !user) {
+  if (!user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -223,5 +217,3 @@ export default function CreatePostPage() {
     </div>
   );
 }
-
-    

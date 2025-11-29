@@ -1,12 +1,12 @@
 'use client';
 
-import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
+import React, { createContext, useContext, ReactNode, useMemo } from 'react';
 import { FirebaseApp } from 'firebase/app';
 import { Firestore } from 'firebase/firestore';
-import { Auth, User } from 'firebase/auth';
+import { Auth } from 'firebase/auth';
 import { FirebaseStorage } from 'firebase/storage';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
-import { useUserAuthState, type UserProfile } from './auth/use-user';
+import { useUser, type UserAuthState, type UserProfile } from './auth/use-user';
 
 interface FirebaseProviderProps {
   children: ReactNode;
@@ -14,16 +14,6 @@ interface FirebaseProviderProps {
   firestore: Firestore;
   auth: Auth;
   storage: FirebaseStorage;
-}
-
-// Internal state for user authentication
-export interface UserAuthState {
-  user: User | null;
-  isUserLoading: boolean;
-  userError: Error | null;
-  isAdmin: boolean;
-  isModerator: boolean;
-  userProfile: UserProfile | null;
 }
 
 // Combined state for the Firebase context
@@ -43,7 +33,7 @@ export interface FirebaseServicesAndUser extends FirebaseContextState {
   storage: FirebaseStorage;
 }
 
-// Return type for useUser() - specific to user auth state
+// Return type for useUser() is now just the simplified UserAuthState
 export interface UserHookResult extends UserAuthState {}
 
 // React Context
@@ -59,7 +49,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   auth,
   storage,
 }) => {
-  const userAuthState = useUserAuthState(auth, firestore);
+  const userAuthState = useUser();
 
   // Memoize the context value
   const contextValue = useMemo((): FirebaseContextState => {
@@ -130,9 +120,7 @@ export const useStorage = (): FirebaseStorage => {
     return storage;
 }
 
-type MemoFirebase <T> = T & {__memo?: boolean};
-
-export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T {
+export function useMemoFirebase<T>(factory: () => T, deps: React.DependencyList): T {
   const memoized = useMemo(factory, deps);
   
   if (memoized && typeof memoized === 'object') {
@@ -145,13 +133,3 @@ export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T {
   
   return memoized;
 }
-
-/**
- * Hook specifically for accessing the authenticated user's state.
- * This provides the User object, loading status, and any auth errors.
- * @returns {UserHookResult} Object with user, isUserLoading, userError.
- */
-export const useUser = (): UserHookResult => {
-  const { user, isUserLoading, userError, isAdmin, isModerator, userProfile } = useFirebase();
-  return { user, isUserLoading, userError, isAdmin, isModerator, userProfile };
-};
