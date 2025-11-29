@@ -34,9 +34,8 @@ export interface UserAuthState {
   hasCompletedOnboarding: boolean;
 }
 
-const auth = getAuth();
-
 export function useUser(): UserAuthState {
+  const auth = getAuth(); // Moved getAuth() inside the hook
   const [user, isUserLoading, userError] = useAuthState(auth);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
